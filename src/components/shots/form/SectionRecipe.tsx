@@ -8,6 +8,7 @@ export function SectionRecipe() {
   const {
     register,
     watch,
+    setValue,
     formState: { errors },
   } = useFormContext<CreateShot>();
 
@@ -18,11 +19,29 @@ export function SectionRecipe() {
   const ratio = dose && yieldG ? (yieldG / dose).toFixed(2) : "—";
   const flow = yieldG && time ? (yieldG / time).toFixed(2) : "—";
 
+  const handleClear = () => {
+    setValue("doseGrams", undefined as unknown as number, { shouldValidate: false });
+    setValue("yieldGrams", undefined as unknown as number, { shouldValidate: false });
+    setValue("grindLevel", undefined as unknown as number, { shouldValidate: false });
+    setValue("brewTimeSecs", undefined as unknown as number, { shouldValidate: false });
+    setValue("brewTempC", undefined, { shouldValidate: false });
+    setValue("preInfusionDuration", undefined, { shouldValidate: false });
+  };
+
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-        Recipe
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+          Recipe
+        </h2>
+        <button
+          type="button"
+          onClick={handleClear}
+          className="text-xs font-medium text-stone-400 transition-colors hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"
+        >
+          Clear section
+        </button>
+      </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <Input

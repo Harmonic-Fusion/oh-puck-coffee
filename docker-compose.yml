@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-coffee}
       POSTGRES_DB: ${DB_NAME:-coffee}
     ports:
-      - "5432:5432"
+      - "8788:5432"
     volumes:
       - pg-data:/var/lib/postgresql/data
     healthcheck:
@@ -18,7 +18,7 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - "8787:3000"
     environment:
       DATABASE_URL: postgresql://${DB_USER:-coffee}:${DB_PASSWORD:-coffee}@db:5432/${DB_NAME:-coffee}
       NEXTAUTH_URL: http://localhost:3000

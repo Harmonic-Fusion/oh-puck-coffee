@@ -14,14 +14,32 @@ export function SectionResults() {
   const {
     register,
     control,
+    setValue,
     formState: { errors },
   } = useFormContext<CreateShot>();
 
+  const handleClear = () => {
+    setValue("shotQuality", undefined as unknown as number, { shouldValidate: false });
+    setValue("flavorProfile", [], { shouldValidate: false });
+    setValue("flavorWheelBody", undefined, { shouldValidate: false });
+    setValue("toolsUsed", [], { shouldValidate: false });
+    setValue("notes", "", { shouldValidate: false });
+  };
+
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-        Results & Tasting
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+          Results & Tasting
+        </h2>
+        <button
+          type="button"
+          onClick={handleClear}
+          className="text-xs font-medium text-stone-400 transition-colors hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"
+        >
+          Clear section
+        </button>
+      </div>
 
       <Controller
         name="shotQuality"

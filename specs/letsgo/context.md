@@ -425,12 +425,12 @@ All endpoints under `/api`. Next.js App Router route handlers. Auth.js session r
 
 ### Phase 3: Dashboard + PWA
 
-- [ ] **3.1** Build stats API routes: `overview/route.ts` (total shots, avg quality, avg ratio, most-used bean, shots this week), `by-bean/[beanId]/route.ts`, `by-user/[userId]/route.ts`. Create `src/components/stats/hooks.ts`.
-- [ ] **3.2** Install `recharts`. Build dashboard page: `src/app/(app)/dashboard/page.tsx` with `StatCard.tsx` (total shots, avg quality, avg brew ratio, most-used bean, shots this week).
-- [ ] **3.3** Build dashboard charts: `RatioChart.tsx` (brew ratio trend, Recharts line chart), `FlavorProfileChart.tsx` (flavor frequency, Recharts bar chart).
-- [ ] **3.4** Build bean comparison view: `BeanComparisonTable.tsx` (compare beans by avg quality, avg ratio, shot count, common flavors). Add as collapsible section on dashboard.
-- [ ] **3.5** Configure PWA: `public/manifest.json`, app icons, `<link rel="manifest">` in layout, service worker for static asset caching.
-- [ ] **3.6** Responsive design audit: single-column form at 375px, card layout for shot log below 768px, stacked charts on mobile, collapsed nav on mobile.
+- [x] **3.1** Build stats API routes: `overview/route.ts` (total shots, avg quality, avg ratio, most-used bean, shots this week), `by-bean/[beanId]/route.ts`, `by-user/[userId]/route.ts`. Create `src/components/stats/hooks.ts`.
+- [x] **3.2** Install `recharts`. Build dashboard page: `src/app/(app)/dashboard/page.tsx` with `StatCard.tsx` (total shots, avg quality, avg brew ratio, most-used bean, shots this week).
+- [x] **3.3** Build dashboard charts: `RatioChart.tsx` (brew ratio trend, Recharts line chart), `FlavorProfileChart.tsx` (flavor frequency, Recharts bar chart).
+- [x] **3.4** Build bean comparison view: `BeanComparisonTable.tsx` (compare beans by avg quality, avg ratio, shot count, common flavors). Add as collapsible section on dashboard.
+- [x] **3.5** Configure PWA: `public/manifest.json`, app icons, `<link rel="manifest">` in layout, service worker for static asset caching.
+- [x] **3.6** Responsive design audit: single-column form at 375px, card layout for shot log below 768px, stacked charts on mobile, collapsed nav on mobile.
 
 ### Phase 4: Polish + Deploy to Railway
 
@@ -448,6 +448,7 @@ All endpoints under `/api`. Next.js App Router route handlers. Auth.js session r
 - [x] Schema update: beans — add origin, roaster, processing method (all optional). Shots — replace grind_setting with grind_level (numeric), brew_time_secs as float, remove brew_ratio & days_post_roast from DB (computed on read), replace texture_body with flavor_wheel_body, overall_preference as float, add pre_infusion_duration (float). Regenerated migration.
 - [x] Shot Quality changed from 1-5 star rating to 1-10 scale with slider. Created `Slider` common component, updated `SectionResults` form, `ShotTable` display, and Zod schema.
 - [x] Slider thumb replaced with espresso cup SVG icon. Cup icon saved to `public/icons/espresso-cup-thumb.svg` and inlined as CSS data URI in `globals.css`.
+- [x] Added "Clear section" buttons to each form section (Setup, Recipe, Results & Tasting, Flavor Wheel) in the shot log form.
 
 ---
 

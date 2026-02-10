@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots, beans, users, grinders, machines, integrations } from "@/db/schema";
 import { createShotSchema } from "@/shared/shots/schema";
@@ -7,7 +7,7 @@ import { eq, desc, asc, and, gte, lte, SQL } from "drizzle-orm";
 import { appendShotRow } from "@/lib/google-sheets";
 
 export async function GET(request: NextRequest) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -113,7 +113,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getSession } from "@/auth";
 import { db } from "@/db";
 import { integrations } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -10,7 +10,7 @@ import {
 } from "@/lib/google-sheets";
 
 export async function GET() {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -25,7 +25,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await auth();
+  const session = await getSession();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

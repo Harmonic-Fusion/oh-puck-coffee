@@ -11,22 +11,40 @@ import type { CreateShot } from "@/shared/shots/schema";
 
 export function SectionFlavorWheel() {
   const [expanded, setExpanded] = useState(false);
-  const { control, formState: { errors } } = useFormContext<CreateShot>();
+  const { control, setValue, formState: { errors } } = useFormContext<CreateShot>();
+
+  const handleClear = () => {
+    setValue("flavorWheelCategories", undefined, { shouldValidate: false });
+    setValue("flavorWheelBody", undefined, { shouldValidate: false });
+    setValue("flavorWheelAdjectives", [], { shouldValidate: false });
+    setValue("overallPreference", undefined, { shouldValidate: false });
+  };
 
   return (
     <section className="space-y-4">
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center justify-between rounded-lg bg-stone-50 px-4 py-3 text-left transition-colors hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-700"
-      >
-        <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-          🎨 Describe flavors in detail?
-        </h2>
-        <span className="text-stone-400 dark:text-stone-500">
-          {expanded ? "▲ Collapse" : "▼ Expand"}
-        </span>
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="flex flex-1 items-center justify-between rounded-lg bg-stone-50 px-4 py-3 text-left transition-colors hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-700"
+        >
+          <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+            🎨 Describe flavors in detail?
+          </h2>
+          <span className="text-stone-400 dark:text-stone-500">
+            {expanded ? "▲ Collapse" : "▼ Expand"}
+          </span>
+        </button>
+        {expanded && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="text-xs font-medium text-stone-400 transition-colors hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"
+          >
+            Clear
+          </button>
+        )}
+      </div>
 
       {expanded && (
         <div className="space-y-6 rounded-xl border border-stone-200 p-4 dark:border-stone-700">

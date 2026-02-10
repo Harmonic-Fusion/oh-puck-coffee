@@ -13,11 +13,26 @@ export function SectionBasics() {
     formState: { errors },
   } = useFormContext<CreateShot>();
 
+  const handleClear = () => {
+    setValue("beanId", "", { shouldValidate: false });
+    setValue("grinderId", "", { shouldValidate: false });
+    setValue("machineId", undefined, { shouldValidate: false });
+  };
+
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-        Setup
-      </h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+          Setup
+        </h2>
+        <button
+          type="button"
+          onClick={handleClear}
+          className="text-xs font-medium text-stone-400 transition-colors hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"
+        >
+          Clear section
+        </button>
+      </div>
 
       <BeanSelector
         value={watch("beanId") || ""}
