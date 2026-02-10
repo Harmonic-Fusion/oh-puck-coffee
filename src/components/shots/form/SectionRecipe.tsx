@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useFormContext } from "react-hook-form";
-import { Input } from "@/components/common/Input";
+import { useFormContext, Controller } from "react-hook-form";
+import { NumberStepper } from "@/components/common/NumberStepper";
 import type { CreateShot } from "@/shared/shots/schema";
 
 const TEMP_UNIT_KEY = "coffee-temp-unit";
@@ -18,15 +18,15 @@ function getSavedTempUnit(): "C" | "F" {
 
 export function SectionRecipe() {
   const {
-    register,
     watch,
     setValue,
+    control,
     formState: { errors },
   } = useFormContext<CreateShot>();
 
   // ── Persisted temp-unit preference ──
   const [tempUnit, setTempUnit] = useState<"C" | "F">("F");
-  const [tempFDisplay, setTempFDisplay] = useState("");
+  const [tempFValue, setTempFValue] = useState<number | undefined>(undefined);
   const [activeRatio, setActiveRatio] = useState<number | null>(null);
 
   // Hydrate from localStorage on mount
@@ -56,10 +56,10 @@ export function SectionRecipe() {
 
   // When dose changes while a ratio button is active, recalculate yield
   const handleDoseChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const d = parseFloat(e.target.value);
-      if (!isNaN(d) && activeRatio) {
-        const computed = parseFloat((d * activeRatio).toFixed(1));
+    (val: number | undefined) => {
+      setValue("doseGrams", val as number, { shouldValidate: true });
+      if (val && activeRatio) {
+        const computed = parseFloat((val * activeRatio).toFixed(1));
         setValue("yieldGrams", computed, { shouldValidate: true });
       }
     },
@@ -67,9 +67,13 @@ export function SectionRecipe() {
   );
 
   // If user manually edits yield, deselect the ratio button
-  const handleYieldChange = useCallback(() => {
-    setActiveRatio(null);
-  }, []);
+  const handleYieldChange = useCallback(
+    (val: number | undefined) => {
+      setActiveRatio(null);
+      setValue("yieldGrams", val as number, { shouldValidate: true });
+    },
+    [setValue]
+  );
 
   // ── Temp unit toggle (persisted) ──
   const handleTempUnitToggle = useCallback(() => {
@@ -77,19 +81,17 @@ export function SectionRecipe() {
     setTempUnit(next);
     localStorage.setItem(TEMP_UNIT_KEY, next);
     if (next === "F" && brewTempC) {
-      setTempFDisplay(String(cToF(brewTempC)));
+      setTempFValue(cToF(brewTempC));
     } else {
-      setTempFDisplay("");
+      setTempFValue(undefined);
     }
   }, [tempUnit, brewTempC]);
 
   const handleTempFChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const val = e.target.value;
-      setTempFDisplay(val);
-      const f = parseFloat(val);
-      if (!isNaN(f)) {
-        setValue("brewTempC", fToC(f), { shouldValidate: true });
+    (val: number | undefined) => {
+      setTempFValue(val);
+      if (val != null) {
+        setValue("brewTempC", fToC(val), { shouldValidate: true });
       } else {
         setValue("brewTempC", undefined, { shouldValidate: false });
       }
@@ -105,19 +107,11 @@ export function SectionRecipe() {
     setValue("brewTempC", undefined, { shouldValidate: false });
     setValue("preInfusionDuration", undefined, { shouldValidate: false });
     setActiveRatio(null);
-    setTempFDisplay("");
+    setTempFValue(undefined);
   };
 
-  // Shared input class for consistency
-  const inputClass = (hasError?: string) =>
-    `w-full rounded-lg border px-3 py-2.5 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
-      hasError
-        ? "border-red-400 focus:ring-red-400"
-        : "border-stone-300 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-    }`;
-
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
           Recipe
@@ -131,133 +125,178 @@ export function SectionRecipe() {
         </button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-7">
         {/* ── Dose ── */}
-        <Input
-          label="Dose (g)"
-          type="number"
-          step="0.1"
-          placeholder="18.0"
-          error={errors.doseGrams?.message}
-          {...register("doseGrams", { onChange: handleDoseChange })}
+        <Controller
+          name="doseGrams"
+          control={control}
+          render={({ field }) => (
+            <NumberStepper
+              label="Dose"
+              suffix="g"
+              value={field.value}
+              onChange={handleDoseChange}
+              min={0}
+              max={50}
+              step={0.1}
+              placeholder="—"
+              error={errors.doseGrams?.message}
+            />
+          )}
         />
 
         {/* ── Yield with ratio quick-select ── */}
-        <div className="w-full">
-          <div className="mb-1 flex items-center justify-between">
-            <label className="text-sm font-medium text-stone-700 dark:text-stone-300">
-              Yield (g)
-            </label>
-            <div className="flex items-center gap-1">
-              <span className="mr-1 text-xs text-stone-400 dark:text-stone-500">
-                Ratio
-              </span>
-              {RATIO_OPTIONS.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => applyRatio(r)}
-                  className={`rounded-md px-2 py-0.5 text-xs font-medium transition-colors ${
-                    activeRatio === r
-                      ? "bg-amber-600 text-white"
-                      : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                  }`}
-                >
-                  1:{r}
-                </button>
-              ))}
-            </div>
-          </div>
-          <input
-            type="number"
-            step="0.1"
-            placeholder="36.0"
-            {...register("yieldGrams", { onChange: handleYieldChange })}
-            className={inputClass(errors.yieldGrams?.message)}
-          />
-          {errors.yieldGrams && (
-            <p className="mt-1 text-xs text-red-500">
-              {errors.yieldGrams.message}
-            </p>
+        <Controller
+          name="yieldGrams"
+          control={control}
+          render={({ field }) => (
+            <NumberStepper
+              label="Yield"
+              suffix="g"
+              value={field.value}
+              onChange={handleYieldChange}
+              min={0}
+              max={200}
+              step={0.1}
+              placeholder="—"
+              error={errors.yieldGrams?.message}
+              labelExtra={
+                <div className="flex items-center gap-1">
+                  <span className="mr-1 text-xs text-stone-400 dark:text-stone-500">
+                    Ratio
+                  </span>
+                  {RATIO_OPTIONS.map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => applyRatio(r)}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                        activeRatio === r
+                          ? "bg-amber-600 text-white"
+                          : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                      }`}
+                    >
+                      1:{r}
+                    </button>
+                  ))}
+                </div>
+              }
+            />
           )}
-        </div>
+        />
 
         {/* ── Grind Level ── */}
-        <Input
-          label="Grind Level"
-          type="number"
-          step="0.1"
-          placeholder="2.5"
-          error={errors.grindLevel?.message}
-          {...register("grindLevel")}
+        <Controller
+          name="grindLevel"
+          control={control}
+          render={({ field }) => (
+            <NumberStepper
+              label="Grind Level"
+              value={field.value}
+              onChange={(val) => setValue("grindLevel", val as number, { shouldValidate: true })}
+              min={0}
+              max={50}
+              step={0.1}
+              placeholder="—"
+              error={errors.grindLevel?.message}
+            />
+          )}
         />
 
         {/* ── Brew Time ── */}
-        <Input
-          label="Brew Time (sec)"
-          type="number"
-          step="0.1"
-          placeholder="28.0"
-          error={errors.brewTimeSecs?.message}
-          {...register("brewTimeSecs")}
+        <Controller
+          name="brewTimeSecs"
+          control={control}
+          render={({ field }) => (
+            <NumberStepper
+              label="Brew Time"
+              suffix="sec"
+              value={field.value}
+              onChange={(val) => setValue("brewTimeSecs", val as number, { shouldValidate: true })}
+              min={0}
+              max={120}
+              step={1}
+              placeholder="—"
+              error={errors.brewTimeSecs?.message}
+            />
+          )}
         />
 
         {/* ── Brew Temp with °F / °C toggle ── */}
-        <div className="w-full">
-          <div className="mb-1 flex items-center justify-between">
-            <label className="text-sm font-medium text-stone-700 dark:text-stone-300">
-              Brew Temp ({tempUnit === "F" ? "°F" : "°C"})
-            </label>
-            <button
-              type="button"
-              onClick={handleTempUnitToggle}
-              className="rounded-md px-1.5 py-0.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30"
-            >
-              Switch to {tempUnit === "F" ? "°C" : "°F"}
-            </button>
-          </div>
-          {tempUnit === "C" ? (
-            <input
-              type="number"
-              step="0.1"
-              placeholder="93.5"
-              {...register("brewTempC")}
-              className={inputClass(errors.brewTempC?.message)}
-            />
-          ) : (
-            <input
-              type="number"
-              step="0.1"
-              placeholder="200"
-              value={tempFDisplay}
-              onChange={handleTempFChange}
-              className={inputClass()}
-            />
-          )}
-          {tempUnit === "F" && brewTempC != null && (
-            <p className="mt-1 text-xs text-stone-500">= {brewTempC}°C</p>
-          )}
-          {errors.brewTempC && (
-            <p className="mt-1 text-xs text-red-500">
-              {errors.brewTempC.message}
-            </p>
-          )}
-        </div>
+        {tempUnit === "C" ? (
+          <Controller
+            name="brewTempC"
+            control={control}
+            render={({ field }) => (
+              <NumberStepper
+                label={`Brew Temp`}
+                suffix="°C"
+                value={field.value ?? undefined}
+                onChange={(val) => setValue("brewTempC", val, { shouldValidate: true })}
+                min={50}
+                max={110}
+                step={0.5}
+                placeholder="—"
+                error={errors.brewTempC?.message}
+                labelExtra={
+                  <button
+                    type="button"
+                    onClick={handleTempUnitToggle}
+                    className="rounded-lg px-2 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30"
+                  >
+                    Switch to °F
+                  </button>
+                }
+              />
+            )}
+          />
+        ) : (
+          <NumberStepper
+            label={`Brew Temp`}
+            suffix="°F"
+            value={tempFValue}
+            onChange={handleTempFChange}
+            min={120}
+            max={230}
+            step={1}
+            placeholder="—"
+            hint={brewTempC != null ? `= ${brewTempC}°C` : undefined}
+            error={errors.brewTempC?.message}
+            labelExtra={
+              <button
+                type="button"
+                onClick={handleTempUnitToggle}
+                className="rounded-lg px-2 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30"
+              >
+                Switch to °C
+              </button>
+            }
+          />
+        )}
 
         {/* ── Pre-infusion ── */}
-        <Input
-          label="Pre-infusion (sec)"
-          type="number"
-          step="0.1"
-          placeholder="5.0"
-          hint="Optional"
-          error={errors.preInfusionDuration?.message}
-          {...register("preInfusionDuration")}
+        <Controller
+          name="preInfusionDuration"
+          control={control}
+          render={({ field }) => (
+            <NumberStepper
+              label="Pre-infusion"
+              suffix="sec"
+              value={field.value ?? undefined}
+              onChange={(val) => setValue("preInfusionDuration", val, { shouldValidate: true })}
+              min={0}
+              max={30}
+              step={0.5}
+              placeholder="—"
+              hint="Optional"
+              error={errors.preInfusionDuration?.message}
+            />
+          )}
         />
       </div>
 
       {/* Computed preview */}
-      <div className="flex gap-6 rounded-lg bg-stone-100 px-4 py-3 text-sm dark:bg-stone-800">
+      <div className="flex gap-6 rounded-xl bg-stone-100 px-4 py-3 text-sm dark:bg-stone-800">
         <div>
           <span className="text-stone-500 dark:text-stone-400">Ratio: </span>
           <span className="font-medium text-stone-800 dark:text-stone-200">

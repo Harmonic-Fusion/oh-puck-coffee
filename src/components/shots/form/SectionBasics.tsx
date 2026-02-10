@@ -23,7 +23,7 @@ export function SectionBasics() {
   };
 
   return (
-    <section className="space-y-4">
+    <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
           Setup

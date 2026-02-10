@@ -49,7 +49,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
 
   return (
     <div className="w-full">
-      <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
+      <label className="mb-2.5 block text-base font-semibold text-stone-800 dark:text-stone-200">
         Bean
       </label>
       {!showCreate ? (
@@ -57,7 +57,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
           <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className={`flex-1 rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
+            className={`h-14 flex-1 rounded-xl border-2 px-4 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
               error
                 ? "border-red-400"
                 : "border-stone-300 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
@@ -75,7 +75,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
           <button
             type="button"
             onClick={() => setShowCreate(true)}
-            className="rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-600 hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800"
+            className="h-14 rounded-xl border-2 border-stone-300 px-4 text-base font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800"
           >
             + New
           </button>
