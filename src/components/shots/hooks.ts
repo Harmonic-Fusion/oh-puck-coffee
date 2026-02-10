@@ -21,6 +21,7 @@ export interface ShotWithJoins {
   brewTimeSecs: string;
   brewTempC: string | null;
   preInfusionDuration: string | null;
+  brewPressure: string | null;
   brewRatio: number | null;
   flowRate: string | null;
   daysPostRoast: number | null;

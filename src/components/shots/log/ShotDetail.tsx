@@ -113,6 +113,10 @@ export function ShotDetail({ shot, open, onClose, onDelete }: ShotDetailProps) {
               }
             />
             <DetailRow
+              label="Brew Pressure"
+              value={shot.brewPressure ? `${shot.brewPressure} bar` : null}
+            />
+            <DetailRow
               label="Flow Rate"
               value={shot.flowRate ? `${shot.flowRate} g/s` : null}
             />

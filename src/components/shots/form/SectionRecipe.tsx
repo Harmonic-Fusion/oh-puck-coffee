@@ -320,6 +320,25 @@ export function SectionRecipe() {
             />
           )}
         />
+
+        {/* ── Brew Pressure ── */}
+        <Controller
+          name="brewPressure"
+          control={control}
+          render={({ field }) => (
+            <NumberStepper
+              label="Brew Pressure"
+              suffix="bar"
+              value={field.value ?? undefined}
+              onChange={(val) => setValue("brewPressure", val, { shouldValidate: true })}
+              min={0}
+              max={20}
+              step={0.1}
+              placeholder="—"
+              error={errors.brewPressure?.message}
+            />
+          )}
+        />
       </div>
 
       {/* Computed preview */}

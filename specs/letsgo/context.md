@@ -462,6 +462,7 @@ All endpoints under `/api`. Next.js App Router route handlers. Auth.js session r
 - [x] Mobile-friendly number inputs: Created `NumberStepper` common component with large 56px tap-target buttons in horizontal `[−] value [+]` layout. Replaced all plain number inputs in SectionRecipe (Dose, Yield, Grind Level, Brew Time, Brew Temp, Pre-infusion) with NumberStepper. Value is tappable for direct keyboard entry. Supports suffix labels (g, sec, °F/°C), configurable step/min/max, and integrates with react-hook-form via Controller.
 - [x] Brew Time allows fractional seconds: Updated NumberStepper step from 1 to 0.01 to support fractional seconds (e.g., 29.52). Schema already supports decimals via z.coerce.number().
 - [x] Add quick select buttons for "Dose" in Recipe section: Added quick-select buttons (16g, 18g, 20g, 22g) to the Dose field, matching the pattern used for Yield ratio buttons. Buttons highlight when active, and manual edits deselect if the value doesn't match a quick-select option. When a dose is selected and a ratio is active, yield is automatically recalculated.
+- [x] Log Brew Pressure with a default to 9 bar pressure: Added `brewPressure` field to database schema with default 9 bar, created migration, added to Zod schemas, added NumberStepper input to SectionRecipe form with default 9 bar, updated API routes (GET and POST), added display to ShotDetail component, and updated Google Sheets integration (header row and appendShotRow).
 
 ---
 

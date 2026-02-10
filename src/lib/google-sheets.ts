@@ -80,6 +80,7 @@ const HEADER_ROW = [
   "Brew Time (s)",
   "Brew Temp (°C)",
   "Pre-infusion (s)",
+  "Brew Pressure (bar)",
   "Flow Rate (g/s)",
   "Shot Quality",
   "Flavor Wheel",
@@ -150,6 +151,7 @@ export async function appendShotRow(
     brewTimeSecs: string;
     brewTempC?: string | null;
     preInfusionDuration?: string | null;
+    brewPressure?: string | null;
     flowRate?: string | null;
     shotQuality: number;
     flavorWheelCategories?: Record<string, string[]> | null;
@@ -183,6 +185,7 @@ export async function appendShotRow(
     shot.brewTimeSecs,
     shot.brewTempC ?? "",
     shot.preInfusionDuration ?? "",
+    shot.brewPressure ?? "",
     shot.flowRate ?? "",
     shot.shotQuality,
     flavorWheelStr,
@@ -195,7 +198,7 @@ export async function appendShotRow(
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: "Sheet1!A:T",
+    range: "Sheet1!A:U",
     valueInputOption: "RAW",
     requestBody: {
       values: [row],

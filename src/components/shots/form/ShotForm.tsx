@@ -33,6 +33,7 @@ export function ShotForm() {
       brewTimeSecs: undefined,
       brewTempC: undefined,
       preInfusionDuration: undefined,
+      brewPressure: 9,
       shotQuality: undefined,
       flavorWheelBody: undefined,
       flavorWheelCategories: undefined,
@@ -70,6 +71,8 @@ export function ShotForm() {
         methods.setValue("brewTempC", parseFloat(lastShot.brewTempC));
       if (lastShot.preInfusionDuration)
         methods.setValue("preInfusionDuration", parseFloat(lastShot.preInfusionDuration));
+      if (lastShot.brewPressure)
+        methods.setValue("brewPressure", parseFloat(lastShot.brewPressure));
       
       // Results & Tasting and Flavor Wheel are intentionally NOT pre-populated
     }
