@@ -7,6 +7,7 @@ import type { CreateShot } from "@/shared/shots/schema";
 
 const TEMP_UNIT_KEY = "coffee-temp-unit";
 const RATIO_OPTIONS = [1, 2, 3, 4] as const;
+const DOSE_OPTIONS = [16, 18, 20, 22] as const;
 
 const fToC = (f: number) => parseFloat(((f - 32) * (5 / 9)).toFixed(1));
 const cToF = (c: number) => parseFloat((c * (9 / 5) + 32).toFixed(1));
@@ -28,6 +29,7 @@ export function SectionRecipe() {
   const [tempUnit, setTempUnit] = useState<"C" | "F">("F");
   const [tempFValue, setTempFValue] = useState<number | undefined>(undefined);
   const [activeRatio, setActiveRatio] = useState<number | null>(null);
+  const [activeDose, setActiveDose] = useState<number | null>(null);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -42,6 +44,20 @@ export function SectionRecipe() {
   const computedRatio = dose && yieldG ? (yieldG / dose).toFixed(2) : "—";
   const flow = yieldG && time ? (yieldG / time).toFixed(2) : "—";
 
+  // ── Dose quick-select: set dose value ──
+  const applyDose = useCallback(
+    (doseValue: number) => {
+      setActiveDose(doseValue);
+      setValue("doseGrams", doseValue, { shouldValidate: true });
+      // If a ratio is active, recalculate yield
+      if (activeRatio) {
+        const computed = parseFloat((doseValue * activeRatio).toFixed(1));
+        setValue("yieldGrams", computed, { shouldValidate: true });
+      }
+    },
+    [activeRatio, setValue]
+  );
+
   // ── Ratio quick-select: set yield = dose × ratio ──
   const applyRatio = useCallback(
     (ratio: number) => {
@@ -55,9 +71,18 @@ export function SectionRecipe() {
   );
 
   // When dose changes while a ratio button is active, recalculate yield
+  // If manually edited, deselect the dose button if it doesn't match a quick-select option
   const handleDoseChange = useCallback(
     (val: number | undefined) => {
       setValue("doseGrams", val as number, { shouldValidate: true });
+      // Check if the value matches any quick-select option
+      if (val != null) {
+        const matchingDose = DOSE_OPTIONS.find((d) => Math.abs(d - val) < 0.01);
+        setActiveDose(matchingDose ?? null);
+      } else {
+        setActiveDose(null);
+      }
+      // If a ratio is active, recalculate yield
       if (val && activeRatio) {
         const computed = parseFloat((val * activeRatio).toFixed(1));
         setValue("yieldGrams", computed, { shouldValidate: true });
@@ -99,34 +124,16 @@ export function SectionRecipe() {
     [setValue]
   );
 
-  const handleClear = () => {
-    setValue("doseGrams", undefined as unknown as number, { shouldValidate: false });
-    setValue("yieldGrams", undefined as unknown as number, { shouldValidate: false });
-    setValue("grindLevel", undefined as unknown as number, { shouldValidate: false });
-    setValue("brewTimeSecs", undefined as unknown as number, { shouldValidate: false });
-    setValue("brewTempC", undefined, { shouldValidate: false });
-    setValue("preInfusionDuration", undefined, { shouldValidate: false });
-    setActiveRatio(null);
-    setTempFValue(undefined);
-  };
-
   return (
     <section className="space-y-6">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
           Recipe
         </h2>
-        <button
-          type="button"
-          onClick={handleClear}
-          className="mt-2 rounded-lg border-2 border-stone-300 bg-stone-50 px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-red-600 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-red-400"
-        >
-          Clear section
-        </button>
       </div>
 
       <div className="space-y-7">
-        {/* ── Dose ── */}
+        {/* ── Dose with quick-select ── */}
         <Controller
           name="doseGrams"
           control={control}
@@ -141,6 +148,24 @@ export function SectionRecipe() {
               step={0.1}
               placeholder="—"
               error={errors.doseGrams?.message}
+              labelExtra={
+                <div className="flex items-center gap-1">
+                  {DOSE_OPTIONS.map((d) => (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => applyDose(d)}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                        activeDose === d
+                          ? "bg-amber-600 text-white"
+                          : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                      }`}
+                    >
+                      {d}g
+                    </button>
+                  ))}
+                </div>
+              }
             />
           )}
         />

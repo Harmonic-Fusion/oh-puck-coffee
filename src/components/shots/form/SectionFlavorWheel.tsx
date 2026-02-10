@@ -10,13 +10,7 @@ import type { CreateShot } from "@/shared/shots/schema";
 
 export function SectionFlavorWheel() {
   const [expanded, setExpanded] = useState(false);
-  const { control, setValue, formState: { errors } } = useFormContext<CreateShot>();
-
-  const handleClear = () => {
-    setValue("flavorWheelCategories", undefined, { shouldValidate: false });
-    setValue("flavorWheelBody", undefined, { shouldValidate: false });
-    setValue("flavorWheelAdjectives", [], { shouldValidate: false });
-  };
+  const { control, formState: { errors } } = useFormContext<CreateShot>();
 
   return (
     <section className="space-y-4">
@@ -35,15 +29,6 @@ export function SectionFlavorWheel() {
 
       {expanded && (
         <div className="space-y-6 rounded-xl border border-stone-200 p-4 dark:border-stone-700">
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={handleClear}
-              className="rounded-lg border-2 border-stone-300 bg-stone-50 px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-red-600 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-red-400"
-            >
-              Clear section
-            </button>
-          </div>
           {/* SCA Flavor Wheel */}
           <Controller
             name="flavorWheelCategories"

@@ -40,19 +40,36 @@ export function ShotForm() {
     },
   });
 
-  // Pre-populate from last shot (task 2.9)
+  // Pre-populate from last shot - only recipe fields, not Results & Tasting
   const hasPrePopulated = useRef(false);
   useEffect(() => {
     if (lastShot && !hasPrePopulated.current) {
       hasPrePopulated.current = true;
+      // Setup section
+      if (lastShot.beanId)
+        methods.setValue("beanId", lastShot.beanId);
       if (lastShot.grinderId)
         methods.setValue("grinderId", lastShot.grinderId);
       if (lastShot.machineId)
         methods.setValue("machineId", lastShot.machineId);
+      if (lastShot.toolsUsed)
+        methods.setValue("toolsUsed", lastShot.toolsUsed);
+      
+      // Recipe section
       if (lastShot.doseGrams)
         methods.setValue("doseGrams", parseFloat(lastShot.doseGrams));
+      if (lastShot.yieldGrams)
+        methods.setValue("yieldGrams", parseFloat(lastShot.yieldGrams));
       if (lastShot.grindLevel)
         methods.setValue("grindLevel", parseFloat(lastShot.grindLevel));
+      if (lastShot.brewTimeSecs)
+        methods.setValue("brewTimeSecs", parseFloat(lastShot.brewTimeSecs));
+      if (lastShot.brewTempC)
+        methods.setValue("brewTempC", parseFloat(lastShot.brewTempC));
+      if (lastShot.preInfusionDuration)
+        methods.setValue("preInfusionDuration", parseFloat(lastShot.preInfusionDuration));
+      
+      // Results & Tasting and Flavor Wheel are intentionally NOT pre-populated
     }
   }, [lastShot, methods]);
 
