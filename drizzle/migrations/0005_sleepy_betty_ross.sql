@@ -1,0 +1,1 @@
+ALTER TABLE "shots" ADD COLUMN "brew_pressure" numeric(4, 1) DEFAULT '9';

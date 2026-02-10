@@ -1,11 +1,21 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { AppRoutes } from "@/app/routes";
+import { QRCode } from "@/components/common/QRCode";
 
 export default function SettingsPage() {
   const { data: session } = useSession();
+  const [appUrl, setAppUrl] = useState<string>("");
+
+  useEffect(() => {
+    // Get the current app URL
+    if (typeof window !== "undefined") {
+      setAppUrl(window.location.origin);
+    }
+  }, []);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -57,6 +67,26 @@ export default function SettingsPage() {
             <span className="text-stone-400">→</span>
           </div>
         </Link>
+
+        {/* QR Code for espresso station access */}
+        {appUrl && (
+          <div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900">
+            <h2 className="mb-4 text-lg font-semibold text-stone-800 dark:text-stone-200">
+              Espresso Station Access
+            </h2>
+            <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
+              Scan this QR code at your espresso station to quickly access the app
+            </p>
+            <div className="flex flex-col items-center gap-4">
+              <QRCode url={appUrl} size={200} />
+              <div className="text-center">
+                <p className="text-xs font-mono text-stone-400 dark:text-stone-500 break-all">
+                  {appUrl}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

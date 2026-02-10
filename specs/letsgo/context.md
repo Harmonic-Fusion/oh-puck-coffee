@@ -434,12 +434,12 @@ All endpoints under `/api`. Next.js App Router route handlers. Auth.js session r
 
 ### Phase 4: Polish + Deploy to Railway
 
-- [ ] **4.1** Add loading and empty states: skeleton loaders for shot table, dashboard, and form selectors. Empty state messages for "No shots yet", "No beans yet", "No integration linked". `<Suspense>` boundaries.
-- [ ] **4.2** Add error boundaries and toast notifications: `Toast.tsx` notification system (success/error/warning). React error boundaries around major sections.
-- [ ] **4.3** Data export: CSV export button on history page (client-side CSV generation from shot data, matching Google Sheets row format).
-- [ ] **4.4** Add `Sidebar.tsx` for desktop nav. Final UI consistency pass: common components, spacing/typography, Tailwind dark-mode-ready classes.
-- [ ] **4.5** Deploy to Railway: managed Postgres, env vars, deploy from Dockerfile, run Drizzle migrations, verify auth + shots + Sheets sync in production.
-- [ ] **4.6** Generate QR code linking to deployed Railway URL. Add to settings page for espresso station access.
+- [x] **4.1** Add loading and empty states: skeleton loaders for shot table, dashboard, and form selectors. Empty state messages for "No shots yet", "No beans yet", "No integration linked". `<Suspense>` boundaries.
+- [x] **4.2** Add error boundaries and toast notifications: `Toast.tsx` notification system (success/error/warning). React error boundaries around major sections.
+- [x] **4.3** Data export: CSV export button on history page (client-side CSV generation from shot data, matching Google Sheets row format).
+- [x] **4.4** Add `Sidebar.tsx` for desktop nav. Final UI consistency pass: common components, spacing/typography, Tailwind dark-mode-ready classes.
+- [x] **4.5** Deploy to Railway: managed Postgres, env vars, deploy from Dockerfile, run Drizzle migrations, verify auth + shots + Sheets sync in production.
+- [x] **4.6** Generate QR code linking to deployed Railway URL. Add to settings page for espresso station access.
 
 ---
 

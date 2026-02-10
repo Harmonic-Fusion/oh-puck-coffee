@@ -122,6 +122,7 @@ export const shots = pgTable("shots", {
   brewTimeSecs: numeric("brew_time_secs", { precision: 5, scale: 1 }).notNull(),
   brewTempC: numeric("brew_temp_c", { precision: 4, scale: 1 }),
   preInfusionDuration: numeric("pre_infusion_duration", { precision: 5, scale: 1 }),
+  brewPressure: numeric("brew_pressure", { precision: 4, scale: 1 }).default("9"),
   // Computed (stored on write)
   flowRate: numeric("flow_rate", { precision: 4, scale: 2 }),
   // Subjective

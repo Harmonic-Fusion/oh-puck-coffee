@@ -13,11 +13,13 @@ import { SectionResults } from "./SectionResults";
 import { SectionFlavorWheel } from "./SectionFlavorWheel";
 import { AppRoutes } from "@/app/routes";
 import { useLastShot } from "@/components/shots/hooks";
+import { useToast } from "@/components/common/Toast";
 
 export function ShotForm() {
   const router = useRouter();
   const createShot = useCreateShot();
   const { data: lastShot } = useLastShot();
+  const { showToast } = useToast();
 
   const methods = useForm<CreateShot>({
     resolver: zodResolver(createShotSchema),
@@ -77,9 +79,10 @@ export function ShotForm() {
     try {
       await createShot.mutateAsync(data);
       methods.reset();
+      showToast("success", "Shot logged successfully!");
       router.push(AppRoutes.history.path);
-    } catch {
-      // Error handled by mutation
+    } catch (error) {
+      showToast("error", error instanceof Error ? error.message : "Failed to log shot");
     }
   };
 

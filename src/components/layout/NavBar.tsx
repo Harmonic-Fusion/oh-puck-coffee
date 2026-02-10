@@ -18,8 +18,8 @@ export function NavBar() {
 
   return (
     <>
-      {/* Desktop / tablet top bar */}
-      <header className="sticky top-0 z-50 border-b border-stone-200 bg-white/80 backdrop-blur-md dark:border-stone-700 dark:bg-stone-900/80">
+      {/* Desktop / tablet top bar - hidden on lg+ when sidebar is shown */}
+      <header className="sticky top-0 z-50 border-b border-stone-200 bg-white/80 backdrop-blur-md dark:border-stone-700 dark:bg-stone-900/80 lg:hidden">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
           <Link
             href={AppRoutes.log.path}

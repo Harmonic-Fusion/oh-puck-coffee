@@ -11,6 +11,8 @@ import {
 import { ShotTable } from "@/components/shots/log/ShotTable";
 import { ShotFilters } from "@/components/shots/log/ShotFilters";
 import { ShotDetail } from "@/components/shots/log/ShotDetail";
+import { exportShotsToCSV, downloadCSV } from "@/lib/csv-export";
+import { useToast } from "@/components/common/Toast";
 
 export default function HistoryPage() {
   const [userId, setUserId] = useState("");
@@ -27,6 +29,7 @@ export default function HistoryPage() {
   const deleteShot = useDeleteShot();
   const toggleReference = useToggleReference();
   const toggleHidden = useToggleHidden();
+  const { showToast } = useToast();
 
   const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
 
@@ -48,15 +51,41 @@ export default function HistoryPage() {
     ids.forEach((id) => toggleHidden.mutate(id));
   };
 
+  const handleExportCSV = () => {
+    if (!shots || shots.length === 0) {
+      showToast("warning", "No shots to export");
+      return;
+    }
+    try {
+      const csv = exportShotsToCSV(shots);
+      const filename = `coffee-shots-${new Date().toISOString().split("T")[0]}.csv`;
+      downloadCSV(csv, filename);
+      showToast("success", `Exported ${shots.length} shot(s) to CSV`);
+    } catch (error) {
+      console.error("Export failed:", error);
+      showToast("error", "Failed to export shots");
+    }
+  };
+
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-          Shot History
-        </h1>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          Browse and sort all your logged espresso shots
-        </p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
+            Shot History
+          </h1>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+            Browse and sort all your logged espresso shots
+          </p>
+        </div>
+        {shots && shots.length > 0 && (
+          <button
+            onClick={handleExportCSV}
+            className="rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+          >
+            Export CSV
+          </button>
+        )}
       </div>
 
       <div className="mb-4">
@@ -73,8 +102,18 @@ export default function HistoryPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-stone-300 border-t-amber-600" />
+        <div className="md:hidden">
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-48 animate-pulse rounded-xl border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800"
+              />
+            ))}
+          </div>
+          <div className="hidden md:block">
+            <TableSkeleton rows={5} />
+          </div>
         </div>
       ) : (
         <ShotTable

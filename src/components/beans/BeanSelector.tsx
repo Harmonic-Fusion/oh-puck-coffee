@@ -66,11 +66,17 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
             <option value="">
               {isLoading ? "Loading..." : "Select a bean..."}
             </option>
-            {beans?.map((bean) => (
-              <option key={bean.id} value={bean.id}>
-                {bean.name} ({bean.roastLevel})
+            {!isLoading && beans && beans.length === 0 ? (
+              <option value="" disabled>
+                No beans yet — create one below
               </option>
-            ))}
+            ) : (
+              beans?.map((bean) => (
+                <option key={bean.id} value={bean.id}>
+                  {bean.name} ({bean.roastLevel})
+                </option>
+              ))
+            )}
           </select>
           <button
             type="button"

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "PORT=8787 NEXT_PUBLIC_PORT=8787 next dev --turbopack",
     "build": "next build",
+    "postbuild": "tsx scripts/migrate.ts",
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
