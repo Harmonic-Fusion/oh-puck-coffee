@@ -3,7 +3,7 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beans } from "@/db/schema";
 import { createBeanSchema } from "@/shared/beans/schema";
-import { ilike, desc } from "drizzle-orm";
+import { ilike, desc, eq, and } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -14,9 +14,16 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search");
 
-  const whereClause = search
-    ? ilike(beans.name, `%${search}%`)
-    : undefined;
+  // Members can only see beans they created, admins can see all
+  const conditions = [];
+  if (session.user.role !== "admin") {
+    conditions.push(eq(beans.createdBy, session.user.id));
+  }
+  if (search) {
+    conditions.push(ilike(beans.name, `%${search}%`));
+  }
+
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   const results = await db
     .select()

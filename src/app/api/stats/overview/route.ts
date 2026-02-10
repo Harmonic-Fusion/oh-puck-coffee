@@ -10,18 +10,25 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Members can only see their own stats, admins see all
+  const whereConditions = [eq(shots.isHidden, false)];
+  if (session.user.role !== "admin") {
+    whereConditions.push(eq(shots.userId, session.user.id));
+  }
+  const whereClause = and(...whereConditions);
+
   // Total shots (excluding hidden)
   const [totalResult] = await db
     .select({ count: count() })
     .from(shots)
-    .where(eq(shots.isHidden, false));
+    .where(whereClause);
   const totalShots = totalResult.count;
 
   // Average quality (excluding hidden)
   const [avgQualityResult] = await db
     .select({ avg: avg(shots.shotQuality) })
     .from(shots)
-    .where(eq(shots.isHidden, false));
+    .where(whereClause);
   const avgQuality = avgQualityResult.avg
     ? parseFloat(parseFloat(avgQualityResult.avg).toFixed(1))
     : null;
@@ -33,7 +40,7 @@ export async function GET() {
       yieldGrams: shots.yieldGrams,
     })
     .from(shots)
-    .where(eq(shots.isHidden, false));
+    .where(whereClause);
 
   let avgBrewRatio: number | null = null;
   if (allShots.length > 0) {
@@ -60,7 +67,7 @@ export async function GET() {
     })
     .from(shots)
     .leftJoin(beans, eq(shots.beanId, beans.id))
-    .where(eq(shots.isHidden, false))
+    .where(whereClause)
     .groupBy(shots.beanId, beans.name)
     .orderBy(sql`count(*) desc`)
     .limit(1);
@@ -68,10 +75,14 @@ export async function GET() {
   // Shots this week (excluding hidden)
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const weekConditions = [gte(shots.createdAt, oneWeekAgo), eq(shots.isHidden, false)];
+  if (session.user.role !== "admin") {
+    weekConditions.push(eq(shots.userId, session.user.id));
+  }
   const [weekResult] = await db
     .select({ count: count() })
     .from(shots)
-    .where(and(gte(shots.createdAt, oneWeekAgo), eq(shots.isHidden, false)));
+    .where(and(...weekConditions));
   const shotsThisWeek = weekResult.count;
 
   return NextResponse.json({

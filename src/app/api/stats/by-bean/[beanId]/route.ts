@@ -3,6 +3,7 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots, beans } from "@/db/schema";
 import { eq, count, avg, and } from "drizzle-orm";
+import { validateMemberAccess } from "@/lib/api-auth";
 
 export async function GET(
   _request: NextRequest,
@@ -26,7 +27,24 @@ export async function GET(
     return NextResponse.json({ error: "Bean not found" }, { status: 404 });
   }
 
+  // Check if member can access this bean
+  const accessError = validateMemberAccess(
+    session.user.id,
+    bean.createdBy,
+    session.user.role
+  );
+  if (accessError) return accessError;
+
   // Get shot stats for this bean (excluding hidden)
+  // Members can only see their own shots for this bean
+  const shotConditions = [
+    eq(shots.beanId, beanId),
+    eq(shots.isHidden, false),
+  ];
+  if (session.user.role !== "admin") {
+    shotConditions.push(eq(shots.userId, session.user.id));
+  }
+
   const beanShots = await db
     .select({
       doseGrams: shots.doseGrams,
@@ -38,7 +56,7 @@ export async function GET(
       createdAt: shots.createdAt,
     })
     .from(shots)
-    .where(and(eq(shots.beanId, beanId), eq(shots.isHidden, false)));
+    .where(and(...shotConditions));
 
   const shotCount = beanShots.length;
 

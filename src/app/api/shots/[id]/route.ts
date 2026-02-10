@@ -3,6 +3,7 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots, beans, users, grinders, machines } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { validateMemberAccess } from "@/lib/api-auth";
 
 export async function GET(
   _request: NextRequest,
@@ -58,6 +59,14 @@ export async function GET(
     return NextResponse.json({ error: "Shot not found" }, { status: 404 });
   }
 
+  // Check if member can access this shot
+  const accessError = validateMemberAccess(
+    session.user.id,
+    result.userId,
+    session.user.role
+  );
+  if (accessError) return accessError;
+
   // Compute derived fields on read
   const dose = parseFloat(result.doseGrams);
   const yieldG = parseFloat(result.yieldGrams);
@@ -100,9 +109,13 @@ export async function DELETE(
     return NextResponse.json({ error: "Shot not found" }, { status: 404 });
   }
 
-  if (shot.userId !== session.user.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  // Check if member can access this shot
+  const accessError = validateMemberAccess(
+    session.user.id,
+    shot.userId,
+    session.user.role
+  );
+  if (accessError) return accessError;
 
   await db.delete(shots).where(eq(shots.id, id));
   return NextResponse.json({ success: true });

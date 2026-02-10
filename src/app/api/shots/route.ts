@@ -23,7 +23,15 @@ export async function GET(request: NextRequest) {
   const offset = parseInt(searchParams.get("offset") || "0", 10);
 
   const conditions: SQL[] = [];
-  if (userId) conditions.push(eq(shots.userId, userId));
+  
+  // Members can only see their own shots
+  if (session.user.role !== "admin") {
+    conditions.push(eq(shots.userId, session.user.id));
+  } else if (userId) {
+    // Admins can filter by userId if provided
+    conditions.push(eq(shots.userId, userId));
+  }
+  
   if (beanId) conditions.push(eq(shots.beanId, beanId));
   if (dateFrom) conditions.push(gte(shots.createdAt, new Date(dateFrom)));
   if (dateTo) {

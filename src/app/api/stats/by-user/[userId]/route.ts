@@ -3,6 +3,7 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots, users, beans } from "@/db/schema";
 import { eq, sql, count, and } from "drizzle-orm";
+import { validateMemberAccess } from "@/lib/api-auth";
 
 export async function GET(
   _request: NextRequest,
@@ -14,6 +15,14 @@ export async function GET(
   }
 
   const { userId } = await params;
+
+  // Check if member can access this user's stats
+  const accessError = validateMemberAccess(
+    session.user.id,
+    userId,
+    session.user.role
+  );
+  if (accessError) return accessError;
 
   // Get user info
   const [user] = await db

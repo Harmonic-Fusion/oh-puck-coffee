@@ -3,6 +3,7 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots } from "@/db/schema";
 import { eq, not } from "drizzle-orm";
+import { validateMemberAccess } from "@/lib/api-auth";
 
 export async function PATCH(
   _request: NextRequest,
@@ -25,9 +26,13 @@ export async function PATCH(
     return NextResponse.json({ error: "Shot not found" }, { status: 404 });
   }
 
-  if (shot.userId !== session.user.id) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  // Check if member can access this shot
+  const accessError = validateMemberAccess(
+    session.user.id,
+    shot.userId,
+    session.user.role
+  );
+  if (accessError) return accessError;
 
   const [updated] = await db
     .update(shots)

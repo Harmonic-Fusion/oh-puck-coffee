@@ -23,9 +23,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     }),
   ],
   callbacks: {
-    session({ session, user }) {
+    async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
+        // Fetch user role from database
+        const [dbUser] = await db
+          .select({ role: users.role })
+          .from(users)
+          .where(eq(users.id, user.id))
+          .limit(1);
+        if (dbUser) {
+          session.user.role = dbUser.role as "member" | "admin";
+        }
       }
       return session;
     },
@@ -83,6 +92,7 @@ export async function getSession(): Promise<Session | null> {
         name: devUser.name,
         email: devUser.email,
         image: devUser.image,
+        role: (devUser.role as "member" | "admin") || "member",
       },
       expires: new Date(
         Date.now() + 30 * 24 * 60 * 60 * 1000
