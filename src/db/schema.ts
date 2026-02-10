@@ -133,6 +133,7 @@ export const shots = pgTable("shots", {
   flavorWheelAdjectives: jsonb("flavor_wheel_adjectives").$type<string[]>(),
   // Meta
   isReferenceShot: boolean("is_reference_shot").default(false).notNull(),
+  isHidden: boolean("is_hidden").default(false).notNull(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });

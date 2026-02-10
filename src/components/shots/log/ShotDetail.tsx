@@ -9,6 +9,7 @@ interface ShotDetailProps {
   shot: ShotWithJoins | null;
   open: boolean;
   onClose: () => void;
+  onDelete?: (id: string) => void;
 }
 
 function DetailRow({
@@ -31,7 +32,7 @@ function DetailRow({
   );
 }
 
-export function ShotDetail({ shot, open, onClose }: ShotDetailProps) {
+export function ShotDetail({ shot, open, onClose, onDelete }: ShotDetailProps) {
   const { data: allTools } = useTools();
   const toolMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -203,7 +204,7 @@ export function ShotDetail({ shot, open, onClose }: ShotDetailProps) {
             </div>
           )}
 
-        {shot.flavorWheelAdjectives &&
+          {shot.flavorWheelAdjectives &&
           shot.flavorWheelAdjectives.length > 0 && (
             <div>
               <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
@@ -221,6 +222,23 @@ export function ShotDetail({ shot, open, onClose }: ShotDetailProps) {
               </div>
             </div>
           )}
+
+        {/* Actions */}
+        {onDelete && (
+          <div className="border-t border-stone-200 pt-4 dark:border-stone-700">
+            <button
+              onClick={() => {
+                if (confirm("Delete this shot?")) {
+                  onDelete(shot.id);
+                  onClose();
+                }
+              }}
+              className="w-full rounded-md bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+            >
+              Delete Shot
+            </button>
+          </div>
+        )}
 
       </div>
     </Modal>

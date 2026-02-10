@@ -40,6 +40,7 @@ export const shotSchema = z.object({
   flavorWheelCategories: z.record(z.string(), z.array(z.string())).nullable(),
   flavorWheelAdjectives: z.array(z.string()).nullable(),
   isReferenceShot: z.boolean(),
+  isHidden: z.boolean(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });

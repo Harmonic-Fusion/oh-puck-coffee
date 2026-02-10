@@ -5,6 +5,7 @@ import {
   useShots,
   useDeleteShot,
   useToggleReference,
+  useToggleHidden,
   type ShotWithJoins,
 } from "@/components/shots/hooks";
 import { ShotTable } from "@/components/shots/log/ShotTable";
@@ -25,13 +26,26 @@ export default function HistoryPage() {
   });
   const deleteShot = useDeleteShot();
   const toggleReference = useToggleReference();
+  const toggleHidden = useToggleHidden();
 
   const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
 
   const handleDelete = async (id: string) => {
-    if (confirm("Delete this shot?")) {
+    deleteShot.mutate(id);
+  };
+
+  const handleBulkDelete = async (ids: string[]) => {
+    for (const id of ids) {
       deleteShot.mutate(id);
     }
+  };
+
+  const handleBulkToggleReference = (ids: string[]) => {
+    ids.forEach((id) => toggleReference.mutate(id));
+  };
+
+  const handleBulkToggleHidden = (ids: string[]) => {
+    ids.forEach((id) => toggleHidden.mutate(id));
   };
 
   return (
@@ -65,9 +79,12 @@ export default function HistoryPage() {
       ) : (
         <ShotTable
           data={shots || []}
-          onDelete={handleDelete}
           onToggleReference={(id) => toggleReference.mutate(id)}
+          onToggleHidden={(id) => toggleHidden.mutate(id)}
           onClickShot={(shot) => setSelectedShot(shot)}
+          onBulkDelete={handleBulkDelete}
+          onBulkToggleReference={handleBulkToggleReference}
+          onBulkToggleHidden={handleBulkToggleHidden}
         />
       )}
 
@@ -75,6 +92,7 @@ export default function HistoryPage() {
         shot={selectedShot}
         open={!!selectedShot}
         onClose={() => setSelectedShot(null)}
+        onDelete={handleDelete}
       />
     </div>
   );

@@ -59,6 +59,9 @@ export const ApiRoutes = {
   shotReference: {
     path: "/api/shots/:id/reference",
   },
+  shotHidden: {
+    path: "/api/shots/:id/hide",
+  },
   // Stats
   statsOverview: {
     path: "/api/stats/overview",

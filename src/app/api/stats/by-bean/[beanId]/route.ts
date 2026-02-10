@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots, beans } from "@/db/schema";
-import { eq, count, avg } from "drizzle-orm";
+import { eq, count, avg, and } from "drizzle-orm";
 
 export async function GET(
   _request: NextRequest,
@@ -26,7 +26,7 @@ export async function GET(
     return NextResponse.json({ error: "Bean not found" }, { status: 404 });
   }
 
-  // Get shot stats for this bean
+  // Get shot stats for this bean (excluding hidden)
   const beanShots = await db
     .select({
       doseGrams: shots.doseGrams,
@@ -38,7 +38,7 @@ export async function GET(
       createdAt: shots.createdAt,
     })
     .from(shots)
-    .where(eq(shots.beanId, beanId));
+    .where(and(eq(shots.beanId, beanId), eq(shots.isHidden, false)));
 
   const shotCount = beanShots.length;
 

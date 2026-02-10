@@ -461,6 +461,7 @@ All endpoints under `/api`. Next.js App Router route handlers. Auth.js session r
 - [x] Created `tools` database table (slug, name, description) in equipment domain. Shots now store tool slugs instead of hardcoded enum names. Added `ToolSelector` component with tooltips and inline "New" creation. API route at `/api/equipment/tools`. Seed script prepopulates 8 default tools. ShotDetail and Google Sheets resolve slugs to display names.
 - [x] Mobile-friendly number inputs: Created `NumberStepper` common component with large 56px tap-target buttons in horizontal `[−] value [+]` layout. Replaced all plain number inputs in SectionRecipe (Dose, Yield, Grind Level, Brew Time, Brew Temp, Pre-infusion) with NumberStepper. Value is tappable for direct keyboard entry. Supports suffix labels (g, sec, °F/°C), configurable step/min/max, and integrates with react-hook-form via Controller.
 - [x] Brew Time allows fractional seconds: Updated NumberStepper step from 1 to 0.01 to support fractional seconds (e.g., 29.52). Schema already supports decimals via z.coerce.number().
+- [x] Add quick select buttons for "Dose" in Recipe section: Added quick-select buttons (16g, 18g, 20g, 22g) to the Dose field, matching the pattern used for Yield ratio buttons. Buttons highlight when active, and manual edits deselect if the value doesn't match a quick-select option. When a dose is selected and a ratio is active, yield is automatically recalculated.
 
 ---
 

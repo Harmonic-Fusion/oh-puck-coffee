@@ -31,6 +31,7 @@ export interface ShotWithJoins {
   flavorWheelCategories: Record<string, string[]> | null;
   flavorWheelAdjectives: string[] | null;
   isReferenceShot: boolean;
+  isHidden: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -118,6 +119,26 @@ export function useToggleReference() {
       if (!res.ok) {
         const error = await res.json();
         throw new Error(error.error || "Failed to toggle reference");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shots"] });
+    },
+  });
+}
+
+export function useToggleHidden() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(
+        resolvePath(ApiRoutes.shotHidden.path, { id }),
+        { method: "PATCH" }
+      );
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to toggle hidden");
       }
       return res.json();
     },

@@ -7,6 +7,7 @@ import {
   flexRender,
   createColumnHelper,
   type SortingState,
+  type RowSelectionState,
 } from "@tanstack/react-table";
 import { useState } from "react";
 import type { ShotWithJoins } from "@/components/shots/hooks";
@@ -72,24 +73,28 @@ const columns = [
 
 interface ShotTableProps {
   data: ShotWithJoins[];
-  onDelete?: (id: string) => void;
   onToggleReference?: (id: string) => void;
+  onToggleHidden?: (id: string) => void;
   onClickShot?: (shot: ShotWithJoins) => void;
+  onBulkDelete?: (ids: string[]) => void;
+  onBulkToggleReference?: (ids: string[]) => void;
+  onBulkToggleHidden?: (ids: string[]) => void;
 }
 
 // Mobile card component for <768px
 function ShotCard({
   shot,
-  onDelete,
   onToggleReference,
+  onToggleHidden,
   onClick,
 }: {
   shot: ShotWithJoins;
-  onDelete?: (id: string) => void;
   onToggleReference?: (id: string) => void;
+  onToggleHidden?: (id: string) => void;
   onClick?: (shot: ShotWithJoins) => void;
 }) {
   const isRef = shot.isReferenceShot;
+  const isHidden = shot.isHidden;
   const ratio = shot.brewRatio ? `1:${shot.brewRatio}` : "—";
   const date = new Date(shot.createdAt).toLocaleDateString("en-US", {
     month: "short",
@@ -209,12 +214,12 @@ function ShotCard({
             {isRef ? "Unmark reference" : "Mark reference"}
           </button>
         )}
-        {onDelete && (
+        {onToggleHidden && (
           <button
-            onClick={() => onDelete(shot.id)}
-            className="text-xs text-stone-400 hover:text-red-500 dark:text-stone-500"
+            onClick={() => onToggleHidden(shot.id)}
+            className="text-xs text-stone-400 hover:text-stone-600 dark:text-stone-500"
           >
-            Delete
+            {isHidden ? "Show" : "Hide"}
           </button>
         )}
       </div>
@@ -224,17 +229,23 @@ function ShotCard({
 
 export function ShotTable({
   data,
-  onDelete,
   onToggleReference,
+  onToggleHidden,
   onClickShot,
+  onBulkDelete,
+  onBulkToggleReference,
+  onBulkToggleHidden,
 }: ShotTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
+    state: { sorting, rowSelection },
     onSortingChange: setSorting,
+    onRowSelectionChange: setRowSelection,
+    enableRowSelection: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
@@ -255,17 +266,91 @@ export function ShotTable({
 
   // Get sorted data for card view
   const sortedData = table.getRowModel().rows.map((row) => row.original);
+  const selectedCount = Object.keys(rowSelection).filter(
+    (key) => rowSelection[key]
+  ).length;
 
   return (
     <>
+      {/* Bulk action menu - shows when rows are selected */}
+      {selectedCount > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
+          <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+            {selectedCount} {selectedCount === 1 ? "shot" : "shots"} selected
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            {onBulkToggleReference && (
+              <button
+                onClick={() => {
+                  const selectedIds = Object.keys(rowSelection)
+                    .filter((key) => rowSelection[key])
+                    .map((key) => {
+                      const row = table.getRowModel().rows.find((r) => r.id === key);
+                      return row?.original.id;
+                    })
+                    .filter((id): id is string => !!id);
+                  onBulkToggleReference(selectedIds);
+                }}
+                className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm transition-colors hover:bg-amber-100 dark:bg-stone-800 dark:text-amber-300 dark:hover:bg-stone-700"
+              >
+                Toggle Reference
+              </button>
+            )}
+            {onBulkToggleHidden && (
+              <button
+                onClick={() => {
+                  const selectedIds = Object.keys(rowSelection)
+                    .filter((key) => rowSelection[key])
+                    .map((key) => {
+                      const row = table.getRowModel().rows.find((r) => r.id === key);
+                      return row?.original.id;
+                    })
+                    .filter((id): id is string => !!id);
+                  onBulkToggleHidden(selectedIds);
+                }}
+                className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm transition-colors hover:bg-amber-100 dark:bg-stone-800 dark:text-amber-300 dark:hover:bg-stone-700"
+              >
+                Toggle Hide
+              </button>
+            )}
+            {onBulkDelete && (
+              <button
+                onClick={() => {
+                  const selectedIds = Object.keys(rowSelection)
+                    .filter((key) => rowSelection[key])
+                    .map((key) => {
+                      const row = table.getRowModel().rows.find((r) => r.id === key);
+                      return row?.original.id;
+                    })
+                    .filter((id): id is string => !!id);
+                  if (confirm(`Delete ${selectedIds.length} shot(s)?`)) {
+                    onBulkDelete(selectedIds);
+                    setRowSelection({});
+                  }
+                }}
+                className="rounded-md bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 shadow-sm transition-colors hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
+              >
+                Delete
+              </button>
+            )}
+            <button
+              onClick={() => setRowSelection({})}
+              className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-stone-600 shadow-sm transition-colors hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Mobile card layout (<768px) */}
       <div className="flex flex-col gap-3 md:hidden">
         {sortedData.map((shot) => (
           <ShotCard
             key={shot.id}
             shot={shot}
-            onDelete={onDelete}
             onToggleReference={onToggleReference}
+            onToggleHidden={onToggleHidden}
             onClick={onClickShot}
           />
         ))}
@@ -277,6 +362,15 @@ export function ShotTable({
           <thead className="border-b border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
+                <th className="px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={table.getIsAllRowsSelected()}
+                    onChange={table.getToggleAllRowsSelectedHandler()}
+                    className="h-4 w-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500"
+                    title="Select all"
+                  />
+                </th>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
@@ -304,8 +398,8 @@ export function ShotTable({
               <ShotRow
                 key={row.id}
                 row={row}
-                onDelete={onDelete}
                 onToggleReference={onToggleReference}
+                onToggleHidden={onToggleHidden}
                 onClick={onClickShot}
               />
             ))}

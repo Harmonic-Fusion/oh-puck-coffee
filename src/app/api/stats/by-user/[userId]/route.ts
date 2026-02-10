@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots, users, beans } from "@/db/schema";
-import { eq, sql, count } from "drizzle-orm";
+import { eq, sql, count, and } from "drizzle-orm";
 
 export async function GET(
   _request: NextRequest,
@@ -26,7 +26,7 @@ export async function GET(
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  // Get shot stats for this user
+  // Get shot stats for this user (excluding hidden)
   const userShots = await db
     .select({
       doseGrams: shots.doseGrams,
@@ -38,7 +38,7 @@ export async function GET(
       createdAt: shots.createdAt,
     })
     .from(shots)
-    .where(eq(shots.userId, userId));
+    .where(and(eq(shots.userId, userId), eq(shots.isHidden, false)));
 
   const shotCount = userShots.length;
 
@@ -61,7 +61,7 @@ export async function GET(
     ? parseFloat((ratios.reduce((a, b) => a + b, 0) / ratios.length).toFixed(2))
     : null;
 
-  // Most-used bean
+  // Most-used bean (excluding hidden)
   const [mostUsedBean] = await db
     .select({
       beanId: shots.beanId,
@@ -70,7 +70,7 @@ export async function GET(
     })
     .from(shots)
     .leftJoin(beans, eq(shots.beanId, beans.id))
-    .where(eq(shots.userId, userId))
+    .where(and(eq(shots.userId, userId), eq(shots.isHidden, false)))
     .groupBy(shots.beanId, beans.name)
     .orderBy(sql`count(*) desc`)
     .limit(1);

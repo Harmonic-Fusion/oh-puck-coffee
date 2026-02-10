@@ -42,6 +42,7 @@ export async function GET(
       flavorWheelBody: shots.flavorWheelBody,
       flavorWheelAdjectives: shots.flavorWheelAdjectives,
       isReferenceShot: shots.isReferenceShot,
+      isHidden: shots.isHidden,
       createdAt: shots.createdAt,
       updatedAt: shots.updatedAt,
     })

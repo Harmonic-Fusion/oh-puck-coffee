@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots, beans } from "@/db/schema";
-import { eq, sql, gte, count, avg } from "drizzle-orm";
+import { eq, sql, gte, count, avg, and } from "drizzle-orm";
 
 export async function GET() {
   const session = await getSession();
@@ -10,27 +10,30 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Total shots
+  // Total shots (excluding hidden)
   const [totalResult] = await db
     .select({ count: count() })
-    .from(shots);
+    .from(shots)
+    .where(eq(shots.isHidden, false));
   const totalShots = totalResult.count;
 
-  // Average quality
+  // Average quality (excluding hidden)
   const [avgQualityResult] = await db
     .select({ avg: avg(shots.shotQuality) })
-    .from(shots);
+    .from(shots)
+    .where(eq(shots.isHidden, false));
   const avgQuality = avgQualityResult.avg
     ? parseFloat(parseFloat(avgQualityResult.avg).toFixed(1))
     : null;
 
-  // Average brew ratio (computed from dose/yield)
+  // Average brew ratio (computed from dose/yield, excluding hidden)
   const allShots = await db
     .select({
       doseGrams: shots.doseGrams,
       yieldGrams: shots.yieldGrams,
     })
-    .from(shots);
+    .from(shots)
+    .where(eq(shots.isHidden, false));
 
   let avgBrewRatio: number | null = null;
   if (allShots.length > 0) {
@@ -48,7 +51,7 @@ export async function GET() {
     }
   }
 
-  // Most-used bean
+  // Most-used bean (excluding hidden)
   const [mostUsedBean] = await db
     .select({
       beanId: shots.beanId,
@@ -57,17 +60,18 @@ export async function GET() {
     })
     .from(shots)
     .leftJoin(beans, eq(shots.beanId, beans.id))
+    .where(eq(shots.isHidden, false))
     .groupBy(shots.beanId, beans.name)
     .orderBy(sql`count(*) desc`)
     .limit(1);
 
-  // Shots this week
+  // Shots this week (excluding hidden)
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   const [weekResult] = await db
     .select({ count: count() })
     .from(shots)
-    .where(gte(shots.createdAt, oneWeekAgo));
+    .where(and(gte(shots.createdAt, oneWeekAgo), eq(shots.isHidden, false)));
   const shotsThisWeek = weekResult.count;
 
   return NextResponse.json({
