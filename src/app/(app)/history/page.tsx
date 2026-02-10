@@ -13,6 +13,7 @@ import { ShotFilters } from "@/components/shots/log/ShotFilters";
 import { ShotDetail } from "@/components/shots/log/ShotDetail";
 import { exportShotsToCSV, downloadCSV } from "@/lib/csv-export";
 import { useToast } from "@/components/common/Toast";
+import { TableSkeleton } from "@/components/common/Skeleton";
 
 export default function HistoryPage() {
   const [userId, setUserId] = useState("");

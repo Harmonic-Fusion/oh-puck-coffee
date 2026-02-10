@@ -11,8 +11,9 @@ import { config } from "../src/shared/config";
 
 async function runMigrations() {
   if (!config.databaseUrl) {
-    console.error("DATABASE_URL environment variable is not set");
-    process.exit(1);
+    console.log("DATABASE_URL environment variable is not set, skipping migrations");
+    console.log("Migrations should be run at deployment time, not during build");
+    process.exit(0);
   }
 
   console.log("Running database migrations...");
