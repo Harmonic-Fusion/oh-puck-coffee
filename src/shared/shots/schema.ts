@@ -11,7 +11,7 @@ export const createShotSchema = z.object({
   yieldGrams: z.coerce.number().positive().max(100),
   grindLevel: z.coerce.number().nonnegative("Grind level is required"),
   brewTimeSecs: z.coerce.number().positive().max(120),
-  brewTempC: z.coerce.number().positive().max(100).optional(),
+  brewTempC: z.coerce.number().positive().max(200).optional(),
   preInfusionDuration: z.coerce.number().nonnegative().max(60).optional(),
   shotQuality: z.coerce.number().int().min(1).max(10),
   flavorProfile: z.array(z.enum(FLAVOR_PROFILES)).optional(),

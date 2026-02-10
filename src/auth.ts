@@ -45,10 +45,22 @@ async function getOrCreateDevUser() {
 
   if (existing) return existing;
 
+  // Use onConflictDoNothing to handle concurrent requests
   const [created] = await db
     .insert(users)
     .values({ name: "Dev User", email: DEV_USER_EMAIL })
+    .onConflictDoNothing({ target: users.email })
     .returning();
+
+  // If another request beat us, fetch the existing row
+  if (!created) {
+    const [raced] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, DEV_USER_EMAIL))
+      .limit(1);
+    return raced;
+  }
 
   return created;
 }

@@ -449,6 +449,11 @@ All endpoints under `/api`. Next.js App Router route handlers. Auth.js session r
 - [x] Shot Quality changed from 1-5 star rating to 1-10 scale with slider. Created `Slider` common component, updated `SectionResults` form, `ShotTable` display, and Zod schema.
 - [x] Slider thumb replaced with espresso cup SVG icon. Cup icon saved to `public/icons/espresso-cup-thumb.svg` and inlined as CSS data URI in `globals.css`.
 - [x] Added "Clear section" buttons to each form section (Setup, Recipe, Results & Tasting, Flavor Wheel) in the shot log form.
+- [x] Beans: All details optional except name and roast level
+- [x] Shot log: Pre-populate from last shot; clear buttons per section
+- [x] Yield ratio UI element (enter ratio like 2 or 3, auto-calculates yield from dose)
+- [x] Brew Temp °F input with auto-conversion to °C
+- [x] Recipe section: stacked vertical layout with ratio quick-select buttons (1:1–1:4) on Yield, °F default with persisted localStorage preference
 
 ---
 
