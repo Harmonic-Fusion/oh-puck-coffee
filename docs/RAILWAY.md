@@ -8,6 +8,16 @@ This guide covers deploying the Coffee Tracker app to Railway.
 2. Railway CLI installed (optional): `npm i -g @railway/cli`
 3. Google OAuth credentials (Client ID and Secret)
 
+## Railway Configuration
+
+This project includes a `railway.json` configuration file that automatically configures:
+- Dockerfile-based builds
+- Health checks
+- Restart policies
+- Start command
+
+The configuration is automatically detected by Railway when you deploy.
+
 ## Deployment Steps
 
 ### 1. Create a New Project
@@ -28,9 +38,11 @@ This guide covers deploying the Coffee Tracker app to Railway.
 #### Option A: Deploy from GitHub (Recommended)
 
 1. Connect your GitHub repository to Railway
-2. Railway will detect the `Dockerfile` and deploy automatically
+2. Railway will automatically detect:
+   - The `railway.json` configuration file
+   - The `Dockerfile` for containerized builds
 3. The build process will:
-   - Build the Next.js app
+   - Build the Next.js app using Docker
    - Run database migrations (via `postbuild` script)
    - Start the application
 
