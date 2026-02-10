@@ -20,14 +20,14 @@ export function SectionResults() {
 
   return (
     <section className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
           Results & Tasting
         </h2>
         <button
           type="button"
           onClick={handleClear}
-          className="text-xs font-medium text-stone-400 transition-colors hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"
+          className="mt-2 rounded-lg border-2 border-stone-300 bg-stone-50 px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-red-600 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-red-400"
         >
           Clear section
         </button>

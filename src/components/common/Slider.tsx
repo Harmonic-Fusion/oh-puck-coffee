@@ -152,8 +152,8 @@ export function Slider({
       )}
 
       {/* Custom slider */}
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-medium text-stone-400 dark:text-stone-500">
+      <div className="flex items-center gap-4">
+        <span className="text-sm font-medium text-stone-500 dark:text-stone-400">
           {min}
         </span>
         <div
@@ -165,7 +165,7 @@ export function Slider({
           aria-valuenow={value}
           aria-label={label}
           aria-disabled={disabled}
-          className={`relative h-10 flex-1 cursor-pointer select-none touch-none ${
+          className={`relative h-14 flex-1 cursor-pointer select-none touch-none ${
             disabled ? "cursor-not-allowed opacity-50" : ""
           }`}
           onPointerDown={handlePointerDown}
@@ -173,7 +173,7 @@ export function Slider({
           onKeyDown={handleKeyDown}
         >
           {/* Track background */}
-          <div className="absolute top-1/2 right-0 left-0 h-2 -translate-y-1/2 rounded-full bg-stone-200 dark:bg-stone-700">
+          <div className="absolute top-1/2 right-0 left-0 h-3 -translate-y-1/2 rounded-full bg-stone-200 dark:bg-stone-700">
             {/* Filled portion */}
             <div
               className="absolute inset-y-0 left-0 rounded-full bg-amber-500"
@@ -186,20 +186,20 @@ export function Slider({
             className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-75"
             style={{ left: `${percentage}%` }}
           >
-            <EspressoCup className="h-9 w-9 drop-shadow-md" />
+            <EspressoCup className="h-12 w-12 drop-shadow-lg" />
           </div>
         </div>
-        <span className="text-xs font-medium text-stone-400 dark:text-stone-500">
+        <span className="text-sm font-medium text-stone-500 dark:text-stone-400">
           {max}
         </span>
       </div>
 
       {/* Tick marks */}
-      <div className="mt-1 flex justify-between px-[14px]">
+      <div className="mt-2 flex justify-between px-[18px]">
         {Array.from({ length: max - min + 1 }, (_, i) => (
           <span
             key={i + min}
-            className="text-[10px] text-stone-400 dark:text-stone-500"
+            className="text-xs text-stone-400 dark:text-stone-500"
           >
             {i + min}
           </span>

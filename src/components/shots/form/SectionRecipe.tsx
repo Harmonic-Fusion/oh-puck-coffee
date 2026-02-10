@@ -112,14 +112,14 @@ export function SectionRecipe() {
 
   return (
     <section className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+      <div className="text-center">
+        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
           Recipe
         </h2>
         <button
           type="button"
           onClick={handleClear}
-          className="text-xs font-medium text-stone-400 transition-colors hover:text-red-500 dark:text-stone-500 dark:hover:text-red-400"
+          className="mt-2 rounded-lg border-2 border-stone-300 bg-stone-50 px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-red-600 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-400 dark:hover:bg-stone-700 dark:hover:text-red-400"
         >
           Clear section
         </button>
@@ -218,6 +218,7 @@ export function SectionRecipe() {
               step={1}
               placeholder="—"
               error={errors.brewTimeSecs?.message}
+              noRound={true}
             />
           )}
         />
@@ -231,6 +232,7 @@ export function SectionRecipe() {
               <NumberStepper
                 label={`Brew Temp`}
                 suffix="°C"
+                secondarySuffix={field.value != null ? `${cToF(field.value).toFixed(1)}°F` : undefined}
                 value={field.value ?? undefined}
                 onChange={(val) => setValue("brewTempC", val, { shouldValidate: true })}
                 min={50}
@@ -254,13 +256,13 @@ export function SectionRecipe() {
           <NumberStepper
             label={`Brew Temp`}
             suffix="°F"
+            secondarySuffix={brewTempC != null ? `${brewTempC.toFixed(1)}°C` : undefined}
             value={tempFValue}
             onChange={handleTempFChange}
             min={120}
             max={230}
             step={1}
             placeholder="—"
-            hint={brewTempC != null ? `= ${brewTempC}°C` : undefined}
             error={errors.brewTempC?.message}
             labelExtra={
               <button

@@ -11,12 +11,16 @@ interface NumberStepperProps {
   precision?: number;
   label?: string;
   suffix?: string;
+  /** Secondary suffix shown in smaller text after the main suffix (e.g. converted temperature) */
+  secondarySuffix?: string;
   placeholder?: string;
   error?: string;
   hint?: string;
   disabled?: boolean;
   /** Extra content rendered after the label (e.g. ratio quick-select buttons) */
   labelExtra?: React.ReactNode;
+  /** If true, preserves exact values without rounding (useful for precise measurements like time) */
+  noRound?: boolean;
 }
 
 export function NumberStepper({
@@ -28,11 +32,13 @@ export function NumberStepper({
   precision,
   label,
   suffix,
+  secondarySuffix,
   placeholder = "—",
   error,
   hint,
   disabled = false,
   labelExtra,
+  noRound = false,
 }: NumberStepperProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -46,8 +52,15 @@ export function NumberStepper({
       : 0);
 
   const formatValue = useCallback(
-    (v: number) => v.toFixed(decimals),
-    [decimals]
+    (v: number) => {
+      if (noRound) {
+        // For noRound, show the value with up to 4 decimal places, removing trailing zeros
+        const formatted = v.toFixed(4);
+        return formatted.replace(/\.?0+$/, "");
+      }
+      return v.toFixed(decimals);
+    },
+    [decimals, noRound]
   );
 
   const clamp = useCallback(
@@ -58,20 +71,18 @@ export function NumberStepper({
   const handleDecrement = useCallback(() => {
     if (disabled) return;
     const current = value ?? min;
-    const next = clamp(
-      parseFloat((current - step).toFixed(decimals))
-    );
+    const raw = current - step;
+    const next = noRound ? clamp(raw) : clamp(parseFloat(raw.toFixed(decimals)));
     onChange(next);
-  }, [disabled, value, min, step, decimals, clamp, onChange]);
+  }, [disabled, value, min, step, decimals, clamp, onChange, noRound]);
 
   const handleIncrement = useCallback(() => {
     if (disabled) return;
     const current = value ?? min;
-    const next = clamp(
-      parseFloat((current + step).toFixed(decimals))
-    );
+    const raw = current + step;
+    const next = noRound ? clamp(raw) : clamp(parseFloat(raw.toFixed(decimals)));
     onChange(next);
-  }, [disabled, value, min, step, decimals, clamp, onChange]);
+  }, [disabled, value, min, step, decimals, clamp, onChange, noRound]);
 
   // Enter editing mode when value is tapped
   const startEditing = useCallback(() => {
@@ -97,9 +108,10 @@ export function NumberStepper({
     }
     const parsed = parseFloat(trimmed);
     if (!isNaN(parsed)) {
-      onChange(clamp(parseFloat(parsed.toFixed(decimals))));
+      const final = noRound ? parsed : parseFloat(parsed.toFixed(decimals));
+      onChange(clamp(final));
     }
-  }, [editValue, onChange, clamp, decimals]);
+  }, [editValue, onChange, clamp, decimals, noRound]);
 
   const handleEditKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -184,6 +196,11 @@ export function NumberStepper({
                 <span className="ml-1 text-sm font-normal text-stone-400 dark:text-stone-500">
                   {suffix}
                 </span>
+              )}
+              {value != null && secondarySuffix && (
+                <small className="ml-1 text-xs font-normal text-stone-400 dark:text-stone-500">
+                  {secondarySuffix}
+                </small>
               )}
             </span>
           )}
