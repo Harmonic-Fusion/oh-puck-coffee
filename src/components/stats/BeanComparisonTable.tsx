@@ -47,12 +47,14 @@ export function BeanComparisonTable({ shots }: BeanComparisonTableProps) {
             )
           : 0;
 
-      // Count flavors
+      // Count flavors from flavor wheel categories
       const flavorCounts: Record<string, number> = {};
       for (const s of beanShots) {
-        if (s.flavorProfile && Array.isArray(s.flavorProfile)) {
-          for (const f of s.flavorProfile) {
-            flavorCounts[f] = (flavorCounts[f] || 0) + 1;
+        if (s.flavorWheelCategories && typeof s.flavorWheelCategories === "object") {
+          for (const flavors of Object.values(s.flavorWheelCategories)) {
+            for (const f of flavors) {
+              flavorCounts[f] = (flavorCounts[f] || 0) + 1;
+            }
           }
         }
       }

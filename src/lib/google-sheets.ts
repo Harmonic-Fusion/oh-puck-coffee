@@ -82,11 +82,10 @@ const HEADER_ROW = [
   "Pre-infusion (s)",
   "Flow Rate (g/s)",
   "Shot Quality",
-  "Flavor Profile",
+  "Flavor Wheel",
   "Body",
   "Tools Used",
   "Notes",
-  "Overall Preference",
   "Days Post Roast",
   "Reference Shot",
 ];
@@ -153,17 +152,23 @@ export async function appendShotRow(
     preInfusionDuration?: string | null;
     flowRate?: string | null;
     shotQuality: number;
-    flavorProfile?: string[] | null;
+    flavorWheelCategories?: Record<string, string[]> | null;
     flavorWheelBody?: string | null;
     toolsUsed?: string[] | null;
     notes?: string | null;
-    overallPreference?: string | null;
     daysPostRoast: number | null;
     isReferenceShot: boolean;
   }
 ): Promise<void> {
   const auth = await getAuthorizedClient(userId);
   const sheets = google.sheets({ version: "v4", auth });
+
+  // Flatten flavor wheel categories into a readable string
+  const flavorWheelStr = shot.flavorWheelCategories
+    ? Object.entries(shot.flavorWheelCategories)
+        .map(([cat, flavors]) => `${cat}: ${flavors.join(", ")}`)
+        .join("; ")
+    : "";
 
   const row = [
     shot.createdAt.toISOString(),
@@ -180,18 +185,17 @@ export async function appendShotRow(
     shot.preInfusionDuration ?? "",
     shot.flowRate ?? "",
     shot.shotQuality,
-    shot.flavorProfile?.join(", ") ?? "",
+    flavorWheelStr,
     shot.flavorWheelBody ?? "",
     shot.toolsUsed?.join(", ") ?? "",
     shot.notes ?? "",
-    shot.overallPreference ?? "",
     shot.daysPostRoast ?? "",
     shot.isReferenceShot ? "Yes" : "No",
   ];
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: "Sheet1!A:U",
+    range: "Sheet1!A:T",
     valueInputOption: "RAW",
     requestBody: {
       values: [row],

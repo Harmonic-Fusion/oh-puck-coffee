@@ -4,6 +4,5 @@ export * from "./beans/constants";
 export * from "./equipment/schema";
 export * from "./equipment/constants";
 export * from "./shots/schema";
-export * from "./shots/constants";
 export * from "./flavor-wheel/constants";
 export * from "./integrations/schema";

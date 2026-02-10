@@ -93,6 +93,14 @@ export const machines = pgTable("machines", {
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
+export const tools = pgTable("tools", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+});
+
 export const shots = pgTable("shots", {
   id: uuid("id").defaultRandom().primaryKey(),
   // Foreign keys
@@ -115,16 +123,14 @@ export const shots = pgTable("shots", {
   preInfusionDuration: numeric("pre_infusion_duration", { precision: 5, scale: 1 }),
   // Computed (stored on write)
   flowRate: numeric("flow_rate", { precision: 4, scale: 2 }),
-  // Section 3 — Subjective
+  // Subjective
   shotQuality: integer("shot_quality").notNull(), // 1-10
-  flavorProfile: jsonb("flavor_profile").$type<string[]>(),
   toolsUsed: jsonb("tools_used").$type<string[]>(),
   notes: text("notes"),
-  // Section 4 — Flavor Wheel (all optional)
+  // Flavor Wheel (all optional)
   flavorWheelCategories: jsonb("flavor_wheel_categories").$type<Record<string, string[]>>(),
   flavorWheelBody: text("flavor_wheel_body"),
   flavorWheelAdjectives: jsonb("flavor_wheel_adjectives").$type<string[]>(),
-  overallPreference: numeric("overall_preference", { precision: 3, scale: 1 }),
   // Meta
   isReferenceShot: boolean("is_reference_shot").default(false).notNull(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),

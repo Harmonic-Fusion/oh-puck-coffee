@@ -1,13 +1,15 @@
 "use client";
 
-import { useFormContext } from "react-hook-form";
+import { useFormContext, Controller } from "react-hook-form";
 import { BeanSelector } from "@/components/beans/BeanSelector";
 import { GrinderSelector } from "@/components/equipment/GrinderSelector";
 import { MachineSelector } from "@/components/equipment/MachineSelector";
+import { ToolSelector } from "@/components/equipment/ToolSelector";
 import type { CreateShot } from "@/shared/shots/schema";
 
 export function SectionBasics() {
   const {
+    control,
     setValue,
     watch,
     formState: { errors },
@@ -17,6 +19,7 @@ export function SectionBasics() {
     setValue("beanId", "", { shouldValidate: false });
     setValue("grinderId", "", { shouldValidate: false });
     setValue("machineId", undefined, { shouldValidate: false });
+    setValue("toolsUsed", [], { shouldValidate: false });
   };
 
   return (
@@ -40,21 +43,30 @@ export function SectionBasics() {
         error={errors.beanId?.message}
       />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <GrinderSelector
-          value={watch("grinderId") || ""}
-          onChange={(v) => setValue("grinderId", v, { shouldValidate: true })}
-          error={errors.grinderId?.message}
-        />
+      <GrinderSelector
+        value={watch("grinderId") || ""}
+        onChange={(v) => setValue("grinderId", v, { shouldValidate: true })}
+        error={errors.grinderId?.message}
+      />
 
-        <MachineSelector
-          value={watch("machineId") || ""}
-          onChange={(v) =>
-            setValue("machineId", v || undefined, { shouldValidate: true })
-          }
-          error={errors.machineId?.message}
-        />
-      </div>
+      <MachineSelector
+        value={watch("machineId") || ""}
+        onChange={(v) =>
+          setValue("machineId", v || undefined, { shouldValidate: true })
+        }
+        error={errors.machineId?.message}
+      />
+
+      <Controller
+        name="toolsUsed"
+        control={control}
+        render={({ field }) => (
+          <ToolSelector
+            value={field.value || []}
+            onChange={field.onChange}
+          />
+        )}
+      />
     </section>
   );
 }

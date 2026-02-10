@@ -16,12 +16,14 @@ interface FlavorProfileChartProps {
 }
 
 export function FlavorProfileChart({ shots }: FlavorProfileChartProps) {
-  // Count flavor frequency across all shots
+  // Count flavor frequency from flavor wheel categories
   const flavorCounts: Record<string, number> = {};
   for (const shot of shots) {
-    if (shot.flavorProfile && Array.isArray(shot.flavorProfile)) {
-      for (const flavor of shot.flavorProfile) {
-        flavorCounts[flavor] = (flavorCounts[flavor] || 0) + 1;
+    if (shot.flavorWheelCategories && typeof shot.flavorWheelCategories === "object") {
+      for (const flavors of Object.values(shot.flavorWheelCategories)) {
+        for (const flavor of flavors) {
+          flavorCounts[flavor] = (flavorCounts[flavor] || 0) + 1;
+        }
       }
     }
   }
@@ -42,7 +44,7 @@ export function FlavorProfileChart({ shots }: FlavorProfileChartProps) {
   return (
     <div className="rounded-xl border border-stone-200 bg-white p-5 dark:border-stone-700 dark:bg-stone-900">
       <h3 className="mb-4 text-sm font-semibold text-stone-700 dark:text-stone-300">
-        Top Flavor Profiles
+        Top Flavors
       </h3>
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={data} layout="vertical">

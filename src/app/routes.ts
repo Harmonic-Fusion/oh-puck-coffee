@@ -46,6 +46,9 @@ export const ApiRoutes = {
   machines: {
     path: "/api/equipment/machines",
   },
+  tools: {
+    path: "/api/equipment/tools",
+  },
   // Shots
   shots: {
     path: "/api/shots",

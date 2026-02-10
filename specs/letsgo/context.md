@@ -454,6 +454,11 @@ All endpoints under `/api`. Next.js App Router route handlers. Auth.js session r
 - [x] Yield ratio UI element (enter ratio like 2 or 3, auto-calculates yield from dose)
 - [x] Brew Temp °F input with auto-conversion to °C
 - [x] Recipe section: stacked vertical layout with ratio quick-select buttons (1:1–1:4) on Yield, °F default with persisted localStorage preference
+- [x] Simplified Results & Tasting section: removed duplicate Body radio group (already in Flavor Wheel section), removed unused imports
+- [x] Removed flavorProfile (simple checkboxes) in favor of SCA Flavor Wheel only. Removed overallPreference (duplicate of shotQuality). Dropped both DB columns, deleted `shots/constants.ts`, updated all API routes, stats, charts, detail views, Google Sheets row format, and hooks.
+- [x] Moved "Tools Used" from Results & Tasting section into the Recipe section
+- [x] Moved "Tools Used" into the Setup section, stacked vertically with Bean, Grinder, Machine
+- [x] Created `tools` database table (slug, name, description) in equipment domain. Shots now store tool slugs instead of hardcoded enum names. Added `ToolSelector` component with tooltips and inline "New" creation. API route at `/api/equipment/tools`. Seed script prepopulates 8 default tools. ShotDetail and Google Sheets resolve slugs to display names.
 
 ---
 

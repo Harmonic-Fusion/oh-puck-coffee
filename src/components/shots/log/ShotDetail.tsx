@@ -1,6 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import { Modal } from "@/components/common/Modal";
+import { useTools } from "@/components/equipment/hooks";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 
 interface ShotDetailProps {
@@ -30,6 +32,13 @@ function DetailRow({
 }
 
 export function ShotDetail({ shot, open, onClose }: ShotDetailProps) {
+  const { data: allTools } = useTools();
+  const toolMap = useMemo(() => {
+    const m = new Map<string, string>();
+    allTools?.forEach((t) => m.set(t.slug, t.name));
+    return m;
+  }, [allTools]);
+
   if (!shot) return null;
 
   const dose = parseFloat(shot.doseGrams);
@@ -121,24 +130,6 @@ export function ShotDetail({ shot, open, onClose }: ShotDetailProps) {
             Tasting
           </h3>
           <div className="space-y-3">
-            {shot.flavorProfile && shot.flavorProfile.length > 0 && (
-              <div>
-                <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
-                  Flavor Profile
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {shot.flavorProfile.map((f) => (
-                    <span
-                      key={f}
-                      className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
-                    >
-                      {f}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {shot.flavorWheelBody && (
               <div>
                 <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
@@ -161,7 +152,7 @@ export function ShotDetail({ shot, open, onClose }: ShotDetailProps) {
                       key={t}
                       className="rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-400"
                     >
-                      {t}
+                      {toolMap.get(t) || t}
                     </span>
                   ))}
                 </div>
@@ -231,12 +222,6 @@ export function ShotDetail({ shot, open, onClose }: ShotDetailProps) {
             </div>
           )}
 
-        {shot.overallPreference && (
-          <DetailRow
-            label="Overall Preference"
-            value={`${shot.overallPreference} / 5`}
-          />
-        )}
       </div>
     </Modal>
   );

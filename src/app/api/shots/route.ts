@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { shots, beans, users, grinders, machines, integrations } from "@/db/schema";
+import { shots, beans, users, grinders, machines, tools, integrations } from "@/db/schema";
 import { createShotSchema } from "@/shared/shots/schema";
-import { eq, desc, asc, and, gte, lte, SQL } from "drizzle-orm";
+import { eq, desc, asc, and, gte, lte, inArray, SQL } from "drizzle-orm";
 import { appendShotRow } from "@/lib/google-sheets";
 
 export async function GET(request: NextRequest) {
@@ -66,13 +66,11 @@ export async function GET(request: NextRequest) {
       preInfusionDuration: shots.preInfusionDuration,
       flowRate: shots.flowRate,
       shotQuality: shots.shotQuality,
-      flavorProfile: shots.flavorProfile,
       toolsUsed: shots.toolsUsed,
       notes: shots.notes,
       flavorWheelCategories: shots.flavorWheelCategories,
       flavorWheelBody: shots.flavorWheelBody,
       flavorWheelAdjectives: shots.flavorWheelAdjectives,
-      overallPreference: shots.overallPreference,
       isReferenceShot: shots.isReferenceShot,
       createdAt: shots.createdAt,
       updatedAt: shots.updatedAt,
@@ -151,13 +149,11 @@ export async function POST(request: NextRequest) {
       preInfusionDuration: data.preInfusionDuration ? String(data.preInfusionDuration) : null,
       flowRate: flowRate ? String(flowRate) : null,
       shotQuality: data.shotQuality,
-      flavorProfile: data.flavorProfile || null,
       toolsUsed: data.toolsUsed || null,
       notes: data.notes || null,
       flavorWheelCategories: data.flavorWheelCategories || null,
       flavorWheelBody: data.flavorWheelBody || null,
       flavorWheelAdjectives: data.flavorWheelAdjectives || null,
-      overallPreference: data.overallPreference ? String(data.overallPreference) : null,
     })
     .returning();
 
@@ -182,6 +178,18 @@ export async function POST(request: NextRequest) {
           .from(beans)
           .where(eq(beans.id, data.beanId))
           .limit(1);
+
+        // Resolve tool slugs to names for the spreadsheet
+        const toolSlugs = (shot.toolsUsed as string[] | null) ?? [];
+        let toolNames: string[] = [];
+        if (toolSlugs.length > 0) {
+          const toolRows = await db
+            .select({ slug: tools.slug, name: tools.name })
+            .from(tools)
+            .where(inArray(tools.slug, toolSlugs));
+          const slugToName = new Map(toolRows.map((t) => [t.slug, t.name]));
+          toolNames = toolSlugs.map((s) => slugToName.get(s) || s);
+        }
 
         const dose = data.doseGrams;
         const yieldG = data.yieldGrams;
@@ -213,11 +221,10 @@ export async function POST(request: NextRequest) {
           preInfusionDuration: shot.preInfusionDuration,
           flowRate: shot.flowRate,
           shotQuality: shot.shotQuality,
-          flavorProfile: shot.flavorProfile as string[] | null,
+          flavorWheelCategories: shot.flavorWheelCategories as Record<string, string[]> | null,
           flavorWheelBody: shot.flavorWheelBody,
-          toolsUsed: shot.toolsUsed as string[] | null,
+          toolsUsed: toolNames.length > 0 ? toolNames : null,
           notes: shot.notes,
-          overallPreference: shot.overallPreference,
           daysPostRoast,
           isReferenceShot: shot.isReferenceShot,
         });

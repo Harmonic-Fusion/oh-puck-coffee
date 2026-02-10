@@ -32,7 +32,7 @@ export async function GET(
       doseGrams: shots.doseGrams,
       yieldGrams: shots.yieldGrams,
       shotQuality: shots.shotQuality,
-      flavorProfile: shots.flavorProfile,
+      flavorWheelCategories: shots.flavorWheelCategories,
       brewTimeSecs: shots.brewTimeSecs,
       grindLevel: shots.grindLevel,
       createdAt: shots.createdAt,
@@ -61,12 +61,15 @@ export async function GET(
     ? parseFloat((ratios.reduce((a, b) => a + b, 0) / ratios.length).toFixed(2))
     : null;
 
-  // Common flavors (frequency count)
+  // Common flavors (from flavor wheel categories)
   const flavorCounts: Record<string, number> = {};
   for (const s of beanShots) {
-    if (s.flavorProfile && Array.isArray(s.flavorProfile)) {
-      for (const f of s.flavorProfile) {
-        flavorCounts[f] = (flavorCounts[f] || 0) + 1;
+    if (s.flavorWheelCategories && typeof s.flavorWheelCategories === "object") {
+      const categories = s.flavorWheelCategories as Record<string, string[]>;
+      for (const [, flavors] of Object.entries(categories)) {
+        for (const f of flavors) {
+          flavorCounts[f] = (flavorCounts[f] || 0) + 1;
+        }
       }
     }
   }

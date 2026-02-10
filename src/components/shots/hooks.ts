@@ -25,13 +25,11 @@ export interface ShotWithJoins {
   flowRate: string | null;
   daysPostRoast: number | null;
   shotQuality: number;
-  flavorProfile: string[] | null;
   flavorWheelBody: string | null;
   toolsUsed: string[] | null;
   notes: string | null;
   flavorWheelCategories: Record<string, string[]> | null;
   flavorWheelAdjectives: string[] | null;
-  overallPreference: string | null;
   isReferenceShot: boolean;
   createdAt: string;
   updatedAt: string;

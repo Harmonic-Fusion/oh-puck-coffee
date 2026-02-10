@@ -1,6 +1,25 @@
+import { readFileSync } from "fs";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { grinders, machines } from "./schema";
+import { grinders, machines, tools } from "./schema";
+import { DEFAULT_TOOLS } from "@/shared/equipment/constants";
+
+// Load .env.local / .env — tsx doesn't auto-load like Next.js
+for (const file of [".env.local", ".env"]) {
+  try {
+    for (const line of readFileSync(file, "utf8").split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq === -1) continue;
+      const key = trimmed.slice(0, eq).trim();
+      const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
+      if (!process.env[key]) process.env[key] = val;
+    }
+  } catch {
+    // file not found, skip
+  }
+}
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
@@ -53,6 +72,18 @@ async function seed() {
       .onConflictDoNothing({ target: machines.name });
   }
   console.log(`  ✓ ${DEFAULT_MACHINES.length} machines`);
+
+  for (const tool of DEFAULT_TOOLS) {
+    await db
+      .insert(tools)
+      .values({
+        slug: tool.slug,
+        name: tool.name,
+        description: tool.description,
+      })
+      .onConflictDoNothing({ target: tools.slug });
+  }
+  console.log(`  ✓ ${DEFAULT_TOOLS.length} tools`);
 
   console.log("Seed complete!");
   await client.end();

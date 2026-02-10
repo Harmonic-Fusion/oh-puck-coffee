@@ -177,20 +177,20 @@ function ShotCard({
         </div>
       </div>
 
-      {/* Flavors */}
-      {shot.flavorProfile && shot.flavorProfile.length > 0 && (
+      {/* Flavors from Flavor Wheel */}
+      {shot.flavorWheelCategories && Object.keys(shot.flavorWheelCategories).length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
-          {shot.flavorProfile.slice(0, 4).map((f) => (
+          {Object.keys(shot.flavorWheelCategories).slice(0, 4).map((cat) => (
             <span
-              key={f}
+              key={cat}
               className="inline-block rounded-full bg-stone-100 px-2 py-0.5 text-[10px] text-stone-600 dark:bg-stone-800 dark:text-stone-400"
             >
-              {f}
+              {cat}
             </span>
           ))}
-          {shot.flavorProfile.length > 4 && (
+          {Object.keys(shot.flavorWheelCategories).length > 4 && (
             <span className="text-[10px] text-stone-400">
-              +{shot.flavorProfile.length - 4}
+              +{Object.keys(shot.flavorWheelCategories).length - 4}
             </span>
           )}
         </div>

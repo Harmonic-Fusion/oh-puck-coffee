@@ -1,6 +1,4 @@
 import * as z from "zod";
-import { FLAVOR_PROFILES } from "./constants";
-import { TOOLS } from "../equipment/constants";
 import { BODY_ADJECTIVES } from "../flavor-wheel/constants";
 
 export const createShotSchema = z.object({
@@ -14,14 +12,12 @@ export const createShotSchema = z.object({
   brewTempC: z.coerce.number().positive().max(200).optional(),
   preInfusionDuration: z.coerce.number().nonnegative().max(60).optional(),
   shotQuality: z.coerce.number().int().min(1).max(10),
-  flavorProfile: z.array(z.enum(FLAVOR_PROFILES)).optional(),
   flavorWheelBody: z.enum(BODY_ADJECTIVES).optional(),
-  toolsUsed: z.array(z.enum(TOOLS)).optional(),
+  toolsUsed: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  // Section 4 — Flavor Wheel (optional)
+  // Flavor Wheel (optional)
   flavorWheelCategories: z.record(z.string(), z.array(z.string())).optional(),
   flavorWheelAdjectives: z.array(z.string()).optional(),
-  overallPreference: z.coerce.number().min(1).max(5).optional(),
 });
 
 export const shotSchema = z.object({
@@ -38,13 +34,11 @@ export const shotSchema = z.object({
   preInfusionDuration: z.coerce.number().nullable(),
   flowRate: z.coerce.number().nullable(),
   shotQuality: z.number(),
-  flavorProfile: z.array(z.string()).nullable(),
   flavorWheelBody: z.string().nullable(),
   toolsUsed: z.array(z.string()).nullable(),
   notes: z.string().nullable(),
   flavorWheelCategories: z.record(z.string(), z.array(z.string())).nullable(),
   flavorWheelAdjectives: z.array(z.string()).nullable(),
-  overallPreference: z.coerce.number().nullable(),
   isReferenceShot: z.boolean(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),

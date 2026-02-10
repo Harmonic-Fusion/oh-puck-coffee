@@ -5,7 +5,6 @@ import { useFormContext, Controller } from "react-hook-form";
 import { FlavorWheel } from "@/components/flavor-wheel/FlavorWheel";
 import { RadioGroup } from "@/components/common/RadioGroup";
 import { CheckboxGroup } from "@/components/common/CheckboxGroup";
-import { Slider } from "@/components/common/Slider";
 import { BODY_ADJECTIVES, EXTRA_ADJECTIVES } from "@/shared/flavor-wheel/constants";
 import type { CreateShot } from "@/shared/shots/schema";
 
@@ -17,7 +16,6 @@ export function SectionFlavorWheel() {
     setValue("flavorWheelCategories", undefined, { shouldValidate: false });
     setValue("flavorWheelBody", undefined, { shouldValidate: false });
     setValue("flavorWheelAdjectives", [], { shouldValidate: false });
-    setValue("overallPreference", undefined, { shouldValidate: false });
   };
 
   return (
@@ -88,23 +86,6 @@ export function SectionFlavorWheel() {
                 value={field.value || []}
                 onChange={field.onChange}
                 columns={3}
-              />
-            )}
-          />
-
-          {/* Overall Preference */}
-          <Controller
-            name="overallPreference"
-            control={control}
-            render={({ field }) => (
-              <Slider
-                label="Overall Preference"
-                value={field.value || 1}
-                onChange={field.onChange}
-                min={1}
-                max={5}
-                step={0.5}
-                error={errors.overallPreference?.message}
               />
             )}
           />
