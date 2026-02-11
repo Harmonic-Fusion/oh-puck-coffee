@@ -7,9 +7,10 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: ReactNode;
+  footer?: ReactNode;
 }
 
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         if (e.target === overlayRef.current) onClose();
       }}
     >
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-stone-200 bg-white shadow-xl dark:border-stone-700 dark:bg-stone-900">
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl border border-stone-200 bg-white shadow-xl dark:border-stone-700 dark:bg-stone-900">
         {title && (
           <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4 dark:border-stone-700">
             <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
@@ -63,7 +64,12 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
             </button>
           </div>
         )}
-        <div className="p-6">{children}</div>
+        <div className="flex-1 overflow-y-auto p-6">{children}</div>
+        {footer && (
+          <div className="border-t border-stone-200 bg-white px-6 py-4 dark:border-stone-700 dark:bg-stone-900">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );

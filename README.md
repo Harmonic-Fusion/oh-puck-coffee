@@ -48,6 +48,9 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 
 # ── Optional Variables ──────────────────────────────────────────────────
 
+# Port to run the application on. Will use the NEXTAUTH_URL port if not set if possible. Otherwise, defaults to 3000.
+PORT=
+
 # Set to "true" to bypass Google OAuth with a local dev user (useful for local development)
 # When enabled, you do not need GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET
 ENABLE_DEV_USER=true

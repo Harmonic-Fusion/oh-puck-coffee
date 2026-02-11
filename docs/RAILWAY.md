@@ -73,7 +73,25 @@ After deploying to Railway and getting your app URL:
    - Authorized redirect URIs: `https://your-app.railway.app/api/auth/callback/google`
 4. Click "Save"
 
-### 6. Publish Your App (Production)
+### 6. Add Authorized Domain (Required - Fixes "Access blocked" Error)
+
+**This step is critical!** Without it, you'll see "Access blocked: [domain] has not completed the Google verification process".
+
+1. Go to "APIs & Services" → "OAuth consent screen"
+2. Scroll down to the "Authorized domains" section
+3. Click "+ ADD DOMAIN"
+4. Enter your Railway domain (e.g., `oh-puck-coffee-production.up.railway.app`)
+   - **Important**: Only enter the domain name, NOT the full URL
+   - Do NOT include `https://` or any paths
+   - Example: `oh-puck-coffee-production.up.railway.app` ✅
+   - Wrong: `https://oh-puck-coffee-production.up.railway.app` ❌
+5. Click "ADD"
+6. Google may require verification:
+   - For Railway domains, verification is usually automatic
+   - If verification is required, follow the prompts in the Google Cloud Console
+   - Check the verification status in the OAuth consent screen
+
+### 7. Publish Your App (Production)
 
 If you're ready for production:
 
@@ -82,6 +100,12 @@ If you're ready for production:
 3. Confirm the publishing (this makes your app available to all Google users)
 
 **Note**: While in testing mode, only users you add to "Test users" can sign in.
+
+**Troubleshooting "Access blocked" error:**
+- Ensure the domain is added to "Authorized domains" (Step 6)
+- Verify the domain verification status shows as verified
+- Make sure the app is published (Step 7) or you've added yourself as a test user
+- Double-check you entered only the domain name (no `https://` or paths)
 
 ## Railway Configuration
 

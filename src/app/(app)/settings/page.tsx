@@ -78,7 +78,7 @@ export default function SettingsPage() {
               Scan this QR code at your espresso station to quickly access the app
             </p>
             <div className="flex flex-col items-center gap-4">
-              <QRCode url={appUrl} size={200} />
+              <QRCode value={appUrl} size={200} title="Espresso Station Access" />
               <div className="text-center">
                 <p className="text-xs font-mono text-stone-400 dark:text-stone-500 break-all">
                   {appUrl}

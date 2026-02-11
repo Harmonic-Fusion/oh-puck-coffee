@@ -62,13 +62,35 @@ After deploying to production and getting your app URL:
    - Authorized redirect URIs: `https://your-domain.com/api/auth/callback/google`
 4. Click "Save"
 
-## 6. Publish Your App (Production)
+## 6. Add Authorized Domains (Required for Production)
+
+**This step is critical to avoid "Access blocked" errors in production.**
+
+1. Go to "APIs & Services" → "OAuth consent screen"
+2. Scroll down to the "Authorized domains" section
+3. Click "+ ADD DOMAIN"
+4. Enter your production domain (e.g., `oh-puck-coffee-production.up.railway.app`)
+   - **Note**: Only enter the domain, not the full URL (no `https://` or paths)
+   - For Railway: Use the domain from your Railway URL (e.g., `oh-puck-coffee-production.up.railway.app`)
+   - For custom domains: Use just the domain (e.g., `coffee.example.com`)
+5. Click "ADD"
+6. **Important**: Google will require domain verification. You may need to:
+   - Add a TXT record to your domain's DNS settings (for custom domains)
+   - For Railway domains, Google may auto-verify or require additional verification steps
+   - Follow any verification prompts that appear
+
+## 7. Publish Your App (Production)
 
 If you're ready for production:
 
 1. Go to "OAuth consent screen"
 2. Click "PUBLISH APP"
 3. Confirm the action
+
+**Note**: If you see "Access blocked" errors after publishing, ensure:
+- The domain is added to "Authorized domains" (Step 6)
+- Domain verification is complete (check for verification status in OAuth consent screen)
+- The app is published (not in testing mode, unless you've added test users)
 
 ## Notes
 

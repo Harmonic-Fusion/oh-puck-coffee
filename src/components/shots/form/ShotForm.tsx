@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createShotSchema, type CreateShot } from "@/shared/shots/schema";
 import { useCreateShot } from "@/components/shots/hooks";
 import { Button } from "@/components/common/Button";
@@ -17,6 +17,7 @@ import { useToast } from "@/components/common/Toast";
 
 export function ShotForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const createShot = useCreateShot();
   const { data: lastShot } = useLastShot();
   const { showToast } = useToast();
@@ -43,10 +44,125 @@ export function ShotForm() {
     },
   });
 
-  // Pre-populate from last shot - only recipe fields, not Results & Tasting
+  // Pre-populate from URL params, duplicate shot (sessionStorage), or last shot - only recipe fields, not Results & Tasting
   const hasPrePopulated = useRef(false);
   useEffect(() => {
-    if (lastShot && !hasPrePopulated.current) {
+    if (hasPrePopulated.current) return;
+    
+    // Priority 1: Check URL search parameters (from QR code or direct link)
+    const urlParams = new URLSearchParams(searchParams.toString());
+    if (urlParams.toString()) {
+      hasPrePopulated.current = true;
+      
+      // Setup section
+      const beanId = urlParams.get("beanId");
+      if (beanId) methods.setValue("beanId", beanId);
+      
+      const grinderId = urlParams.get("grinderId");
+      if (grinderId) methods.setValue("grinderId", grinderId);
+      
+      const machineId = urlParams.get("machineId");
+      if (machineId) methods.setValue("machineId", machineId);
+      
+      const toolsUsed = urlParams.get("toolsUsed");
+      if (toolsUsed) {
+        methods.setValue("toolsUsed", toolsUsed.split(",").filter(Boolean));
+      }
+      
+      // Recipe section
+      const doseGrams = urlParams.get("doseGrams");
+      if (doseGrams) {
+        const value = parseFloat(doseGrams);
+        if (!isNaN(value)) methods.setValue("doseGrams", value);
+      }
+      
+      const yieldGrams = urlParams.get("yieldGrams");
+      if (yieldGrams) {
+        const value = parseFloat(yieldGrams);
+        if (!isNaN(value)) methods.setValue("yieldGrams", value);
+      }
+      
+      const grindLevel = urlParams.get("grindLevel");
+      if (grindLevel) {
+        const value = parseFloat(grindLevel);
+        if (!isNaN(value)) methods.setValue("grindLevel", value);
+      }
+      
+      const brewTimeSecs = urlParams.get("brewTimeSecs");
+      if (brewTimeSecs) {
+        const value = parseFloat(brewTimeSecs);
+        if (!isNaN(value)) methods.setValue("brewTimeSecs", value);
+      }
+      
+      const brewTempC = urlParams.get("brewTempC");
+      if (brewTempC) {
+        const value = parseFloat(brewTempC);
+        if (!isNaN(value)) methods.setValue("brewTempC", value);
+      }
+      
+      const preInfusionDuration = urlParams.get("preInfusionDuration");
+      if (preInfusionDuration) {
+        const value = parseFloat(preInfusionDuration);
+        if (!isNaN(value)) methods.setValue("preInfusionDuration", value);
+      }
+      
+      const brewPressure = urlParams.get("brewPressure");
+      if (brewPressure) {
+        const value = parseFloat(brewPressure);
+        if (!isNaN(value)) methods.setValue("brewPressure", value);
+      }
+      
+      // Clear URL params after reading
+      if (typeof window !== "undefined") {
+        router.replace(AppRoutes.log.path, { scroll: false });
+      }
+      
+      return; // Don't check sessionStorage or lastShot if URL params exist
+    }
+    
+    // Priority 2: Check for duplicate shot data in sessionStorage
+    const duplicateDataStr = sessionStorage.getItem("duplicateShot");
+    if (duplicateDataStr) {
+      try {
+        const duplicateData = JSON.parse(duplicateDataStr);
+        hasPrePopulated.current = true;
+        sessionStorage.removeItem("duplicateShot"); // Clear after use
+        
+        // Setup section
+        if (duplicateData.beanId)
+          methods.setValue("beanId", duplicateData.beanId);
+        if (duplicateData.grinderId)
+          methods.setValue("grinderId", duplicateData.grinderId);
+        if (duplicateData.machineId)
+          methods.setValue("machineId", duplicateData.machineId);
+        if (duplicateData.toolsUsed)
+          methods.setValue("toolsUsed", duplicateData.toolsUsed);
+        
+        // Recipe section
+        if (duplicateData.doseGrams !== undefined)
+          methods.setValue("doseGrams", duplicateData.doseGrams);
+        if (duplicateData.yieldGrams !== undefined)
+          methods.setValue("yieldGrams", duplicateData.yieldGrams);
+        if (duplicateData.grindLevel !== undefined)
+          methods.setValue("grindLevel", duplicateData.grindLevel);
+        if (duplicateData.brewTimeSecs !== undefined)
+          methods.setValue("brewTimeSecs", duplicateData.brewTimeSecs);
+        if (duplicateData.brewTempC !== undefined)
+          methods.setValue("brewTempC", duplicateData.brewTempC);
+        if (duplicateData.preInfusionDuration !== undefined)
+          methods.setValue("preInfusionDuration", duplicateData.preInfusionDuration);
+        if (duplicateData.brewPressure !== undefined)
+          methods.setValue("brewPressure", duplicateData.brewPressure);
+        
+        return; // Don't use lastShot if duplicate data exists
+      } catch (error) {
+        // Invalid JSON, fall through to lastShot
+        sessionStorage.removeItem("duplicateShot");
+      }
+    }
+    
+    // Priority 3: Fall back to last shot if no duplicate data
+    if (lastShot) {
       hasPrePopulated.current = true;
       // Setup section
       if (lastShot.beanId)
@@ -73,10 +189,10 @@ export function ShotForm() {
         methods.setValue("preInfusionDuration", parseFloat(lastShot.preInfusionDuration));
       if (lastShot.brewPressure)
         methods.setValue("brewPressure", parseFloat(lastShot.brewPressure));
-      
-      // Results & Tasting and Flavor Wheel are intentionally NOT pre-populated
     }
-  }, [lastShot, methods]);
+    
+    // Results & Tasting and Flavor Wheel are intentionally NOT pre-populated
+  }, [searchParams, lastShot, methods, router]);
 
   const onSubmit = async (data: CreateShot) => {
     try {

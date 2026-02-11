@@ -36,6 +36,33 @@ export default function HistoryPage() {
 
   const handleDelete = async (id: string) => {
     deleteShot.mutate(id);
+    if (selectedShot?.id === id) {
+      setSelectedShot(null);
+    }
+  };
+
+  const handleToggleReference = (id: string) => {
+    toggleReference.mutate(id, {
+      onSuccess: (updatedShot) => {
+        if (selectedShot?.id === id) {
+          setSelectedShot((prev) => 
+            prev ? { ...prev, isReferenceShot: updatedShot.isReferenceShot } : null
+          );
+        }
+      },
+    });
+  };
+
+  const handleToggleHidden = (id: string) => {
+    toggleHidden.mutate(id, {
+      onSuccess: (updatedShot) => {
+        if (selectedShot?.id === id) {
+          setSelectedShot((prev) => 
+            prev ? { ...prev, isHidden: updatedShot.isHidden } : null
+          );
+        }
+      },
+    });
   };
 
   const handleBulkDelete = async (ids: string[]) => {
@@ -133,6 +160,8 @@ export default function HistoryPage() {
         open={!!selectedShot}
         onClose={() => setSelectedShot(null)}
         onDelete={handleDelete}
+        onToggleReference={handleToggleReference}
+        onToggleHidden={handleToggleHidden}
       />
     </div>
   );

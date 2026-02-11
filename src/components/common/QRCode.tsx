@@ -1,53 +1,248 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useRef, useEffect, useState, forwardRef } from "react";
+import { QRCodeSVG } from "qrcode.react";
 
-interface QRCodeProps {
-  url: string;
+type QRCodeProps = {
+  value: string;
+  title?: string;
   size?: number;
+  logoImage?: string;
   className?: string;
-}
+  forceLight?: boolean;
+  customFgColor?: string;
+  customBgColor?: string;
+};
 
 /**
- * QR Code component using qr-server.com API
- * Generates a QR code for the given URL
+ * Fluid QR Code component with responsive sizing and theme-aware colors
+ * Generates a QR code with styled round corner eyes that adapts to container size
  */
-export function QRCode({ url, size = 256, className = "" }: QRCodeProps) {
+export const QRCode = forwardRef<HTMLDivElement, QRCodeProps>(function QRCode(
+  {
+    value,
+    title,
+    size,
+    logoImage,
+    className,
+    forceLight = false,
+    customFgColor,
+    customBgColor,
+  },
+  ref
+) {
+  const internalRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
   const [error, setError] = useState(false);
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(url)}`;
 
-  // Validate URL
-  useEffect(() => {
-    try {
-      new URL(url);
-      setError(false);
-    } catch {
-      setError(true);
+  // Merge external ref with internal ref using callback ref
+  const setRef = (node: HTMLDivElement | null) => {
+    internalRef.current = node;
+    if (typeof ref === "function") {
+      ref(node);
+    } else if (ref) {
+      (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
     }
-  }, [url]);
+  };
 
-  if (error || !url) {
+  const containerRef = internalRef;
+
+  // Validate value
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      setMounted(true);
+      return;
+    }
+
+    try {
+      // Try to validate as URL if it looks like one
+      if (value && (value.startsWith("http://") || value.startsWith("https://"))) {
+        new URL(value);
+        setError(false);
+      } else if (value && value.trim() !== "") {
+        // Allow non-URL values (like recipe data)
+        setError(false);
+      } else {
+        setError(true);
+      }
+    } catch {
+      // If it's not a URL but has content, it's valid
+      if (value && value.trim() !== "") {
+        setError(false);
+      } else {
+        setError(true);
+      }
+    }
+    setMounted(true);
+  }, [value]);
+
+  // Detect if className contains any width or height variants (w-*, h-*)
+  const hasWidthClass = className?.match(/\bw-[\w/]+/)?.[0];
+  const hasHeightClass = className?.match(/\bh-[\w/]+/)?.[0];
+  const isResponsive = !!(hasWidthClass || hasHeightClass);
+
+  const [dynamicSize, setDynamicSize] = useState(size || 317);
+
+  // Calculate size from container dimensions when using width/height classes (responsive mode)
+  useEffect(() => {
+    if (!isResponsive || !containerRef.current) {
+      // If not responsive, use provided size or default
+      if (size !== undefined) {
+        setDynamicSize(size);
+      }
+      return;
+    }
+
+    const updateSize = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        const containerHeight = containerRef.current.offsetHeight;
+
+        // Account for padding (p-6 = 1.5rem = 24px on each side = 48px total)
+        const padding = 48;
+        const availableWidth = containerWidth - padding;
+        const availableHeight = containerHeight - padding;
+
+        // Use the smaller dimension to maintain square aspect ratio for QR code
+        // If only one dimension is constrained, use that one
+        let calculatedSize: number;
+        if (hasWidthClass && hasHeightClass) {
+          // Both width and height are constrained - use the smaller dimension
+          calculatedSize = Math.min(availableWidth, availableHeight);
+        } else if (hasWidthClass) {
+          // Only width is constrained
+          calculatedSize = availableWidth;
+        } else {
+          // Only height is constrained
+          calculatedSize = availableHeight;
+        }
+
+        setDynamicSize(Math.max(100, calculatedSize));
+      }
+    };
+
+    // Initial size calculation
+    updateSize();
+
+    // Use ResizeObserver for responsive updates
+    const resizeObserver = new ResizeObserver(updateSize);
+    resizeObserver.observe(containerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [size, isResponsive, hasWidthClass, hasHeightClass]);
+
+  const finalSize = isResponsive ? dynamicSize : size ?? 317;
+
+  // Compute colors during render (avoid useEffect for derived values)
+  const { fgColor, bgColor } = useMemo(() => {
+    // If custom colors are provided, use them directly
+    if (customFgColor && customBgColor) {
+      return {
+        fgColor: customFgColor,
+        bgColor: customBgColor,
+      };
+    }
+
+    if (typeof window === "undefined") {
+      // SSR fallback
+      return { fgColor: "#171717", bgColor: "#ffffff" };
+    }
+
+    const root = document.documentElement;
+
+    // Get CSS variables
+    const foreground = getComputedStyle(root)
+      .getPropertyValue("--foreground")
+      .trim();
+    const background = getComputedStyle(root)
+      .getPropertyValue("--background")
+      .trim();
+
+    if (forceLight) {
+      // Always render in light mode regardless of active theme
+      return {
+        fgColor: foreground || "#171717",
+        bgColor: background || "#ffffff",
+      };
+    }
+
+    // Detect dark mode via media query
+    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+    if (isDark) {
+      // Dark mode: QR code should be light on dark background
+      return {
+        fgColor: foreground || "#ededed",
+        bgColor: background || "#0a0a0a",
+      };
+    } else {
+      // Light mode: QR code should be dark on light background
+      return {
+        fgColor: foreground || "#171717",
+        bgColor: background || "#ffffff",
+      };
+    }
+  }, [forceLight, customFgColor, customBgColor]);
+
+  // Don't render QR code if value is empty or invalid
+  if (!mounted) {
     return (
       <div
-        className={`flex items-center justify-center rounded-lg border border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800 ${className}`}
-        style={{ width: size, height: size }}
+        ref={setRef}
+        className={`flex items-center justify-center p-6 ${className || ""}`}
+        style={{
+          borderRadius: 55,
+        }}
+      />
+    );
+  }
+
+  if (error || !value || value.trim() === "") {
+    return (
+      <div
+        ref={setRef}
+        className={`flex items-center justify-center p-6 ${className || ""}`}
+        style={{
+          backgroundColor: bgColor,
+          borderRadius: 55,
+        }}
       >
         <p className="text-sm text-stone-500 dark:text-stone-400">
-          Invalid URL
+          {title ? `${title} - Invalid` : "Invalid QR code"}
         </p>
       </div>
     );
   }
 
   return (
-    <div className={`inline-block ${className}`}>
-      <img
-        src={qrUrl}
-        alt={`QR code for ${url}`}
-        className="rounded-lg border border-stone-200 dark:border-stone-700"
-        style={{ width: size, height: size }}
-        onError={() => setError(true)}
+    <div
+      ref={setRef}
+      className={`flex items-center justify-center p-6 ${className || ""}`}
+      style={{
+        backgroundColor: bgColor,
+        borderRadius: 55,
+      }}
+    >
+      <QRCodeSVG
+        value={value}
+        size={finalSize}
+        fgColor={fgColor}
+        bgColor={bgColor}
+        level="M"
+        includeMargin={false}
+        imageSettings={
+          logoImage
+            ? {
+                src: logoImage,
+                height: 159,
+                width: 159,
+                excavate: true,
+              }
+            : undefined
+        }
       />
     </div>
   );
-}
+});

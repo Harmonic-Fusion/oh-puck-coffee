@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/common/Modal";
 import { Button } from "@/components/common/Button";
+import { QRCode } from "@/components/common/QRCode";
 import { useTools } from "@/components/equipment/hooks";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { AppRoutes } from "@/app/routes";
@@ -53,26 +54,55 @@ export function ShotDetail({
     return m;
   }, [allTools]);
 
+  const [duplicateUrl, setDuplicateUrl] = useState<string>("");
+
+  useEffect(() => {
+    if (shot && typeof window !== "undefined") {
+      const params = new URLSearchParams();
+      if (shot.beanId) params.set("beanId", shot.beanId);
+      if (shot.grinderId) params.set("grinderId", shot.grinderId);
+      if (shot.machineId) params.set("machineId", shot.machineId);
+      if (shot.doseGrams) params.set("doseGrams", shot.doseGrams);
+      if (shot.yieldGrams) params.set("yieldGrams", shot.yieldGrams);
+      if (shot.grindLevel) params.set("grindLevel", shot.grindLevel);
+      if (shot.brewTimeSecs) params.set("brewTimeSecs", shot.brewTimeSecs);
+      if (shot.brewTempC) params.set("brewTempC", shot.brewTempC);
+      if (shot.preInfusionDuration) params.set("preInfusionDuration", shot.preInfusionDuration);
+      if (shot.brewPressure) params.set("brewPressure", shot.brewPressure);
+      if (shot.toolsUsed && shot.toolsUsed.length > 0) {
+        params.set("toolsUsed", shot.toolsUsed.join(","));
+      }
+      
+      const url = `${window.location.origin}${AppRoutes.log.path}?${params.toString()}`;
+      setDuplicateUrl(url);
+    }
+  }, [shot]);
+
   if (!shot) return null;
 
   const handleDuplicate = () => {
-    // Store shot data in sessionStorage for pre-population
-    const duplicateData = {
-      beanId: shot.beanId,
-      grinderId: shot.grinderId,
-      machineId: shot.machineId || undefined,
-      doseGrams: shot.doseGrams ? parseFloat(shot.doseGrams) : undefined,
-      yieldGrams: shot.yieldGrams ? parseFloat(shot.yieldGrams) : undefined,
-      grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
-      brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : undefined,
-      brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
-      preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
-      brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : undefined,
-      toolsUsed: shot.toolsUsed || [],
-    };
-    sessionStorage.setItem("duplicateShot", JSON.stringify(duplicateData));
-    onClose();
-    router.push(AppRoutes.log.path);
+    if (duplicateUrl) {
+      onClose();
+      router.push(duplicateUrl);
+    } else {
+      // Fallback to sessionStorage for backward compatibility
+      const duplicateData = {
+        beanId: shot.beanId,
+        grinderId: shot.grinderId,
+        machineId: shot.machineId || undefined,
+        doseGrams: shot.doseGrams ? parseFloat(shot.doseGrams) : undefined,
+        yieldGrams: shot.yieldGrams ? parseFloat(shot.yieldGrams) : undefined,
+        grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
+        brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : undefined,
+        brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
+        preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
+        brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : undefined,
+        toolsUsed: shot.toolsUsed || [],
+      };
+      sessionStorage.setItem("duplicateShot", JSON.stringify(duplicateData));
+      onClose();
+      router.push(AppRoutes.log.path);
+    }
   };
 
   const handleDelete = () => {
@@ -394,6 +424,19 @@ export function ShotDetail({
               </div>
             </div>
           )}
+
+        {/* QR Code for Duplicate */}
+        {duplicateUrl && (
+          <div className="flex flex-col items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+              Duplicate Shot
+            </h3>
+            <p className="text-center text-xs text-stone-500 dark:text-stone-400">
+              Scan to duplicate this shot recipe
+            </p>
+            <QRCode value={duplicateUrl} size={200} title="Duplicate Shot Recipe" />
+          </div>
+        )}
 
       </div>
     </Modal>

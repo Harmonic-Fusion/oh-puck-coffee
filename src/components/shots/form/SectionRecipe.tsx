@@ -1,8 +1,12 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { NumberStepper } from "@/components/common/NumberStepper";
+import { QRCode } from "@/components/common/QRCode";
+import { Modal } from "@/components/common/Modal";
+import { Button } from "@/components/common/Button";
+import { AppRoutes } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
 
 const TEMP_UNIT_KEY = "coffee-temp-unit";
@@ -32,6 +36,7 @@ export function SectionRecipe() {
   const [activeRatio, setActiveRatio] = useState<number | null>(null);
   const [activeDose, setActiveDose] = useState<number | null>(null);
   const [activePressure, setActivePressure] = useState<number | null>(9);
+  const [showQRCode, setShowQRCode] = useState(false);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -42,9 +47,39 @@ export function SectionRecipe() {
   const yieldG = watch("yieldGrams");
   const time = watch("brewTimeSecs");
   const brewTempC = watch("brewTempC");
+  const grindLevel = watch("grindLevel");
+  const brewTimeSecs = watch("brewTimeSecs");
+  const preInfusionDuration = watch("preInfusionDuration");
+  const brewPressure = watch("brewPressure");
+  const beanId = watch("beanId");
+  const grinderId = watch("grinderId");
+  const machineId = watch("machineId");
+  const toolsUsed = watch("toolsUsed");
 
   const computedRatio = dose && yieldG ? (yieldG / dose).toFixed(2) : "—";
   const flow = yieldG && time ? (yieldG / time).toFixed(2) : "—";
+
+  // Generate QR code URL for current recipe
+  const recipeQRUrl = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    
+    const params = new URLSearchParams();
+    if (beanId) params.set("beanId", beanId);
+    if (grinderId) params.set("grinderId", grinderId);
+    if (machineId) params.set("machineId", machineId);
+    if (dose) params.set("doseGrams", dose.toString());
+    if (yieldG) params.set("yieldGrams", yieldG.toString());
+    if (grindLevel) params.set("grindLevel", grindLevel.toString());
+    if (brewTimeSecs) params.set("brewTimeSecs", brewTimeSecs.toString());
+    if (brewTempC) params.set("brewTempC", brewTempC.toString());
+    if (preInfusionDuration) params.set("preInfusionDuration", preInfusionDuration.toString());
+    if (brewPressure) params.set("brewPressure", brewPressure.toString());
+    if (toolsUsed && Array.isArray(toolsUsed) && toolsUsed.length > 0) {
+      params.set("toolsUsed", toolsUsed.join(","));
+    }
+    
+    return `${window.location.origin}${AppRoutes.log.path}?${params.toString()}`;
+  }, [beanId, grinderId, machineId, dose, yieldG, grindLevel, brewTimeSecs, brewTempC, preInfusionDuration, brewPressure, toolsUsed]);
 
   // ── Dose quick-select: set dose value ──
   const applyDose = useCallback(
@@ -157,11 +192,10 @@ export function SectionRecipe() {
                       key={d}
                       type="button"
                       onClick={() => applyDose(d)}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                        activeDose === d
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeDose === d
                           ? "bg-amber-600 text-white"
                           : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                      }`}
+                        }`}
                     >
                       {d}g
                     </button>
@@ -197,11 +231,10 @@ export function SectionRecipe() {
                       key={r}
                       type="button"
                       onClick={() => applyRatio(r)}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                        activeRatio === r
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeRatio === r
                           ? "bg-amber-600 text-white"
                           : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                      }`}
+                        }`}
                     >
                       1:{r}
                     </button>
@@ -303,25 +336,6 @@ export function SectionRecipe() {
           />
         )}
 
-        {/* ── Pre-infusion ── */}
-        <Controller
-          name="preInfusionDuration"
-          control={control}
-          render={({ field }) => (
-            <NumberStepper
-              label="Pre-infusion"
-              suffix="sec"
-              value={field.value ?? undefined}
-              onChange={(val) => setValue("preInfusionDuration", val, { shouldValidate: true })}
-              min={0}
-              max={30}
-              step={0.5}
-              placeholder="—"
-              hint="Optional"
-              error={errors.preInfusionDuration?.message}
-            />
-          )}
-        />
 
         {/* ── Brew Pressure with quick-select ── */}
         <Controller
@@ -356,11 +370,10 @@ export function SectionRecipe() {
                         setActivePressure(p);
                         setValue("brewPressure", p, { shouldValidate: true });
                       }}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                        activePressure === p
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activePressure === p
                           ? "bg-amber-600 text-white"
                           : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                      }`}
+                        }`}
                     >
                       {p} bar
                     </button>
@@ -372,23 +385,96 @@ export function SectionRecipe() {
         />
       </div>
 
+      {/* ── Pre-infusion ── */}
+      <Controller
+        name="preInfusionDuration"
+        control={control}
+        render={({ field }) => (
+          <NumberStepper
+            label="Pre-infusion"
+            suffix="sec"
+            value={field.value ?? undefined}
+            onChange={(val) => setValue("preInfusionDuration", val, { shouldValidate: true })}
+            min={0}
+            max={30}
+            step={0.5}
+            placeholder="—"
+            hint="Optional"
+            error={errors.preInfusionDuration?.message}
+          />
+        )}
+      />
+
       {/* Computed preview */}
-      <div className="flex gap-6 rounded-xl bg-stone-100 px-4 py-3 text-sm dark:bg-stone-800">
-        <div>
-          <span className="text-stone-500 dark:text-stone-400">Ratio: </span>
-          <span className="font-medium text-stone-800 dark:text-stone-200">
-            1:{computedRatio}
-          </span>
+      <div className="flex items-center justify-between gap-6 rounded-xl bg-stone-100 px-4 py-3 text-sm dark:bg-stone-800">
+        <div className="flex gap-6">
+          <div>
+            <span className="text-stone-500 dark:text-stone-400">Ratio: </span>
+            <span className="font-medium text-stone-800 dark:text-stone-200">
+              1:{computedRatio}
+            </span>
+          </div>
+          <div>
+            <span className="text-stone-500 dark:text-stone-400">
+              Flow Rate:{" "}
+            </span>
+            <span className="font-medium text-stone-800 dark:text-stone-200">
+              {flow} g/s
+            </span>
+          </div>
         </div>
-        <div>
-          <span className="text-stone-500 dark:text-stone-400">
-            Flow Rate:{" "}
-          </span>
-          <span className="font-medium text-stone-800 dark:text-stone-200">
-            {flow} g/s
-          </span>
-        </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => setShowQRCode(true)}
+          title="Generate QR code for this recipe"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="3" width="5" height="5" />
+            <rect x="16" y="3" width="5" height="5" />
+            <rect x="3" y="16" width="5" height="5" />
+            <path d="M21 16h-3a2 2 0 0 0-2 2v3" />
+            <path d="M21 21v.01" />
+            <path d="M12 7v3a2 2 0 0 1-2 2H7" />
+            <path d="M12 12h.01" />
+          </svg>
+          <span className="ml-1.5">QR Code</span>
+        </Button>
       </div>
+
+      {/* QR Code Modal */}
+      <Modal
+        open={showQRCode}
+        onClose={() => setShowQRCode(false)}
+        title="Recipe QR Code"
+      >
+        <div className="flex flex-col items-center gap-4">
+          <p className="text-center text-sm text-stone-500 dark:text-stone-400">
+            Scan this QR code to load this recipe on another device
+          </p>
+          {recipeQRUrl && (
+            <div className="flex flex-col items-center gap-3">
+              <QRCode value={recipeQRUrl} size={250} title="Recipe QR Code" />
+              <div className="text-center">
+                <p className="text-xs font-mono text-stone-400 dark:text-stone-500 break-all max-w-md">
+                  {recipeQRUrl}
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
     </section>
   );
 }
