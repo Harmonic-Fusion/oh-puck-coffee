@@ -25,7 +25,11 @@ export function NavBar() {
             href={AppRoutes.log.path}
             className="flex items-center gap-2 text-lg font-bold text-amber-800 dark:text-amber-500"
           >
-            <span>☕</span>
+            <img
+              src="/logos/logo_complex.png"
+              alt="Coffee Tracker"
+              className="h-6 w-6"
+            />
             <span className="hidden sm:inline">Coffee Tracker</span>
           </Link>
 

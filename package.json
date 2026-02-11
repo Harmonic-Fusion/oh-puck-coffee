@@ -8,6 +8,9 @@
     "postbuild": "tsx scripts/migrate.ts",
     "start": "next start",
     "lint": "eslint",
+    "logo": "tsx scripts/generate-logo.ts",
+    "logo:svg": "tsx scripts/png-to-svg.ts",
+    "logo:favicon": "tsx scripts/generate-favicon.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -40,7 +43,10 @@
     "drizzle-kit": "^0.31",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "potrace": "^2.1.8",
+    "sharp": "^0.33.0",
     "tailwindcss": "^4",
+    "to-ico": "^1.1.5",
     "tsx": "^4",
     "typescript": "^5"
   }

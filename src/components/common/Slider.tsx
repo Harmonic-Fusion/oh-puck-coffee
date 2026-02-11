@@ -14,61 +14,6 @@ interface SliderProps {
   showValue?: boolean;
 }
 
-/* Inline espresso cup SVG as a React component */
-function EspressoCup({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 36 36"
-      className={className}
-    >
-      {/* White circle background */}
-      <circle cx="18" cy="18" r="17" fill="white" />
-      <circle
-        cx="18"
-        cy="18"
-        r="16.5"
-        fill="none"
-        stroke="#d6d3d1"
-        strokeWidth="0.75"
-      />
-      {/* Saucer */}
-      <ellipse cx="16" cy="27" rx="10" ry="2" fill="#BCAAA4" />
-      {/* Cup body */}
-      <path d="M8 12h16l-2 14H10z" fill="#6F4E37" />
-      {/* Handle */}
-      <path
-        d="M24 15c3 0 3 3 3 3.5s0 3-3 3"
-        fill="none"
-        stroke="#6F4E37"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      {/* Coffee surface */}
-      <ellipse cx="16" cy="12.5" rx="8" ry="2.5" fill="#3E2723" />
-      {/* Crema */}
-      <ellipse cx="16" cy="12.5" rx="6" ry="1.5" fill="#8D6E63" opacity="0.5" />
-      {/* Steam lines */}
-      <path
-        d="M12 6c0-2 2-2 2 0s2 2 2 0"
-        fill="none"
-        stroke="#a8a29e"
-        strokeWidth="0.8"
-        strokeLinecap="round"
-        opacity="0.6"
-      />
-      <path
-        d="M17 7c0-2 2-2 2 0s2 2 2 0"
-        fill="none"
-        stroke="#a8a29e"
-        strokeWidth="0.8"
-        strokeLinecap="round"
-        opacity="0.4"
-      />
-    </svg>
-  );
-}
-
 export function Slider({
   value,
   onChange,
@@ -181,12 +126,18 @@ export function Slider({
             />
           </div>
 
-          {/* Thumb — espresso cup */}
+          {/* Thumb — logo with background */}
           <div
             className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-75"
             style={{ left: `${percentage}%` }}
           >
-            <EspressoCup className="h-12 w-12 drop-shadow-lg" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg dark:bg-stone-800">
+              <img
+                src="/logos/logo_complex.png"
+                alt=""
+                className="h-12 w-12"
+              />
+            </div>
           </div>
         </div>
         <span className="text-sm font-medium text-stone-500 dark:text-stone-400">
