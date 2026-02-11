@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
       preInfusionDuration: data.preInfusionDuration ? String(data.preInfusionDuration) : null,
       brewPressure: data.brewPressure ? String(data.brewPressure) : null,
       flowRate: flowRate ? String(flowRate) : null,
-      shotQuality: data.shotQuality,
+      shotQuality: String(data.shotQuality),
       toolsUsed: data.toolsUsed || null,
       notes: data.notes || null,
       flavorWheelCategories: data.flavorWheelCategories || null,

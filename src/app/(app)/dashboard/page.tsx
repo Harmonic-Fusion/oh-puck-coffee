@@ -43,7 +43,7 @@ export default function DashboardPage() {
           />
           <StatCard
             label="Avg Quality"
-            value={stats?.avgQuality ? `${stats.avgQuality}/10` : null}
+            value={stats?.avgQuality ? `${stats.avgQuality}/5` : null}
             icon="⭐"
           />
           <StatCard

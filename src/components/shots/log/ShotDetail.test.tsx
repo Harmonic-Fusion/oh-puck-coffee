@@ -17,7 +17,7 @@ const mockShot: ShotWithJoins = {
   preInfusionDuration: 5,
   brewPressure: 9,
   flowRate: null,
-  shotQuality: 8,
+  shotQuality: 4,
   flavorWheelBody: "Medium",
   flavorWheelCategories: {},
   flavorWheelAdjectives: [],

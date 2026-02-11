@@ -280,7 +280,7 @@ export function ShotDetail({
             {shot.shotQuality}
           </span>
           <span className="text-sm text-stone-400 dark:text-stone-500">
-            / 10
+            / 5
           </span>
         </div>
 

@@ -5,7 +5,7 @@ A web application for tracking espresso shot recipes, tasting notes, and analysi
 ## Features
 
 - **Shot Tracking**: Record detailed shot recipes including dose, yield, grind settings, brew time, temperature, and pressure
-- **Tasting Notes**: Subjective quality ratings (1-10 scale), flavor profiles, and optional SCA Flavor Wheel analysis
+- **Tasting Notes**: Subjective quality ratings (1-5 scale with 0.5 steps), flavor profiles, and optional SCA Flavor Wheel analysis
 - **Shot History**: Sortable, filterable table of all shots with reference shot highlighting
 - **Dashboard**: Statistics, charts, and bean comparison views
 - **Google Sheets Integration**: Automatically append shot data to a user-configured Google Spreadsheet

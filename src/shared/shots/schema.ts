@@ -12,7 +12,12 @@ export const createShotSchema = z.object({
   brewTempC: z.coerce.number().positive().max(200).optional(),
   preInfusionDuration: z.coerce.number().nonnegative().max(60).optional(),
   brewPressure: z.coerce.number().positive().max(20).optional(),
-  shotQuality: z.coerce.number().int().min(1).max(10),
+  shotQuality: z.coerce.number().min(1).max(5).refine((val) => {
+    // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
+    const step = 0.5;
+    const normalized = Math.round(val / step) * step;
+    return Math.abs(val - normalized) < 0.01;
+  }, { message: "Quality must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }),
   flavorWheelBody: z.enum(BODY_ADJECTIVES).optional(),
   toolsUsed: z.array(z.string()).optional(),
   notes: z.string().optional(),

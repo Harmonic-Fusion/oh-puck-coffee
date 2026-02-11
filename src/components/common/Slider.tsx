@@ -98,9 +98,6 @@ export function Slider({
 
       {/* Custom slider */}
       <div className="flex items-center gap-4">
-        <span className="text-sm font-medium text-stone-500 dark:text-stone-400">
-          {min}
-        </span>
         <div
           ref={trackRef}
           role="slider"
@@ -140,21 +137,23 @@ export function Slider({
             </div>
           </div>
         </div>
-        <span className="text-sm font-medium text-stone-500 dark:text-stone-400">
-          {max}
-        </span>
       </div>
 
-      {/* Tick marks */}
+      {/* Tick marks - only show whole numbers */}
       <div className="mt-2 flex justify-between px-[18px]">
-        {Array.from({ length: max - min + 1 }, (_, i) => (
-          <span
-            key={i + min}
-            className="text-xs text-stone-400 dark:text-stone-500"
-          >
-            {i + min}
-          </span>
-        ))}
+        {Array.from({ length: Math.round((max - min) / step) + 1 }, (_, i) => {
+          const tickValue = min + i * step;
+          // Only show whole numbers, hide half intervals
+          if (tickValue % 1 !== 0) return null;
+          return (
+            <span
+              key={tickValue}
+              className="text-xs text-stone-400 dark:text-stone-500"
+            >
+              {tickValue}
+            </span>
+          );
+        })}
       </div>
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>

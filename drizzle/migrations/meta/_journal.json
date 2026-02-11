@@ -43,6 +43,13 @@
       "when": 1770693844684,
       "tag": "0005_sleepy_betty_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1770700000000,
+      "tag": "0006_convert_quality_scale",
+      "breakpoints": true
     }
   ]
 }

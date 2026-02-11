@@ -29,8 +29,8 @@ export function SectionResults() {
             value={field.value || 1}
             onChange={field.onChange}
             min={1}
-            max={10}
-            step={1}
+            max={5}
+            step={0.5}
             error={errors.shotQuality?.message}
           />
         )}
