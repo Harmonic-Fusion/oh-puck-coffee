@@ -8,6 +8,7 @@ import type { CreateShot } from "@/shared/shots/schema";
 const TEMP_UNIT_KEY = "coffee-temp-unit";
 const RATIO_OPTIONS = [1, 2, 3, 4] as const;
 const DOSE_OPTIONS = [16, 18, 20, 22] as const;
+const PRESSURE_OPTIONS = [6, 9, 12] as const;
 
 const fToC = (f: number) => parseFloat(((f - 32) * (5 / 9)).toFixed(1));
 const cToF = (c: number) => parseFloat((c * (9 / 5) + 32).toFixed(1));
@@ -30,6 +31,7 @@ export function SectionRecipe() {
   const [tempFValue, setTempFValue] = useState<number | undefined>(undefined);
   const [activeRatio, setActiveRatio] = useState<number | null>(null);
   const [activeDose, setActiveDose] = useState<number | null>(null);
+  const [activePressure, setActivePressure] = useState<number | null>(9);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -321,7 +323,7 @@ export function SectionRecipe() {
           )}
         />
 
-        {/* ── Brew Pressure ── */}
+        {/* ── Brew Pressure with quick-select ── */}
         <Controller
           name="brewPressure"
           control={control}
@@ -330,12 +332,41 @@ export function SectionRecipe() {
               label="Brew Pressure"
               suffix="bar"
               value={field.value ?? undefined}
-              onChange={(val) => setValue("brewPressure", val, { shouldValidate: true })}
+              onChange={(val) => {
+                setValue("brewPressure", val, { shouldValidate: true });
+                if (val != null) {
+                  const match = PRESSURE_OPTIONS.find((p) => Math.abs(p - val) < 0.01);
+                  setActivePressure(match ?? null);
+                } else {
+                  setActivePressure(null);
+                }
+              }}
               min={0}
               max={20}
-              step={0.1}
+              step={0.5}
               placeholder="—"
               error={errors.brewPressure?.message}
+              labelExtra={
+                <div className="flex items-center gap-1">
+                  {PRESSURE_OPTIONS.map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => {
+                        setActivePressure(p);
+                        setValue("brewPressure", p, { shouldValidate: true });
+                      }}
+                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                        activePressure === p
+                          ? "bg-amber-600 text-white"
+                          : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                      }`}
+                    >
+                      {p} bar
+                    </button>
+                  ))}
+                </div>
+              }
             />
           )}
         />
