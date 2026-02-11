@@ -1,15 +1,20 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Modal } from "@/components/common/Modal";
+import { Button } from "@/components/common/Button";
 import { useTools } from "@/components/equipment/hooks";
 import type { ShotWithJoins } from "@/components/shots/hooks";
+import { AppRoutes } from "@/app/routes";
 
 interface ShotDetailProps {
   shot: ShotWithJoins | null;
   open: boolean;
   onClose: () => void;
   onDelete?: (id: string) => void;
+  onToggleReference?: (id: string) => void;
+  onToggleHidden?: (id: string) => void;
 }
 
 function DetailRow({
@@ -32,7 +37,15 @@ function DetailRow({
   );
 }
 
-export function ShotDetail({ shot, open, onClose, onDelete }: ShotDetailProps) {
+export function ShotDetail({ 
+  shot, 
+  open, 
+  onClose, 
+  onDelete,
+  onToggleReference,
+  onToggleHidden,
+}: ShotDetailProps) {
+  const router = useRouter();
   const { data: allTools } = useTools();
   const toolMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -42,12 +55,167 @@ export function ShotDetail({ shot, open, onClose, onDelete }: ShotDetailProps) {
 
   if (!shot) return null;
 
+  const handleDuplicate = () => {
+    // Store shot data in sessionStorage for pre-population
+    const duplicateData = {
+      beanId: shot.beanId,
+      grinderId: shot.grinderId,
+      machineId: shot.machineId || undefined,
+      doseGrams: shot.doseGrams ? parseFloat(shot.doseGrams) : undefined,
+      yieldGrams: shot.yieldGrams ? parseFloat(shot.yieldGrams) : undefined,
+      grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
+      brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : undefined,
+      brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
+      preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
+      brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : undefined,
+      toolsUsed: shot.toolsUsed || [],
+    };
+    sessionStorage.setItem("duplicateShot", JSON.stringify(duplicateData));
+    onClose();
+    router.push(AppRoutes.log.path);
+  };
+
+  const handleDelete = () => {
+    if (confirm("Delete this shot?")) {
+      if (onDelete) {
+        onDelete(shot.id);
+      }
+      onClose();
+    }
+  };
+
+  const handleToggleReference = () => {
+    if (onToggleReference) {
+      onToggleReference(shot.id);
+    }
+  };
+
+  const handleToggleHidden = () => {
+    if (onToggleHidden) {
+      onToggleHidden(shot.id);
+    }
+  };
+
   const dose = parseFloat(shot.doseGrams);
   const yieldG = parseFloat(shot.yieldGrams);
   const ratio = dose > 0 ? (yieldG / dose).toFixed(2) : null;
 
+  const footer = (
+    <div className="flex items-center gap-2">
+      {onDelete ? (
+        <Button
+          variant="danger"
+          size="md"
+          onClick={handleDelete}
+          className="flex-1"
+          title="Delete shot"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3 6h18" />
+            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            <line x1="10" y1="11" x2="10" y2="17" />
+            <line x1="14" y1="11" x2="14" y2="17" />
+          </svg>
+        </Button>
+      ) : (
+        <div className="flex-1" />
+      )}
+      {onToggleReference && (
+        <Button
+          variant={shot.isReferenceShot ? "primary" : "secondary"}
+          size="md"
+          onClick={handleToggleReference}
+          className="flex-1"
+          title={shot.isReferenceShot ? "Remove reference shot" : "Mark as reference shot"}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill={shot.isReferenceShot ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+        </Button>
+      )}
+      {onToggleHidden && (
+        <Button
+          variant={shot.isHidden ? "secondary" : "ghost"}
+          size="md"
+          onClick={handleToggleHidden}
+          className="flex-1"
+          title={shot.isHidden ? "Show shot" : "Hide shot"}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {shot.isHidden ? (
+              <>
+                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                <line x1="2" y1="2" x2="22" y2="22" />
+              </>
+            ) : (
+              <>
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                <circle cx="12" cy="12" r="3" />
+              </>
+            )}
+          </svg>
+        </Button>
+      )}
+      <Button
+        variant="secondary"
+        size="md"
+        onClick={handleDuplicate}
+        className="flex-1"
+        title="Duplicate shot"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      </Button>
+    </div>
+  );
+
   return (
-    <Modal open={open} onClose={onClose} title="Shot Detail">
+    <Modal open={open} onClose={onClose} title="Shot Detail" footer={footer}>
       <div className="space-y-6">
         {/* Meta */}
         <div className="flex items-center justify-between">
@@ -169,7 +337,7 @@ export function ShotDetail({ shot, open, onClose, onDelete }: ShotDetailProps) {
                 <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
                   Notes
                 </p>
-                <p className="text-sm text-stone-700 dark:text-stone-300">
+                <p className="whitespace-pre-wrap text-sm text-stone-700 dark:text-stone-300">
                   {shot.notes}
                 </p>
               </div>
@@ -226,23 +394,6 @@ export function ShotDetail({ shot, open, onClose, onDelete }: ShotDetailProps) {
               </div>
             </div>
           )}
-
-        {/* Actions */}
-        {onDelete && (
-          <div className="border-t border-stone-200 pt-4 dark:border-stone-700">
-            <button
-              onClick={() => {
-                if (confirm("Delete this shot?")) {
-                  onDelete(shot.id);
-                  onClose();
-                }
-              }}
-              className="w-full rounded-md bg-red-50 px-4 py-2 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300 dark:hover:bg-red-900/50"
-            >
-              Delete Shot
-            </button>
-          </div>
-        )}
 
       </div>
     </Modal>

@@ -2,7 +2,7 @@
 
 import { useFormContext, Controller } from "react-hook-form";
 import { Slider } from "@/components/common/Slider";
-import { Input } from "@/components/common/Input";
+import { Textarea } from "@/components/common/Textarea";
 import type { CreateShot } from "@/shared/shots/schema";
 
 export function SectionResults() {
@@ -36,10 +36,11 @@ export function SectionResults() {
         )}
       />
 
-      <Input
+      <Textarea
         label="Notes"
         placeholder="Any additional observations..."
         error={errors.notes?.message}
+        rows={4}
         {...register("notes")}
       />
     </section>
