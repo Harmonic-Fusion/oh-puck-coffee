@@ -1,6 +1,6 @@
 ---
 config:
-  SPECS_DIR: specs
+  SPECS_DIR: ./contextual/plans
   AGENTS_MD: AGENTS.md
 ---
 
