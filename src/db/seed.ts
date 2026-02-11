@@ -21,13 +21,16 @@ for (const file of [".env.local", ".env"]) {
   }
 }
 
-const DATABASE_URL = process.env.DATABASE_URL;
-if (!DATABASE_URL) {
+const CONFIG = {
+  DATABASE_URL: process.env.DATABASE_URL,
+};
+
+if (!CONFIG.DATABASE_URL) {
   console.error("DATABASE_URL is required");
   process.exit(1);
 }
 
-const client = postgres(DATABASE_URL);
+const client = postgres(CONFIG.DATABASE_URL);
 const db = drizzle(client);
 
 const DEFAULT_GRINDERS = [

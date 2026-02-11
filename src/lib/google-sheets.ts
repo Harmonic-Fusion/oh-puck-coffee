@@ -2,6 +2,7 @@ import { google } from "googleapis";
 import { db } from "@/db";
 import { accounts, integrations } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { config } from "@/shared/config";
 
 /**
  * Get an authorized Google Sheets client for a user.
@@ -21,8 +22,8 @@ async function getAuthorizedClient(userId: string) {
   }
 
   const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET
+    config.googleClientId,
+    config.googleClientSecret
   );
 
   oauth2Client.setCredentials({

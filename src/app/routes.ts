@@ -24,6 +24,10 @@ export const AppRoutes = {
 };
 
 export const ApiRoutes = {
+  // Health
+  health: {
+    path: "/api/health",
+  },
   // Auth
   auth: {
     path: "/api/auth/[...nextauth]",

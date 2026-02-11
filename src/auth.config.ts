@@ -1,6 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
-
-const enableDevUser = process.env.ENABLE_DEV_USER === "true";
+import { config } from "@/shared/config";
 
 export const authConfig = {
   providers: [],
@@ -10,7 +9,7 @@ export const authConfig = {
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {
       // Dev user bypass — skip all auth checks
-      if (enableDevUser) return true;
+      if (config.enableDevUser) return true;
 
       const isLoggedIn = !!auth?.user;
       const isApiRoute = nextUrl.pathname.startsWith("/api/");
