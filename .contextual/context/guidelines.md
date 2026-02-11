@@ -246,3 +246,53 @@ Keep helper functions private to their component module unless they're used by a
 **Making functions private**: Don't export helpers used only within the same file. Use `function` declarations (not arrow functions).
 
 **Decision rule**: Keep private if only used in one file/module. Extract to shared location if imported by 2+ modules.
+
+## Never Do These
+
+- ❌ Never read `process.env` directly in application code (use `@/shared/config`)
+- ❌ Never hardcode routes (use `@/app/routes`)
+- ❌ Never use `any` type (use `unknown` and narrow)
+- ❌ Never define components inside other components
+- ❌ Never use `useEffect` for derived state or prop transformations
+- ❌ Never disable ESLint rules without explanation
+- ❌ Never skip authentication checks in API routes
+- ❌ Never skip input validation
+
+## Type Safety
+
+- Always use explicit return types for exported functions
+- Use `type` imports for types/interfaces: `import type { ... }`
+- Narrow `unknown` errors: `if (error instanceof Error)`
+- Prefer `const` assertions for literal types
+- Use Zod schemas for runtime validation (never trust API responses)
+
+## Validation
+
+- All API route inputs must be validated with Zod schemas
+- Use Zod schemas from `src/shared/[domain]/schema.ts`
+- Return 400 status for validation errors
+- Never trust user input without validation
+
+## Error Handling
+
+- API routes: Return `Response.json({ error: string }, { status: number })`
+- Client hooks: Throw errors in `queryFn`, let TanStack Query handle them
+- Always log errors server-side before returning to client
+- Use specific error messages (avoid generic "Something went wrong")
+
+## File Naming
+
+- Components: `PascalCase.tsx` (e.g., `ShotDetail.tsx`)
+- Hooks: `camelCase.ts` (e.g., `hooks.ts` in domain folders)
+- Utilities: `kebab-case.ts` (e.g., `google-sheets.ts`)
+- API routes: `route.ts` (Next.js convention)
+- Schemas: `schema.ts` (Zod schemas)
+
+## Common Mistakes
+
+1. **Hardcoding routes** - Always use `AppRoutes`/`ApiRoutes`
+2. **Direct `process.env` access** - Use `config` from `@/shared/config`
+3. **Missing authentication** - All API routes need `getSession()` check
+4. **Skipping validation** - All inputs need Zod validation
+5. **Arrow function components** - Use function declarations
+6. **`useEffect` for derived state** - Compute during render

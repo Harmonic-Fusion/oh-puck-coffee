@@ -91,6 +91,14 @@ export function useShots() {
 
 **Patterns:** Use `queryKey` arrays for cache keys, always use `ApiRoutes` for URLs, handle errors in `queryFn`, use `useQueryClient` for cache invalidation in mutations.
 
+### Never Do These
+
+See @`.contextual/context/guidelines.md` for the complete list of critical rules that must never be violated, including:
+- Never read `process.env` directly (use `@/shared/config`)
+- Never hardcode routes (use `@/app/routes`)
+- Never use `any` type (use `unknown` and narrow)
+- Never skip authentication or validation
+
 ### Code Style
 
 See @`.contextual/context/guidelines.md` for:
@@ -99,6 +107,11 @@ See @`.contextual/context/guidelines.md` for:
 - Error handling (use `unknown`, narrow with `instanceof Error`)
 - React hooks (avoid `useEffect`, prefer render-time computation)
 - Component extraction (thresholds: 30 lines for conditionals, 40 lines for any JSX block)
+- **Type Safety** - TypeScript best practices
+- **Validation** - Input validation requirements
+- **Error Handling** - Error handling patterns
+- **File Naming** - File naming conventions
+- **Common Mistakes** - Frequent errors to avoid
 
 ## Domain Organization
 
