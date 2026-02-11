@@ -9,6 +9,18 @@ export const config = {
   /** Auth.js / NextAuth */
   nextAuthUrl: process.env.NEXTAUTH_URL ?? "http://localhost:3000",
   nextAuthSecret: process.env.NEXTAUTH_SECRET,
+  /**
+   * Trust host header. Required when running behind a reverse proxy (Railway, Vercel, etc.)
+   * Can be set via AUTH_TRUST_HOST or NEXTAUTH_TRUST_HOST environment variable.
+   * Defaults to true in production, false in development.
+   */
+  trustHost: (() => {
+    const explicit = process.env.AUTH_TRUST_HOST || process.env.NEXTAUTH_TRUST_HOST;
+    if (explicit === "true") return true;
+    if (explicit === "false") return false;
+    // Default: true in production, false in development
+    return process.env.NODE_ENV === "production";
+  })(),
 
   /** Google OAuth */
   googleClientId: process.env.GOOGLE_CLIENT_ID,

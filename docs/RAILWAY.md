@@ -143,6 +143,7 @@ In Railway, go to your service → Variables tab and add:
 **Optional:**
 - `PORT` - Defaults to 3000 (Railway sets this automatically)
 - `NODE_ENV` - Set to `production`
+- `AUTH_TRUST_HOST` or `NEXTAUTH_TRUST_HOST` - Set to `"true"` to trust host headers (auto-enabled in production, but can be explicitly set)
 
 ### 5. Update Google OAuth Settings
 
@@ -191,6 +192,15 @@ Or via Railway dashboard:
 - Verify `NEXTAUTH_URL` matches your Railway domain
 - Check Google OAuth redirect URI is correct
 - Ensure `NEXTAUTH_SECRET` is set
+
+### UntrustedHost Error
+
+If you see `UntrustedHost: Host must be trusted` errors:
+
+- The app automatically enables `trustHost` in production environments
+- You can explicitly set `AUTH_TRUST_HOST=true` or `NEXTAUTH_TRUST_HOST=true` in Railway environment variables
+- This is required because Railway routes traffic through internal container URLs
+- If errors persist, verify `NEXTAUTH_URL` is set correctly in Railway environment variables
 
 ### Migrations Not Running
 

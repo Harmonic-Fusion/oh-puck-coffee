@@ -9,6 +9,7 @@ import { config } from "./shared/config";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
+  trustHost: config.trustHost,
   adapter: DrizzleAdapter(db),
   providers: [
     Google({
