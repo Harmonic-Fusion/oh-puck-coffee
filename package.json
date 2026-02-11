@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "PORT=8787 NEXT_PUBLIC_PORT=8787 next dev --turbopack",
+    "dev": "PORT=8787 next dev --turbopack",
     "build": "next build",
     "postbuild": "tsx scripts/migrate.ts",
     "start": "next start",
@@ -32,6 +32,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "^7",
+    "qrcode.react": "^4.1.0",
     "recharts": "^3.7.0",
     "zod": "^3"
   },

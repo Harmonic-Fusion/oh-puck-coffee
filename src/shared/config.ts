@@ -25,19 +25,63 @@ function normalizeNextAuthUrl(): string {
   return normalized;
 }
 
+/**
+ * Determine the port number for the server.
+ * Priority:
+ * 1. PORT environment variable (if provided)
+ * 2. Port extracted from NEXTAUTH_URL (if PORT is not provided)
+ * 3. Default to 3000
+ */
+function determinePort(): number {
+  // If PORT is explicitly set, use it
+  if (process.env.PORT) {
+    const port = parseInt(process.env.PORT, 10);
+    if (!isNaN(port)) {
+      return port;
+    }
+  }
+  
+  // Try to extract port from NEXTAUTH_URL
+  const nextAuthUrl = process.env.NEXTAUTH_URL;
+  if (nextAuthUrl) {
+    try {
+      const url = new URL(nextAuthUrl.startsWith("http") ? nextAuthUrl : `http://${nextAuthUrl}`);
+      if (url.port) {
+        const port = parseInt(url.port, 10);
+        if (!isNaN(port)) {
+          // Set PORT in process.env so Next.js can use it
+          process.env.PORT = url.port;
+          return port;
+        }
+      }
+    } catch {
+      // Invalid URL, fall through to default
+    }
+  }
+  
+  // Default to 3000
+  if (!process.env.PORT) {
+    process.env.PORT = "3000";
+  }
+  return 3000;
+}
+
 export const config = {
   /** Database connection string */
   databaseUrl: process.env.DATABASE_URL!,
+
+  /** Server port (defaults to 3000, or inferred from NEXTAUTH_URL if PORT is not set) */
+  port: determinePort(),
 
   /** Auth.js / NextAuth */
   nextAuthUrl: normalizeNextAuthUrl(),
   nextAuthSecret: process.env.NEXTAUTH_SECRET,
   /**
-   * Trust host header. Required when running behind a reverse proxy (Railway, Vercel, etc.)
+   * Trust host header. Required for Auth.js v5 in all environments.
    * Can be set via AUTH_TRUST_HOST or NEXTAUTH_TRUST_HOST environment variable.
    * 
    * Defaults:
-   * - false in development/localhost (no reverse proxy)
+   * - true in development (Auth.js v5 requires this even for localhost)
    * - true in production or when running on Railway/Vercel (behind reverse proxy)
    */
   trustHost: (() => {
@@ -45,16 +89,15 @@ export const config = {
     if (explicit === "true") return true;
     if (explicit === "false") return false;
     
-    // Check if running on localhost/development
-    const isLocalhost = 
+    // Auth.js v5 requires trustHost: true in development
+    const isDevelopment = 
       process.env.NODE_ENV === "development" ||
-      !process.env.NODE_ENV ||
-      (process.env.NEXTAUTH_URL?.includes("localhost") ?? false);
+      !process.env.NODE_ENV;
     
-    // If localhost, don't trust host (no reverse proxy)
-    if (isLocalhost) return false;
+    // Default to true in development
+    if (isDevelopment) return true;
     
-    // Otherwise, trust host if production or on Railway/Vercel
+    // In production, trust host if on Railway/Vercel or explicitly production
     const isProduction = process.env.NODE_ENV === "production";
     const isRailway = !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_PUBLIC_DOMAIN;
     const isVercel = !!process.env.VERCEL;
