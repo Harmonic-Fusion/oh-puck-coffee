@@ -43,6 +43,9 @@ export function SectionRecipe() {
     setTempUnit(getSavedTempUnit());
   }, []);
 
+  // Watch brewTempC early so it can be used in useEffect
+  const brewTempC = watch("brewTempC");
+
   // Sync tempFValue when brewTempC is set from external sources (pre-population)
   useEffect(() => {
     if (tempUnit === "F" && brewTempC != null) {
@@ -55,7 +58,6 @@ export function SectionRecipe() {
   const dose = watch("doseGrams");
   const yieldG = watch("yieldGrams");
   const time = watch("brewTimeSecs");
-  const brewTempC = watch("brewTempC");
   const grindLevel = watch("grindLevel");
   const brewTimeSecs = watch("brewTimeSecs");
   const preInfusionDuration = watch("preInfusionDuration");
