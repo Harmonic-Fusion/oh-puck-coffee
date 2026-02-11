@@ -35,14 +35,30 @@ export const config = {
   /**
    * Trust host header. Required when running behind a reverse proxy (Railway, Vercel, etc.)
    * Can be set via AUTH_TRUST_HOST or NEXTAUTH_TRUST_HOST environment variable.
-   * Defaults to true in production, false in development.
+   * 
+   * Defaults:
+   * - false in development/localhost (no reverse proxy)
+   * - true in production or when running on Railway/Vercel (behind reverse proxy)
    */
   trustHost: (() => {
     const explicit = process.env.AUTH_TRUST_HOST || process.env.NEXTAUTH_TRUST_HOST;
     if (explicit === "true") return true;
     if (explicit === "false") return false;
-    // Default: true in production, false in development
-    return process.env.NODE_ENV === "production";
+    
+    // Check if running on localhost/development
+    const isLocalhost = 
+      process.env.NODE_ENV === "development" ||
+      !process.env.NODE_ENV ||
+      (process.env.NEXTAUTH_URL?.includes("localhost") ?? false);
+    
+    // If localhost, don't trust host (no reverse proxy)
+    if (isLocalhost) return false;
+    
+    // Otherwise, trust host if production or on Railway/Vercel
+    const isProduction = process.env.NODE_ENV === "production";
+    const isRailway = !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_PUBLIC_DOMAIN;
+    const isVercel = !!process.env.VERCEL;
+    return isProduction || isRailway || isVercel;
   })(),
 
   /** Google OAuth */
