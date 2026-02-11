@@ -43,6 +43,15 @@ export function SectionRecipe() {
     setTempUnit(getSavedTempUnit());
   }, []);
 
+  // Sync tempFValue when brewTempC is set from external sources (pre-population)
+  useEffect(() => {
+    if (tempUnit === "F" && brewTempC != null) {
+      setTempFValue(cToF(brewTempC));
+    } else if (brewTempC == null) {
+      setTempFValue(undefined);
+    }
+  }, [brewTempC, tempUnit]);
+
   const dose = watch("doseGrams");
   const yieldG = watch("yieldGrams");
   const time = watch("brewTimeSecs");

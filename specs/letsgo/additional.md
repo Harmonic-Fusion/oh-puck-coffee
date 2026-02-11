@@ -12,10 +12,8 @@ Tasks
         - Brew Time
         - Brew Pressure
 
-- [ ] Show Quality. 1-5 with 0.5 steps. 
-
-- [ ] Add to the beans. A flag for "is best guess" for the roast date. 
-
 - [ ] Make recommendations based on the quality of the last shot
 
 - [ ] Fix brew temp isn't being pre-populated when refreshing the log page.
+
+- [ ] The "tab" accessibility should focus on the value fields in the form not the buttons or labels.
