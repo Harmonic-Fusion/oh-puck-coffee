@@ -8,6 +8,7 @@ export const createBeanSchema = z.object({
   processingMethod: z.enum(PROCESSING_METHODS).optional(),
   roastLevel: z.enum(ROAST_LEVELS),
   roastDate: z.coerce.date().optional(),
+  isRoastDateBestGuess: z.boolean().optional(),
 });
 
 export const beanSchema = z.object({
@@ -18,6 +19,7 @@ export const beanSchema = z.object({
   processingMethod: z.string().nullable(),
   roastLevel: z.string(),
   roastDate: z.coerce.date().nullable(),
+  isRoastDateBestGuess: z.boolean(),
   createdBy: z.string().uuid(),
   createdAt: z.coerce.date(),
 });

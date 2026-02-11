@@ -76,6 +76,7 @@ export const beans = pgTable("beans", {
   processingMethod: text("processing_method"),
   roastLevel: text("roast_level").notNull(),
   roastDate: timestamp("roast_date", { mode: "date" }),
+  isRoastDateBestGuess: boolean("is_roast_date_best_guess").default(false).notNull(),
   createdBy: uuid("created_by")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
