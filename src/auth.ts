@@ -34,6 +34,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
   trustHost: config.trustHost,
   secret: config.nextAuthSecret,
+  // Explicitly lock the cookie prefix so it stays consistent between
+  // the sign-in request (cookie set) and the OAuth callback (cookie read).
+  // Behind Railway / Vercel reverse proxies the auto-detection can flip
+  // between requests, causing the PKCE code_verifier cookie to "vanish".
+  useSecureCookies: config.nextAuthUrl.startsWith("https://"),
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,

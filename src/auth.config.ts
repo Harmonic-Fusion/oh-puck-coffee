@@ -3,6 +3,9 @@ import { config } from "@/shared/config";
 
 export const authConfig = {
   providers: [],
+  // Share the same secret with the main NextAuth instance so both
+  // middleware and route-handler encrypt / decrypt cookies identically.
+  secret: config.nextAuthSecret,
   pages: {
     signIn: "/login",
   },

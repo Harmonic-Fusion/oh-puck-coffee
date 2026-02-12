@@ -221,9 +221,18 @@ If your logs show a connection timeout to `postgres.railway.internal`, your `DAT
 
 ### OAuth Not Working
 
-- Verify `NEXTAUTH_URL` matches your Railway domain
+- Verify `NEXTAUTH_URL` matches your Railway domain (including `https://`)
 - Check Google OAuth redirect URI is correct
 - Ensure `NEXTAUTH_SECRET` is set
+
+### PKCE / `pkceCodeVerifier could not be parsed`
+
+This error means the PKCE cookie set during sign-in initiation can't be read during the OAuth callback. Behind Railway's reverse proxy the HTTPS auto-detection can differ between requests, causing the `__Secure-` cookie prefix to flip.
+
+The codebase already handles this by explicitly setting `useSecureCookies` based on `NEXTAUTH_URL`. Make sure:
+
+- `NEXTAUTH_URL` starts with `https://` (e.g. `https://your-app.railway.app`)
+- `NEXTAUTH_SECRET` is set to a stable value (`openssl rand -base64 32`)
 
 ### UntrustedHost Error
 
