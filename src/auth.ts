@@ -3,7 +3,7 @@ import NextAuth, { type Session } from "next-auth";
 import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { eq } from "drizzle-orm";
-import { db, getUnderlyingDb } from "./db";
+import { db } from "./db";
 import { users, accounts, sessions, verificationTokens } from "./db/schema";
 import { authConfig } from "./auth.config";
 import { config } from "./shared/config";
@@ -54,9 +54,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   // Behind Railway / Vercel reverse proxies the auto-detection can flip
   // between requests, causing the PKCE code_verifier cookie to "vanish".
   useSecureCookies,
-  // Pass the real (non-Proxy) db so DrizzleAdapter's `is()` dialect
-  // detection works correctly and uses our custom table definitions.
-  adapter: DrizzleAdapter(getUnderlyingDb(), {
+  // Use the Proxy db directly - it has a getPrototypeOf trap that makes
+  // DrizzleAdapter's `is()` checks work correctly via prototype chain walking.
+  adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,
     sessionsTable: sessions,
