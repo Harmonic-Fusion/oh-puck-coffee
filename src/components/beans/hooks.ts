@@ -43,7 +43,7 @@ export function useUpdateBean() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: CreateBean }) => {
-      const res = await fetch(resolvePath(ApiRoutes.bean.path, { id }), {
+      const res = await fetch(resolvePath(ApiRoutes.beans.beanId, { id }), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),

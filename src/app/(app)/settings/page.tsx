@@ -52,7 +52,7 @@ export default function SettingsPage() {
 
         {/* Integrations link */}
         <Link
-          href={AppRoutes.settingsIntegrations.path}
+          href={AppRoutes.settings.integrations.path}
           className="block rounded-xl border border-stone-200 bg-white p-6 transition-colors hover:border-amber-300 hover:bg-amber-50/50 dark:border-stone-700 dark:bg-stone-900 dark:hover:border-amber-800 dark:hover:bg-amber-950/20"
         >
           <div className="flex items-center justify-between">

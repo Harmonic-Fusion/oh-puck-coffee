@@ -1,110 +1,77 @@
-// A mapping of route names to their paths.
-export const AppRoutes = {
-  home: {
-    path: "/",
-  },
-  log: {
-    path: "/log",
-  },
-  history: {
-    path: "/history",
-  },
-  dashboard: {
-    path: "/dashboard",
-  },
+// DO NOT DEPEND ON OTHER MODULES IN THIS FILE. ONLY IMPORT FROM `@/lib/routes-builder`.
+import { routesBuilder, resolvePath } from "@/lib/routes-builder";
+
+export { resolvePath };
+
+export const AppRoutes = routesBuilder({
+  home: "/",
+  log: "/log",
+  history: "/history",
+  dashboard: "/dashboard",
   settings: {
     path: "/settings",
+    integrations: "/integrations",
   },
-  settingsIntegrations: {
-    path: "/settings/integrations",
-  },
-  login: {
-    path: "/login",
-  },
-};
+  login: "/login",
+});
 
-export const ApiRoutes = {
+export const ApiRoutes = routesBuilder({
   // Health
-  health: {
-    path: "/api/health",
-  },
+  health: "/api/health",
   // Auth
   auth: {
-    path: "/api/auth/[...nextauth]",
-  },
-  authDebug: {
-    path: "/api/auth/debug",
+    path: "/api/auth",
+    nextauth: "/[...nextauth]",
+    debug: "/debug",
   },
   // Users
-  users: {
-    path: "/api/users",
-  },
+  users: "/api/users",
   // Beans
   beans: {
     path: "/api/beans",
-  },
-  bean: {
-    path: "/api/beans/:id",
+    beanId: {
+      path: "/:id",
+    },
   },
   // Equipment
-  grinders: {
-    path: "/api/equipment/grinders",
-  },
-  machines: {
-    path: "/api/equipment/machines",
-  },
-  tools: {
-    path: "/api/equipment/tools",
+  equipment: {
+    path: "/api/equipment",
+    grinders: "/grinders",
+    machines: "/machines",
+    tools: "/tools",
   },
   // Shots
   shots: {
     path: "/api/shots",
-  },
-  shot: {
-    path: "/api/shots/:id",
-  },
-  shotReference: {
-    path: "/api/shots/:id/reference",
-  },
-  shotHidden: {
-    path: "/api/shots/:id/hide",
+    shotId: {
+      path: "/:id",
+      reference: "/reference",
+      hidden: "/hide",
+    },
   },
   // Stats
-  statsOverview: {
-    path: "/api/stats/overview",
-  },
-  statsByBean: {
-    path: "/api/stats/by-bean/:beanId",
-  },
-  statsByUser: {
-    path: "/api/stats/by-user/:userId",
+  stats: {
+    path: "/api/stats",
+    overview: "/overview",
+    byBean: {
+      path: "/by-bean",
+      beanId: {
+        path: "/:beanId",
+      },
+    },
+    byUser: {
+      path: "/by-user",
+      userId: {
+        path: "/:userId",
+      },
+    },
   },
   // Integrations
   integrations: {
     path: "/api/integrations",
+    integrationId: {
+      path: "/:id",
+    },
+    validate: "/validate",
   },
-  integration: {
-    path: "/api/integrations/:id",
-  },
-  integrationsValidate: {
-    path: "/api/integrations/validate",
-  },
-};
-
-type Path = string;
-type Params = Record<string, string | number>;
-
-/**
- * Replaces path parameters with their values.
- *
- * @example
- * resolvePath("/users/:id", { id: 1 }) // "/users/1"
- */
-export function resolvePath(path: Path, params: Params = {}): Path {
-  let resolvedPath = path;
-  for (const key in params) {
-    const value = params[key];
-    resolvedPath = resolvedPath.replace(`:${key}`, String(value));
-  }
-  return resolvedPath;
-}
+});

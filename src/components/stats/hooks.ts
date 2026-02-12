@@ -44,7 +44,7 @@ export function useOverviewStats() {
   return useQuery<OverviewStats>({
     queryKey: ["stats", "overview"],
     queryFn: async () => {
-      const res = await fetch(ApiRoutes.statsOverview.path);
+      const res = await fetch(ApiRoutes.stats.overview.path);
       if (!res.ok) throw new Error("Failed to fetch overview stats");
       return res.json();
     },
@@ -56,7 +56,7 @@ export function useBeanStats(beanId: string | undefined) {
     queryKey: ["stats", "by-bean", beanId],
     queryFn: async () => {
       const res = await fetch(
-        resolvePath(ApiRoutes.statsByBean.path, { beanId: beanId! })
+        resolvePath(ApiRoutes.stats.byBean.beanId, { beanId: beanId! })
       );
       if (!res.ok) throw new Error("Failed to fetch bean stats");
       return res.json();
@@ -70,7 +70,7 @@ export function useUserStats(userId: string | undefined) {
     queryKey: ["stats", "by-user", userId],
     queryFn: async () => {
       const res = await fetch(
-        resolvePath(ApiRoutes.statsByUser.path, { userId: userId! })
+        resolvePath(ApiRoutes.stats.byUser.userId, { userId: userId! })
       );
       if (!res.ok) throw new Error("Failed to fetch user stats");
       return res.json();

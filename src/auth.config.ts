@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 import { config } from "@/shared/config";
+import { AppRoutes } from "@/app/routes";
 
 export const authConfig = {
   providers: [],
@@ -7,7 +8,7 @@ export const authConfig = {
   // middleware and route-handler encrypt / decrypt cookies identically.
   secret: config.nextAuthSecret,
   pages: {
-    signIn: "/login",
+    signIn: AppRoutes.login.path,
   },
   callbacks: {
     authorized({ auth, request: { nextUrl } }) {

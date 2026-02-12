@@ -116,7 +116,7 @@ export function useToggleReference() {
   return useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(
-        resolvePath(ApiRoutes.shotReference.path, { id }),
+        resolvePath(ApiRoutes.shots.shotId.reference, { id }),
         { method: "PATCH" }
       );
       if (!res.ok) {
@@ -136,7 +136,7 @@ export function useToggleHidden() {
   return useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(
-        resolvePath(ApiRoutes.shotHidden.path, { id }),
+        resolvePath(ApiRoutes.shots.shotId.hidden, { id }),
         { method: "PATCH" }
       );
       if (!res.ok) {
@@ -155,7 +155,7 @@ export function useDeleteShot() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const res = await fetch(resolvePath(ApiRoutes.shot.path, { id }), {
+      const res = await fetch(resolvePath(ApiRoutes.shots.shotId, { id }), {
         method: "DELETE",
       });
       if (!res.ok) {

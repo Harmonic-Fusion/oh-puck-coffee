@@ -41,7 +41,7 @@ export function useUnlinkSheet() {
   return useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(
-        resolvePath(ApiRoutes.integration.path, { id }),
+        resolvePath(ApiRoutes.integrations.integrationId, { id }),
         { method: "DELETE" }
       );
       if (!res.ok) {
@@ -59,7 +59,7 @@ export function useUnlinkSheet() {
 export function useValidateSheet() {
   return useMutation({
     mutationFn: async (spreadsheetId: string) => {
-      const res = await fetch(ApiRoutes.integrationsValidate.path, {
+      const res = await fetch(ApiRoutes.integrations.validate.path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ spreadsheetId }),

@@ -64,7 +64,7 @@ export function NavBar() {
               />
             )}
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => signOut({ callbackUrl: AppRoutes.login.path })}
               className="text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
             >
               Sign out

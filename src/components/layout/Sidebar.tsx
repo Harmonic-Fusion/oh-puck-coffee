@@ -73,7 +73,7 @@ export function Sidebar() {
               </div>
             )}
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => signOut({ callbackUrl: AppRoutes.login.path })}
               className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
             >
               Sign out

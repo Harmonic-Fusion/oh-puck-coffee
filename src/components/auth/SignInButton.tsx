@@ -1,11 +1,12 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { AppRoutes } from "@/app/routes";
 
 export function SignInButton() {
   return (
     <button
-      onClick={() => signIn("google", { callbackUrl: "/" })}
+      onClick={() => signIn("google", { callbackUrl: AppRoutes.home.path })}
       className="flex items-center gap-3 rounded-lg border border-stone-300 bg-white px-5 py-2.5 text-sm font-medium text-stone-700 shadow-sm transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
     >
       <svg className="h-5 w-5" viewBox="0 0 24 24">

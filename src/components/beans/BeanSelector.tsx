@@ -36,7 +36,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
         setSelectedBean(bean);
       } else {
         // Fetch individual bean if not in list
-        fetch(resolvePath(ApiRoutes.bean.path, { id: value }))
+        fetch(resolvePath(ApiRoutes.beans.beanId, { id: value }))
           .then((res) => res.json())
           .then((data) => setSelectedBean(data))
           .catch(() => setSelectedBean(null));
