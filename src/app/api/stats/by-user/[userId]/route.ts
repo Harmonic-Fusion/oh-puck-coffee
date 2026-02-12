@@ -41,6 +41,7 @@ export async function GET(
       doseGrams: shots.doseGrams,
       yieldGrams: shots.yieldGrams,
       shotQuality: shots.shotQuality,
+      rating: shots.rating,
       flavorWheelCategories: shots.flavorWheelCategories,
       brewTimeSecs: shots.brewTimeSecs,
       grindLevel: shots.grindLevel,
@@ -55,6 +56,14 @@ export async function GET(
   const avgQuality = shotCount > 0
     ? parseFloat(
         (userShots.reduce((acc, s) => acc + s.shotQuality, 0) / shotCount).toFixed(1)
+      )
+    : null;
+
+  // Average rating (only where rating is not null)
+  const ratedShots = userShots.filter((s) => s.rating != null);
+  const avgRating = ratedShots.length > 0
+    ? parseFloat(
+        (ratedShots.reduce((acc, s) => acc + (s.rating ?? 0), 0) / ratedShots.length).toFixed(1)
       )
     : null;
 
@@ -109,6 +118,7 @@ export async function GET(
     },
     shotCount,
     avgQuality,
+    avgRating,
     avgBrewRatio,
     mostUsedBean: mostUsedBean
       ? { id: mostUsedBean.beanId, name: mostUsedBean.beanName, shotCount: mostUsedBean.count }

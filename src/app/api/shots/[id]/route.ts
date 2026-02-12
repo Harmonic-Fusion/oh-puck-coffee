@@ -38,6 +38,7 @@ export async function GET(
       brewPressure: shots.brewPressure,
       flowRate: shots.flowRate,
       shotQuality: shots.shotQuality,
+      rating: shots.rating,
       toolsUsed: shots.toolsUsed,
       notes: shots.notes,
       flavorWheelCategories: shots.flavorWheelCategories,

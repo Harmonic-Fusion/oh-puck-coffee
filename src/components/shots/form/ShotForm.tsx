@@ -37,6 +37,7 @@ export function ShotForm() {
       preInfusionDuration: undefined,
       brewPressure: 9,
       shotQuality: undefined,
+      rating: undefined,
       flavorWheelBody: undefined,
       flavorWheelCategories: undefined,
       flavorWheelAdjectives: [],

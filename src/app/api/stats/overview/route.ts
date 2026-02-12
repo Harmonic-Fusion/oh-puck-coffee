@@ -33,6 +33,15 @@ export async function GET() {
     ? parseFloat(parseFloat(avgQualityResult.avg).toFixed(1))
     : null;
 
+  // Average rating (excluding hidden, only where rating is not null)
+  const [avgRatingResult] = await db
+    .select({ avg: avg(shots.rating) })
+    .from(shots)
+    .where(whereClause);
+  const avgRating = avgRatingResult.avg
+    ? parseFloat(parseFloat(avgRatingResult.avg).toFixed(1))
+    : null;
+
   // Average brew ratio (computed from dose/yield, excluding hidden)
   const allShots = await db
     .select({
@@ -88,6 +97,7 @@ export async function GET() {
   return NextResponse.json({
     totalShots,
     avgQuality,
+    avgRating,
     avgBrewRatio,
     mostUsedBean: mostUsedBean
       ? { id: mostUsedBean.beanId, name: mostUsedBean.beanName, shotCount: mostUsedBean.count }

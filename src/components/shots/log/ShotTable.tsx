@@ -69,6 +69,19 @@ const columns = [
       );
     },
   }),
+  columnHelper.accessor("rating", {
+    header: "Rating",
+    cell: (info) => {
+      const val = info.getValue();
+      if (val == null) return "—";
+      return (
+        <span className="inline-flex items-center gap-1">
+          <span className="font-semibold text-amber-600 dark:text-amber-400">{val}</span>
+          <span className="text-stone-400 dark:text-stone-500">/ 5</span>
+        </span>
+      );
+    },
+  }),
 ];
 
 interface ShotTableProps {
@@ -126,6 +139,11 @@ function ShotCard({
           <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-sm font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
             {shot.shotQuality}/5
           </span>
+          {shot.rating != null && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-100 px-2 py-0.5 text-sm font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+              {shot.rating}/5
+            </span>
+          )}
           {isRef && <span className="text-amber-500">⭐</span>}
         </div>
       </div>

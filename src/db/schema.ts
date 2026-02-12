@@ -130,6 +130,7 @@ export const shots = pgTable("shots", {
   flowRate: numeric("flow_rate", { precision: 4, scale: 2 }),
   // Subjective
   shotQuality: numeric("shot_quality", { precision: 3, scale: 1 }).notNull(), // 1-5 with 0.5 steps
+  rating: numeric("rating", { precision: 3, scale: 1 }), // 1-5 with 0.5 steps (optional)
   toolsUsed: jsonb("tools_used").$type<string[]>(),
   notes: text("notes"),
   // Flavor Wheel (all optional)

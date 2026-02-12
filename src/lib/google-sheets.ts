@@ -85,6 +85,7 @@ const HEADER_ROW = [
   "Brew Pressure (bar)",
   "Flow Rate (g/s)",
   "Shot Quality",
+  "Rating",
   "Flavor Wheel",
   "Body",
   "Tools Used",
@@ -157,6 +158,7 @@ export async function appendShotRow(
     brewPressure?: string | null;
     flowRate?: string | null;
     shotQuality: number;
+    rating?: number | null;
     flavorWheelCategories?: Record<string, string[]> | null;
     flavorWheelBody?: string | null;
     toolsUsed?: string[] | null;
@@ -192,6 +194,7 @@ export async function appendShotRow(
     shot.brewPressure ?? "",
     shot.flowRate ?? "",
     shot.shotQuality,
+    shot.rating ?? "",
     flavorWheelStr,
     shot.flavorWheelBody ?? "",
     shot.toolsUsed?.join(", ") ?? "",

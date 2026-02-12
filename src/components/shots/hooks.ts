@@ -27,6 +27,7 @@ export interface ShotWithJoins {
   flowRate: string | null;
   daysPostRoast: number | null;
   shotQuality: number;
+  rating: number | null;
   flavorWheelBody: string | null;
   toolsUsed: string[] | null;
   notes: string | null;

@@ -18,6 +18,7 @@ const mockShot: ShotWithJoins = {
   brewPressure: 9,
   flowRate: null,
   shotQuality: 4,
+  rating: 5,
   flavorWheelBody: "Medium",
   flavorWheelCategories: {},
   flavorWheelAdjectives: [],

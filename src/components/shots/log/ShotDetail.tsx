@@ -284,6 +284,21 @@ export function ShotDetail({
           </span>
         </div>
 
+        {/* Rating */}
+        {shot.rating != null && (
+          <div className="flex items-center gap-2 rounded-lg bg-stone-50 px-4 py-3 dark:bg-stone-800">
+            <span className="text-sm text-stone-500 dark:text-stone-400">
+              Rating
+            </span>
+            <span className="ml-auto text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {shot.rating}
+            </span>
+            <span className="text-sm text-stone-400 dark:text-stone-500">
+              / 5
+            </span>
+          </div>
+        )}
+
         {/* Recipe */}
         <div>
           <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">

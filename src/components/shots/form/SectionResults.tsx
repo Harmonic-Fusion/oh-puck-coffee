@@ -83,6 +83,36 @@ export function SectionResults() {
             max={5}
             step={0.5}
             error={errors.shotQuality?.message}
+            labels={{
+              1: "Severe channeling/spraying",
+              2: "Severe channeling/spraying",
+              3: "Channeling detected",
+              4: "Good - Minor unevenness",
+              5: "Excellent - Even extraction",
+            }}
+          />
+        )}
+      />
+
+      <Controller
+        name="rating"
+        control={control}
+        render={({ field }) => (
+          <Slider
+            label="Rating"
+            value={field.value || 1}
+            onChange={field.onChange}
+            min={1}
+            max={5}
+            step={0.5}
+            error={errors.rating?.message}
+            labels={{
+              1: "Didn't enjoy",
+              2: "Somewhat enjoyed",
+              3: "Enjoyed",
+              4: "Really enjoyed",
+              5: "Loved it",
+            }}
           />
         )}
       />

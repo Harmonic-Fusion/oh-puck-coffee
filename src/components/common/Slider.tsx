@@ -12,6 +12,7 @@ interface SliderProps {
   error?: string;
   disabled?: boolean;
   showValue?: boolean;
+  labels?: Record<number, string>; // Map of integer values to label text
 }
 
 export function Slider({
@@ -24,6 +25,7 @@ export function Slider({
   error,
   disabled = false,
   showValue = true,
+  labels,
 }: SliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const percentage = ((value - min) / (max - min)) * 100;
@@ -155,6 +157,26 @@ export function Slider({
           );
         })}
       </div>
+      {/* Labels below tick marks */}
+      {labels && (
+        <div className="mt-1 flex justify-between px-[18px]">
+          {Array.from({ length: Math.round((max - min) / step) + 1 }, (_, i) => {
+            const tickValue = min + i * step;
+            // Only show whole numbers, hide half intervals
+            if (tickValue % 1 !== 0) return null;
+            const labelText = labels[tickValue];
+            if (!labelText) return <span key={tickValue} className="text-xs" />;
+            return (
+              <span
+                key={tickValue}
+                className="text-xs text-stone-500 dark:text-stone-400 max-w-[20%] text-center"
+              >
+                {labelText}
+              </span>
+            );
+          })}
+        </div>
+      )}
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
