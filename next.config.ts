@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   env: {
     NEXT_PUBLIC_COMMIT_SHA: getCommitSha(),
+    NEXT_PUBLIC_ENABLE_DEBUGGING: process.env.ENABLE_DEBUGGING ?? "false",
   },
   headers: async () => [
     {

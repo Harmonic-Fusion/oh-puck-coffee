@@ -171,4 +171,10 @@ export const config = {
    * Defaults to false if not set.
    */
   enableDevUser: process.env.ENABLE_DEV_USER === "true",
+
+  /**
+   * When true, enables server debugging output in the frontend.
+   * Defaults to false if not set.
+   */
+  enableDebugging: process.env.ENABLE_DEBUGGING === "true",
 } as const;

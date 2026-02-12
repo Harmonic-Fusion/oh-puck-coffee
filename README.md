@@ -57,6 +57,9 @@ PORT=
 # When enabled, you do not need GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET
 ENABLE_DEV_USER=true
 
+# Set to "true" to enable server debugging output in the frontend
+ENABLE_DEBUGGING=
+
 # Trust host header behind reverse proxy (auto-detected on Railway/Vercel)
 # Set to "true" when running behind a reverse proxy
 # NEXTAUTH_TRUST_HOST is also accepted as an alias
