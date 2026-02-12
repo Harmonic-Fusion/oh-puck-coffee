@@ -5,71 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1770615135439,
-      "tag": "0000_clever_sphinx",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1770687578253,
-      "tag": "0001_sticky_madame_hydra",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1770688575918,
-      "tag": "0002_common_valkyrie",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1770692021460,
-      "tag": "0003_greedy_freak",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1770693563018,
-      "tag": "0004_sticky_sunfire",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1770693844684,
-      "tag": "0005_sleepy_betty_ross",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1770700000000,
-      "tag": "0006_convert_quality_scale",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1770831360192,
-      "tag": "0007_black_black_widow",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1770857571019,
-      "tag": "0008_fancy_galactus",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1770861542030,
-      "tag": "0009_robust_sugar_man",
+      "when": 1770881433795,
+      "tag": "0000_kind_spacker_dave",
       "breakpoints": true
     }
   ]

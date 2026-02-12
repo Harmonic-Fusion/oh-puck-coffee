@@ -1,1 +1,0 @@
-ALTER TABLE "shots" ADD COLUMN "rating" numeric(3, 1);

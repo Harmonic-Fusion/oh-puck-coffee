@@ -1,3 +1,4 @@
+import type { Provider } from "next-auth/providers";
 import NextAuth, { type Session } from "next-auth";
 import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
@@ -6,6 +7,28 @@ import { db } from "./db";
 import { users, accounts, sessions, verificationTokens } from "./db/schema";
 import { authConfig } from "./auth.config";
 import { config } from "./shared/config";
+
+// Build providers list conditionally to avoid Configuration errors
+// when Google OAuth credentials are not set (e.g. dev-only deployments)
+function buildProviders(): Provider[] {
+  const providers: Provider[] = [];
+
+  if (config.googleClientId && config.googleClientSecret) {
+    providers.push(
+      Google({
+        clientId: config.googleClientId,
+        clientSecret: config.googleClientSecret,
+      })
+    );
+  } else if (!config.enableDevUser) {
+    console.warn(
+      "[auth] GOOGLE_CLIENT_ID and/or GOOGLE_CLIENT_SECRET are not set. " +
+        "Google OAuth will be unavailable. Set ENABLE_DEV_USER=true for local development."
+    );
+  }
+
+  return providers;
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -17,12 +40,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     sessionsTable: sessions,
     verificationTokensTable: verificationTokens,
   }),
-  providers: [
-    Google({
-      clientId: config.googleClientId,
-      clientSecret: config.googleClientSecret,
-    }),
-  ],
+  providers: buildProviders(),
   callbacks: {
     async session({ session, user }) {
       if (session.user) {

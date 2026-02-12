@@ -1,1 +1,0 @@
-ALTER TABLE "shots" ADD COLUMN "is_hidden" boolean DEFAULT false NOT NULL;

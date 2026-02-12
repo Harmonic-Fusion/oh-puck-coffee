@@ -18,6 +18,17 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_COMMIT_SHA: getCommitSha(),
   },
+  headers: async () => [
+    {
+      source: "/(.*)",
+      headers: [
+        {
+          key: "Permissions-Policy",
+          value: "browsing-topics=()",
+        },
+      ],
+    },
+  ],
 };
 
 export default nextConfig;

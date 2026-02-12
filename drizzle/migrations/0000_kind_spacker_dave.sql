@@ -21,6 +21,7 @@ CREATE TABLE "beans" (
 	"processing_method" text,
 	"roast_level" text NOT NULL,
 	"roast_date" timestamp,
+	"is_roast_date_best_guess" boolean DEFAULT false NOT NULL,
 	"created_by" uuid NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
@@ -66,21 +67,32 @@ CREATE TABLE "shots" (
 	"dose_grams" numeric(5, 1) NOT NULL,
 	"yield_grams" numeric(5, 1) NOT NULL,
 	"grind_level" numeric(6, 2) NOT NULL,
-	"brew_time_secs" numeric(5, 1) NOT NULL,
 	"brew_temp_c" numeric(4, 1),
 	"pre_infusion_duration" numeric(5, 1),
+	"brew_pressure" numeric(4, 1) DEFAULT '9',
+	"brew_time_secs" numeric(5, 1),
+	"yield_actual_grams" numeric(5, 1),
 	"flow_rate" numeric(4, 2),
-	"shot_quality" integer NOT NULL,
-	"flavor_profile" jsonb,
+	"shot_quality" numeric(3, 1) NOT NULL,
+	"rating" numeric(3, 1),
 	"tools_used" jsonb,
 	"notes" text,
 	"flavor_wheel_categories" jsonb,
 	"flavor_wheel_body" text,
 	"flavor_wheel_adjectives" jsonb,
-	"overall_preference" numeric(3, 1),
 	"is_reference_shot" boolean DEFAULT false NOT NULL,
+	"is_hidden" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "tools" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"slug" text NOT NULL,
+	"name" text NOT NULL,
+	"description" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "tools_slug_unique" UNIQUE("slug")
 );
 --> statement-breakpoint
 CREATE TABLE "users" (
@@ -89,6 +101,7 @@ CREATE TABLE "users" (
 	"email" text,
 	"email_verified" timestamp,
 	"image" text,
+	"role" text DEFAULT 'member' NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint

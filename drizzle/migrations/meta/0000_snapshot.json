@@ -1,5 +1,5 @@
 {
-  "id": "54e64294-3a88-46c2-bb87-a8a510e491da",
+  "id": "9c646964-7e37-495e-968c-1c901fe3b809",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -151,6 +151,13 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "is_roast_date_best_guess": {
+          "name": "is_roast_date_best_guess",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "created_by": {
           "name": "created_by",
@@ -455,12 +462,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "brew_time_secs": {
-          "name": "brew_time_secs",
-          "type": "numeric(5, 1)",
-          "primaryKey": false,
-          "notNull": true
-        },
         "brew_temp_c": {
           "name": "brew_temp_c",
           "type": "numeric(4, 1)",
@@ -473,6 +474,25 @@
           "primaryKey": false,
           "notNull": false
         },
+        "brew_pressure": {
+          "name": "brew_pressure",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'9'"
+        },
+        "brew_time_secs": {
+          "name": "brew_time_secs",
+          "type": "numeric(5, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yield_actual_grams": {
+          "name": "yield_actual_grams",
+          "type": "numeric(5, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "flow_rate": {
           "name": "flow_rate",
           "type": "numeric(4, 2)",
@@ -481,13 +501,13 @@
         },
         "shot_quality": {
           "name": "shot_quality",
-          "type": "integer",
+          "type": "numeric(3, 1)",
           "primaryKey": false,
           "notNull": true
         },
-        "flavor_profile": {
-          "name": "flavor_profile",
-          "type": "jsonb",
+        "rating": {
+          "name": "rating",
+          "type": "numeric(3, 1)",
           "primaryKey": false,
           "notNull": false
         },
@@ -521,14 +541,15 @@
           "primaryKey": false,
           "notNull": false
         },
-        "overall_preference": {
-          "name": "overall_preference",
-          "type": "numeric(3, 1)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "is_reference_shot": {
           "name": "is_reference_shot",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_hidden": {
+          "name": "is_hidden",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
@@ -610,6 +631,59 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.tools": {
+      "name": "tools",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tools_slug_unique": {
+          "name": "tools_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.users": {
       "name": "users",
       "schema": "",
@@ -644,6 +718,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'member'"
         }
       },
       "indexes": {},
