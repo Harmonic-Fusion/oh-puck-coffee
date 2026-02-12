@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
       machineName: machines.name,
       doseGrams: shots.doseGrams,
       yieldGrams: shots.yieldGrams,
+      yieldActualGrams: shots.yieldActualGrams,
       grindLevel: shots.grindLevel,
       brewTimeSecs: shots.brewTimeSecs,
       brewTempC: shots.brewTempC,
@@ -138,10 +139,11 @@ export async function POST(request: NextRequest) {
 
   const data = parsed.data;
 
-  // Compute flow rate (stored on write)
+  // Compute flow rate (stored on write) - use actual yield if available, otherwise target yield
+  const yieldForFlow = data.yieldActualGrams ?? data.yieldGrams;
   const flowRate =
-    data.brewTimeSecs > 0
-      ? parseFloat((data.yieldGrams / data.brewTimeSecs).toFixed(2))
+    data.brewTimeSecs && data.brewTimeSecs > 0 && yieldForFlow
+      ? parseFloat((yieldForFlow / data.brewTimeSecs).toFixed(2))
       : null;
 
   const [shot] = await db
@@ -154,8 +156,9 @@ export async function POST(request: NextRequest) {
       doseGrams: String(data.doseGrams),
       yieldGrams: String(data.yieldGrams),
       grindLevel: String(data.grindLevel),
-      brewTimeSecs: String(data.brewTimeSecs),
       brewTempC: data.brewTempC ? String(data.brewTempC) : null,
+      brewTimeSecs: data.brewTimeSecs ? String(data.brewTimeSecs) : null,
+      yieldActualGrams: data.yieldActualGrams ? String(data.yieldActualGrams) : null,
       preInfusionDuration: data.preInfusionDuration ? String(data.preInfusionDuration) : null,
       brewPressure: data.brewPressure ? String(data.brewPressure) : null,
       flowRate: flowRate ? String(flowRate) : null,
@@ -225,6 +228,7 @@ export async function POST(request: NextRequest) {
           beanRoastDate: bean?.roastDate ?? null,
           doseGrams: shot.doseGrams,
           yieldGrams: shot.yieldGrams,
+          yieldActualGrams: shot.yieldActualGrams,
           brewRatio,
           grindLevel: shot.grindLevel,
           brewTimeSecs: shot.brewTimeSecs,

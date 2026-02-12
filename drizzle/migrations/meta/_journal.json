@@ -57,6 +57,13 @@
       "when": 1770831360192,
       "tag": "0007_black_black_widow",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1770857571019,
+      "tag": "0008_fancy_galactus",
+      "breakpoints": true
     }
   ]
 }

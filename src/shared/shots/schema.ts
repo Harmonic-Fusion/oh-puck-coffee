@@ -8,10 +8,12 @@ export const createShotSchema = z.object({
   doseGrams: z.coerce.number().positive().max(50),
   yieldGrams: z.coerce.number().positive().max(100),
   grindLevel: z.coerce.number().nonnegative("Grind level is required"),
-  brewTimeSecs: z.coerce.number().positive().max(120),
   brewTempC: z.coerce.number().positive().max(200).optional(),
   preInfusionDuration: z.coerce.number().nonnegative().max(60).optional(),
   brewPressure: z.coerce.number().positive().max(20).optional(),
+  // Results
+  brewTimeSecs: z.coerce.number().positive().max(120).optional(),
+  yieldActualGrams: z.coerce.number().positive().max(200).optional(),
   shotQuality: z.coerce.number().min(1).max(5).refine((val) => {
     // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
     const step = 0.5;
@@ -35,10 +37,12 @@ export const shotSchema = z.object({
   doseGrams: z.coerce.number(),
   yieldGrams: z.coerce.number(),
   grindLevel: z.coerce.number(),
-  brewTimeSecs: z.coerce.number(),
   brewTempC: z.coerce.number().nullable(),
   preInfusionDuration: z.coerce.number().nullable(),
   brewPressure: z.coerce.number().nullable(),
+  // Results
+  brewTimeSecs: z.coerce.number().nullable(),
+  yieldActualGrams: z.coerce.number().nullable(),
   flowRate: z.coerce.number().nullable(),
   shotQuality: z.number(),
   flavorWheelBody: z.string().nullable(),

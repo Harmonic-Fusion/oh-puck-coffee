@@ -18,7 +18,7 @@ const RATIO_OPTIONS = [1, 2, 3, 4] as const;
 const DOSE_OPTIONS = [16, 18, 20, 22] as const;
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
 
-type RecipeStepId = "dose" | "yield" | "grindLevel" | "brewTime" | "brewTemp" | "brewPressure" | "preInfusion" | "toolsUsed";
+type RecipeStepId = "dose" | "yield" | "grindLevel" | "brewTemp" | "brewPressure" | "preInfusion" | "toolsUsed";
 
 interface RecipeStepConfig {
   id: RecipeStepId;
@@ -28,9 +28,8 @@ interface RecipeStepConfig {
 
 const DEFAULT_STEPS: RecipeStepConfig[] = [
   { id: "dose", label: "Dose", visible: true },
-  { id: "yield", label: "Yield", visible: true },
+  { id: "yield", label: "Target Yield", visible: true },
   { id: "grindLevel", label: "Grind Level", visible: true },
-  { id: "brewTime", label: "Brew Time", visible: true },
   { id: "brewTemp", label: "Brew Temp", visible: true },
   { id: "brewPressure", label: "Brew Pressure", visible: true },
   { id: "preInfusion", label: "Pre-infusion", visible: true },
@@ -157,9 +156,7 @@ export function SectionRecipe() {
 
   const dose = watch("doseGrams");
   const yieldG = watch("yieldGrams");
-  const time = watch("brewTimeSecs");
   const grindLevel = watch("grindLevel");
-  const brewTimeSecs = watch("brewTimeSecs");
   const preInfusionDuration = watch("preInfusionDuration");
   const brewPressure = watch("brewPressure");
   const beanId = watch("beanId");
@@ -168,7 +165,6 @@ export function SectionRecipe() {
   const toolsUsed = watch("toolsUsed");
 
   const computedRatio = dose && yieldG ? (yieldG / dose).toFixed(2) : "—";
-  const flow = yieldG && time ? (yieldG / time).toFixed(2) : "—";
 
   // Generate QR code URL for current recipe
   const recipeQRUrl = useMemo(() => {
@@ -181,7 +177,6 @@ export function SectionRecipe() {
     if (dose) params.set("doseGrams", dose.toString());
     if (yieldG) params.set("yieldGrams", yieldG.toString());
     if (grindLevel) params.set("grindLevel", grindLevel.toString());
-    if (brewTimeSecs) params.set("brewTimeSecs", brewTimeSecs.toString());
     if (brewTempC) params.set("brewTempC", brewTempC.toString());
     if (preInfusionDuration) params.set("preInfusionDuration", preInfusionDuration.toString());
     if (brewPressure) params.set("brewPressure", brewPressure.toString());
@@ -190,7 +185,7 @@ export function SectionRecipe() {
     }
     
     return `${window.location.origin}${AppRoutes.log.path}?${params.toString()}`;
-  }, [beanId, grinderId, machineId, dose, yieldG, grindLevel, brewTimeSecs, brewTempC, preInfusionDuration, brewPressure, toolsUsed]);
+  }, [beanId, grinderId, machineId, dose, yieldG, grindLevel, brewTempC, preInfusionDuration, brewPressure, toolsUsed]);
 
   // ── Dose quick-select: set dose value ──
   const applyDose = useCallback(
@@ -335,40 +330,44 @@ export function SectionRecipe() {
             key="yield"
             name="yieldGrams"
             control={control}
-            render={({ field }) => (
-              <NumberStepper
-                label="Yield"
-                suffix="g"
-                value={field.value}
-                onChange={handleYieldChange}
-                min={0}
-                max={200}
-                step={0.1}
-                placeholder="—"
-                error={errors.yieldGrams?.message}
-                labelExtra={
-                  <div className="flex items-center gap-1">
-                    <span className="mr-1 text-xs text-stone-400 dark:text-stone-500">
-                      Ratio
-                    </span>
-                    {RATIO_OPTIONS.map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => applyRatio(r)}
-                        tabIndex={-1}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeRatio === r
-                            ? "bg-amber-600 text-white"
-                            : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                          }`}
-                      >
-                        1:{r}
-                      </button>
-                    ))}
-                  </div>
-                }
-              />
-            )}
+            render={({ field }) => {
+              const targetRatio = dose && field.value ? (field.value / dose).toFixed(2) : null;
+              return (
+                <NumberStepper
+                  label="Target Yield"
+                  suffix="g"
+                  secondarySuffix={targetRatio ? `1:${targetRatio}` : undefined}
+                  value={field.value}
+                  onChange={handleYieldChange}
+                  min={0}
+                  max={200}
+                  step={0.5}
+                  placeholder="—"
+                  error={errors.yieldGrams?.message}
+                  labelExtra={
+                    <div className="flex items-center gap-1">
+                      <span className="mr-1 text-xs text-stone-400 dark:text-stone-500">
+                        Ratio
+                      </span>
+                      {RATIO_OPTIONS.map((r) => (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => applyRatio(r)}
+                          tabIndex={-1}
+                          className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeRatio === r
+                              ? "bg-amber-600 text-white"
+                              : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                            }`}
+                        >
+                          1:{r}
+                        </button>
+                      ))}
+                    </div>
+                  }
+                />
+              );
+            }}
           />
         );
       case "grindLevel":
@@ -387,28 +386,6 @@ export function SectionRecipe() {
                 step={0.1}
                 placeholder="—"
                 error={errors.grindLevel?.message}
-              />
-            )}
-          />
-        );
-      case "brewTime":
-        return (
-          <Controller
-            key="brewTime"
-            name="brewTimeSecs"
-            control={control}
-            render={({ field }) => (
-              <NumberStepper
-                label="Brew Time"
-                suffix="sec"
-                value={field.value}
-                onChange={(val) => setValue("brewTimeSecs", val as number, { shouldValidate: true })}
-                min={0}
-                max={120}
-                step={1}
-                placeholder="—"
-                error={errors.brewTimeSecs?.message}
-                noRound={true}
               />
             )}
           />
@@ -646,24 +623,7 @@ export function SectionRecipe() {
       </div>
 
       {/* Computed preview */}
-      <div className="flex items-center justify-between gap-6 rounded-xl bg-stone-100 px-4 py-3 text-sm dark:bg-stone-800">
-        <div className="flex gap-6">
-          <div>
-            <span className="text-stone-500 dark:text-stone-400">Ratio: </span>
-            <span className="font-medium text-stone-800 dark:text-stone-200">
-              1:{computedRatio}
-            </span>
-          </div>
-          <div>
-            <span className="text-stone-500 dark:text-stone-400">
-              Flow Rate:{" "}
-            </span>
-            <span className="font-medium text-stone-800 dark:text-stone-200">
-              {flow} g/s
-            </span>
-          </div>
-        </div>
-        <Button
+      <div className="flex items-center justify-center gap-6 rounded-xl bg-stone-100 px-4 py-3 text-sm dark:bg-stone-800">        <Button
           type="button"
           variant="secondary"
           size="sm"

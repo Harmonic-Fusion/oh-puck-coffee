@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormContext, Controller } from "react-hook-form";
+import { NumberStepper } from "@/components/common/NumberStepper";
 import { Slider } from "@/components/common/Slider";
 import { Textarea } from "@/components/common/Textarea";
 import type { CreateShot } from "@/shared/shots/schema";
@@ -9,8 +10,19 @@ export function SectionResults() {
   const {
     register,
     control,
+    watch,
     formState: { errors },
   } = useFormContext<CreateShot>();
+
+  const dose = watch("doseGrams");
+  const yieldActual = watch("yieldActualGrams");
+  const brewTime = watch("brewTimeSecs");
+
+  // Calculate ratio for actual yield
+  const actualRatio = dose && yieldActual ? (yieldActual / dose).toFixed(2) : null;
+  
+  // Calculate flow rate (g/s) from actual yield and brew time
+  const flowRate = yieldActual && brewTime ? (yieldActual / brewTime).toFixed(2) : null;
 
   return (
     <section className="space-y-6">
@@ -19,6 +31,45 @@ export function SectionResults() {
           Results & Tasting
         </h2>
       </div>
+
+      <Controller
+        name="yieldActualGrams"
+        control={control}
+        render={({ field }) => (
+          <NumberStepper
+            label="Actual Yield"
+            suffix="g"
+            secondarySuffix={actualRatio ? `1:${actualRatio}` : undefined}
+            value={field.value}
+            onChange={(val) => field.onChange(val)}
+            min={0}
+            max={200}
+            step={0.5}
+            placeholder="—"
+            error={errors.yieldActualGrams?.message}
+          />
+        )}
+      />
+
+      <Controller
+        name="brewTimeSecs"
+        control={control}
+        render={({ field }) => (
+          <NumberStepper
+            label="Brew Time"
+            suffix="sec"
+            secondarySuffix={flowRate ? `${flowRate} g/s` : undefined}
+            value={field.value}
+            onChange={(val) => field.onChange(val)}
+            min={0}
+            max={120}
+            step={1}
+            placeholder="—"
+            error={errors.brewTimeSecs?.message}
+            noRound={true}
+          />
+        )}
+      />
 
       <Controller
         name="shotQuality"

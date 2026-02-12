@@ -142,7 +142,7 @@ function ShotCard({
         </div>
         <div className="rounded-lg bg-stone-50 px-2 py-1.5 dark:bg-stone-800">
           <p className="text-[10px] font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
-            Yield
+            Target Yield
           </p>
           <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">
             {shot.yieldGrams}g

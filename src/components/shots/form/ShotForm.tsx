@@ -31,8 +31,9 @@ export function ShotForm() {
       doseGrams: undefined,
       yieldGrams: undefined,
       grindLevel: undefined,
-      brewTimeSecs: undefined,
       brewTempC: undefined,
+      yieldActualGrams: undefined,
+      brewTimeSecs: undefined,
       preInfusionDuration: undefined,
       brewPressure: 9,
       shotQuality: undefined,
@@ -88,12 +89,6 @@ export function ShotForm() {
         if (!isNaN(value)) methods.setValue("grindLevel", value);
       }
       
-      const brewTimeSecs = urlParams.get("brewTimeSecs");
-      if (brewTimeSecs) {
-        const value = parseFloat(brewTimeSecs);
-        if (!isNaN(value)) methods.setValue("brewTimeSecs", value);
-      }
-      
       const brewTempC = urlParams.get("brewTempC");
       if (brewTempC) {
         const value = parseFloat(brewTempC);
@@ -145,8 +140,6 @@ export function ShotForm() {
           methods.setValue("yieldGrams", duplicateData.yieldGrams);
         if (duplicateData.grindLevel !== undefined)
           methods.setValue("grindLevel", duplicateData.grindLevel);
-        if (duplicateData.brewTimeSecs !== undefined)
-          methods.setValue("brewTimeSecs", duplicateData.brewTimeSecs);
         if (duplicateData.brewTempC !== undefined)
           methods.setValue("brewTempC", duplicateData.brewTempC);
         if (duplicateData.preInfusionDuration !== undefined)
@@ -181,8 +174,6 @@ export function ShotForm() {
         methods.setValue("yieldGrams", parseFloat(lastShot.yieldGrams));
       if (lastShot.grindLevel)
         methods.setValue("grindLevel", parseFloat(lastShot.grindLevel));
-      if (lastShot.brewTimeSecs)
-        methods.setValue("brewTimeSecs", parseFloat(lastShot.brewTimeSecs));
       if (lastShot.brewTempC)
         methods.setValue("brewTempC", parseFloat(lastShot.brewTempC));
       if (lastShot.preInfusionDuration)

@@ -75,7 +75,8 @@ const HEADER_ROW = [
   "Roast Level",
   "Roast Date",
   "Dose (g)",
-  "Yield (g)",
+  "Target Yield (g)",
+  "Actual Yield (g)",
   "Brew Ratio",
   "Grind Level",
   "Brew Time (s)",
@@ -147,9 +148,10 @@ export async function appendShotRow(
     beanRoastDate?: Date | null;
     doseGrams: string;
     yieldGrams: string;
+    yieldActualGrams?: string | null;
     brewRatio: number | null;
     grindLevel: string;
-    brewTimeSecs: string;
+    brewTimeSecs?: string | null;
     brewTempC?: string | null;
     preInfusionDuration?: string | null;
     brewPressure?: string | null;
@@ -181,9 +183,10 @@ export async function appendShotRow(
     shot.beanRoastDate ? shot.beanRoastDate.toISOString().split("T")[0] : "",
     shot.doseGrams,
     shot.yieldGrams,
+    shot.yieldActualGrams ?? "",
     shot.brewRatio ?? "",
     shot.grindLevel,
-    shot.brewTimeSecs,
+    shot.brewTimeSecs ?? "",
     shot.brewTempC ?? "",
     shot.preInfusionDuration ?? "",
     shot.brewPressure ?? "",

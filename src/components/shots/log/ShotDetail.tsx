@@ -65,7 +65,6 @@ export function ShotDetail({
       if (shot.doseGrams) params.set("doseGrams", shot.doseGrams);
       if (shot.yieldGrams) params.set("yieldGrams", shot.yieldGrams);
       if (shot.grindLevel) params.set("grindLevel", shot.grindLevel);
-      if (shot.brewTimeSecs) params.set("brewTimeSecs", shot.brewTimeSecs);
       if (shot.brewTempC) params.set("brewTempC", shot.brewTempC);
       if (shot.preInfusionDuration) params.set("preInfusionDuration", shot.preInfusionDuration);
       if (shot.brewPressure) params.set("brewPressure", shot.brewPressure);
@@ -93,7 +92,6 @@ export function ShotDetail({
         doseGrams: shot.doseGrams ? parseFloat(shot.doseGrams) : undefined,
         yieldGrams: shot.yieldGrams ? parseFloat(shot.yieldGrams) : undefined,
         grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
-        brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : undefined,
         brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
         preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
         brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : undefined,
@@ -128,7 +126,9 @@ export function ShotDetail({
 
   const dose = parseFloat(shot.doseGrams);
   const yieldG = parseFloat(shot.yieldGrams);
-  const ratio = dose > 0 ? (yieldG / dose).toFixed(2) : null;
+  const yieldActual = shot.yieldActualGrams ? parseFloat(shot.yieldActualGrams) : null;
+  const ratio = dose > 0 ? parseFloat((yieldG / dose).toFixed(2)) : null;
+  const actualRatio = dose > 0 && yieldActual ? parseFloat((yieldActual / dose).toFixed(2)) : null;
 
   const footer = (
     <div className="flex items-center gap-2">
@@ -291,13 +291,8 @@ export function ShotDetail({
           </h3>
           <div className="divide-y divide-stone-100 rounded-lg border border-stone-200 px-4 dark:divide-stone-800 dark:border-stone-700">
             <DetailRow label="Dose" value={`${shot.doseGrams}g`} />
-            <DetailRow label="Yield" value={`${shot.yieldGrams}g`} />
-            <DetailRow
-              label="Brew Ratio"
-              value={ratio ? `1:${ratio}` : null}
-            />
+            <DetailRow label="Target Yield" value={`${shot.yieldGrams}g${ratio ? ` (1:${ratio})` : ""}`} />
             <DetailRow label="Grind Level" value={shot.grindLevel} />
-            <DetailRow label="Brew Time" value={`${shot.brewTimeSecs}s`} />
             <DetailRow
               label="Brew Temp"
               value={shot.brewTempC ? `${shot.brewTempC}°C` : null}
@@ -314,10 +309,6 @@ export function ShotDetail({
               label="Brew Pressure"
               value={shot.brewPressure ? `${shot.brewPressure} bar` : null}
             />
-            <DetailRow
-              label="Flow Rate"
-              value={shot.flowRate ? `${shot.flowRate} g/s` : null}
-            />
             <DetailRow label="Grinder" value={shot.grinderName} />
             <DetailRow label="Machine" value={shot.machineName} />
             <DetailRow
@@ -326,6 +317,29 @@ export function ShotDetail({
             />
           </div>
         </div>
+
+        {/* Results */}
+        {(shot.brewTimeSecs || shot.yieldActualGrams) && (
+          <div>
+            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+              Results
+            </h3>
+            <div className="divide-y divide-stone-100 rounded-lg border border-stone-200 px-4 dark:divide-stone-800 dark:border-stone-700">
+              {shot.yieldActualGrams && (
+                <DetailRow 
+                  label="Actual Yield" 
+                  value={`${shot.yieldActualGrams}g${actualRatio ? ` (1:${actualRatio})` : ""}`} 
+                />
+              )}
+              {shot.brewTimeSecs && (
+                <DetailRow 
+                  label="Brew Time" 
+                  value={`${shot.brewTimeSecs}s${shot.flowRate ? ` · ${shot.flowRate} g/s` : ""}`} 
+                />
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Tasting */}
         <div>
