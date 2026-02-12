@@ -6,17 +6,19 @@ import { NumberStepper } from "@/components/common/NumberStepper";
 import { QRCode } from "@/components/common/QRCode";
 import { Modal } from "@/components/common/Modal";
 import { Button } from "@/components/common/Button";
+import { ToolSelector } from "@/components/equipment/ToolSelector";
 import { AppRoutes } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
 
 const TEMP_UNIT_KEY = "coffee-temp-unit";
 const RECIPE_ORDER_KEY = "coffee-recipe-order";
 const RECIPE_VISIBILITY_KEY = "coffee-recipe-visibility";
+const TOOLS_EXPANDED_KEY = "coffee-tools-expanded";
 const RATIO_OPTIONS = [1, 2, 3, 4] as const;
 const DOSE_OPTIONS = [16, 18, 20, 22] as const;
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
 
-type RecipeStepId = "dose" | "yield" | "grindLevel" | "brewTime" | "brewTemp" | "brewPressure" | "preInfusion";
+type RecipeStepId = "dose" | "yield" | "grindLevel" | "brewTime" | "brewTemp" | "brewPressure" | "preInfusion" | "toolsUsed";
 
 interface RecipeStepConfig {
   id: RecipeStepId;
@@ -32,6 +34,7 @@ const DEFAULT_STEPS: RecipeStepConfig[] = [
   { id: "brewTemp", label: "Brew Temp", visible: true },
   { id: "brewPressure", label: "Brew Pressure", visible: true },
   { id: "preInfusion", label: "Pre-infusion", visible: true },
+  { id: "toolsUsed", label: "Tools Used", visible: true },
 ];
 
 const fToC = (f: number) => parseFloat(((f - 32) * (5 / 9)).toFixed(1));
@@ -84,6 +87,18 @@ function saveRecipeVisibility(visibility: Record<RecipeStepId, boolean>): void {
   localStorage.setItem(RECIPE_VISIBILITY_KEY, JSON.stringify(visibility));
 }
 
+function getSavedToolsExpanded(): boolean {
+  if (typeof window === "undefined") return true;
+  const saved = localStorage.getItem(TOOLS_EXPANDED_KEY);
+  if (saved === null) return true; // Default to expanded
+  return saved === "true";
+}
+
+function saveToolsExpanded(expanded: boolean): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TOOLS_EXPANDED_KEY, expanded ? "true" : "false");
+}
+
 export function SectionRecipe() {
   const {
     watch,
@@ -103,6 +118,7 @@ export function SectionRecipe() {
   // ── Recipe order and visibility ──
   const [recipeOrder, setRecipeOrder] = useState<RecipeStepId[]>(() => getSavedRecipeOrder());
   const [recipeVisibility, setRecipeVisibility] = useState<Record<RecipeStepId, boolean>>(() => getSavedRecipeVisibility());
+  const [toolsExpanded, setToolsExpanded] = useState<boolean>(() => getSavedToolsExpanded());
   const [showMenu, setShowMenu] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -112,6 +128,7 @@ export function SectionRecipe() {
     setTempUnit(getSavedTempUnit());
     setRecipeOrder(getSavedRecipeOrder());
     setRecipeVisibility(getSavedRecipeVisibility());
+    setToolsExpanded(getSavedToolsExpanded());
   }, []);
 
   // Handle click outside to close menu
@@ -522,6 +539,57 @@ export function SectionRecipe() {
                 error={errors.preInfusionDuration?.message}
               />
             )}
+          />
+        );
+      case "toolsUsed":
+        return (
+          <Controller
+            key="toolsUsed"
+            name="toolsUsed"
+            control={control}
+            render={({ field }) => {
+              const toolsCount = (field.value || []).length;
+              const handleToggle = () => {
+                const newExpanded = !toolsExpanded;
+                setToolsExpanded(newExpanded);
+                saveToolsExpanded(newExpanded);
+              };
+              return (
+                <div className="w-full">
+                  <button
+                    type="button"
+                    onClick={handleToggle}
+                    className="flex w-full items-center justify-between rounded-lg border border-stone-200 bg-white px-4 py-3 text-left transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+                  >
+                    <span className="text-base font-semibold text-stone-800 dark:text-stone-200">
+                      Tools Used {toolsCount > 0 && `(${toolsCount})`}
+                    </span>
+                    <svg
+                      className={`h-5 w-5 text-stone-400 transition-transform ${toolsExpanded ? "rotate-180" : ""}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
+                  {toolsExpanded && (
+                    <div className="mt-2">
+                      <ToolSelector
+                        value={field.value || []}
+                        onChange={field.onChange}
+                        hideLabel={true}
+                      />
+                    </div>
+                  )}
+                </div>
+              );
+            }}
           />
         );
       default:

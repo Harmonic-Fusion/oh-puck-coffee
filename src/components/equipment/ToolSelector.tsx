@@ -7,6 +7,8 @@ interface ToolSelectorProps {
   /** Array of tool slugs currently selected */
   value: string[];
   onChange: (slugs: string[]) => void;
+  /** Hide the "Tools Used" label */
+  hideLabel?: boolean;
 }
 
 function slugify(name: string): string {
@@ -16,7 +18,7 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-export function ToolSelector({ value, onChange }: ToolSelectorProps) {
+export function ToolSelector({ value, onChange, hideLabel = false }: ToolSelectorProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -53,9 +55,11 @@ export function ToolSelector({ value, onChange }: ToolSelectorProps) {
 
   return (
     <div className="w-full">
-      <span className="mb-2.5 block text-base font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
-        Tools Used
-      </span>
+      {!hideLabel && (
+        <span className="mb-2.5 block text-base font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
+          Tools Used
+        </span>
+      )}
 
       {isLoading ? (
         <p className="text-xs text-stone-400">Loading tools…</p>

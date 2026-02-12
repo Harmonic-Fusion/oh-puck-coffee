@@ -1,10 +1,9 @@
 "use client";
 
-import { useFormContext, Controller } from "react-hook-form";
+import { useFormContext } from "react-hook-form";
 import { BeanSelector } from "@/components/beans/BeanSelector";
 import { GrinderSelector } from "@/components/equipment/GrinderSelector";
 import { MachineSelector } from "@/components/equipment/MachineSelector";
-import { ToolSelector } from "@/components/equipment/ToolSelector";
 import type { CreateShot } from "@/shared/shots/schema";
 
 export function SectionBasics() {
@@ -41,17 +40,6 @@ export function SectionBasics() {
           setValue("machineId", v || undefined, { shouldValidate: true })
         }
         error={errors.machineId?.message}
-      />
-
-      <Controller
-        name="toolsUsed"
-        control={control}
-        render={({ field }) => (
-          <ToolSelector
-            value={field.value || []}
-            onChange={field.onChange}
-          />
-        )}
       />
     </section>
   );
