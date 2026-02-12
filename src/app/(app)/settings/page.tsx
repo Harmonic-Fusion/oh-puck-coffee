@@ -57,11 +57,16 @@ export default function SettingsPage() {
         >
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-                Integrations
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+                  Integrations
+                </h2>
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                  Coming Soon
+                </span>
+              </div>
               <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-                Link your Google Sheet to sync shot data
+                Sync shot data with Google Sheets and more
               </p>
             </div>
             <span className="text-stone-400">→</span>

@@ -10,17 +10,12 @@ import { config } from "./shared/config";
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
   trustHost: config.trustHost,
+  secret: config.nextAuthSecret,
   adapter: DrizzleAdapter(db),
   providers: [
     Google({
       clientId: config.googleClientId,
       clientSecret: config.googleClientSecret,
-      authorization: {
-        params: {
-          scope:
-            "https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/spreadsheets",
-        },
-      },
     }),
   ],
   callbacks: {
