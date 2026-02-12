@@ -4,12 +4,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 // Wrap handlers to catch JWT errors and provide better error handling
 async function handleAuthRequest(
-  handler: (req: Request) => Promise<Response>,
+  handler: (req: Request | NextRequest) => Promise<Response>,
   req: NextRequest
 ): Promise<Response> {
   try {
     // NextRequest extends Request, so we can pass it directly
-    return await handler(req as Request);
+    return await handler(req);
   } catch (error) {
     // Handle JWT session errors gracefully
     if (
@@ -53,9 +53,9 @@ async function handleAuthRequest(
 }
 
 export async function GET(req: NextRequest) {
-  return handleAuthRequest(handlers.GET, req);
+  return handleAuthRequest(handlers.GET as (req: Request | NextRequest) => Promise<Response>, req);
 }
 
 export async function POST(req: NextRequest) {
-  return handleAuthRequest(handlers.POST, req);
+  return handleAuthRequest(handlers.POST as (req: Request | NextRequest) => Promise<Response>, req);
 }
