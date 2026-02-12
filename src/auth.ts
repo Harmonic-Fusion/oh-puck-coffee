@@ -11,16 +11,19 @@ import { config } from "./shared/config";
 // ── Auth debug diagnostics ───────────────────────────────────────────
 const useSecureCookies = config.nextAuthUrl.startsWith("https://");
 
-console.log("[auth:debug] ── Auth configuration ──");
-console.log("[auth:debug]   NEXTAUTH_URL        =", config.nextAuthUrl);
-console.log("[auth:debug]   useSecureCookies     =", useSecureCookies);
-console.log("[auth:debug]   trustHost            =", config.trustHost);
-console.log("[auth:debug]   NEXTAUTH_SECRET set? =", !!config.nextAuthSecret);
-console.log("[auth:debug]   SECRET length        =", config.nextAuthSecret?.length ?? 0);
-console.log("[auth:debug]   NODE_ENV             =", process.env.NODE_ENV);
-console.log("[auth:debug]   GOOGLE_CLIENT_ID set?=", !!config.googleClientId);
-console.log("[auth:debug]   enableDevUser        =", config.enableDevUser);
-console.log("[auth:debug] ─────────────────────────");
+if (config.enableDebugging) {
+  console.log("[auth:debug] ── Auth configuration ──");
+  console.log("[auth:debug]   NEXTAUTH_URL        =", config.nextAuthUrl);
+  console.log("[auth:debug]   useSecureCookies     =", useSecureCookies);
+  console.log("[auth:debug]   trustHost            =", config.trustHost);
+  console.log("[auth:debug]   NEXTAUTH_SECRET set? =", !!config.nextAuthSecret);
+  console.log("[auth:debug]   SECRET length        =", config.nextAuthSecret?.length ?? 0);
+  console.log("[auth:debug]   NODE_ENV             =", process.env.NODE_ENV);
+  console.log("[auth:debug]   GOOGLE_CLIENT_ID set?=", !!config.googleClientId);
+  console.log("[auth:debug]   enableDevUser        =", config.enableDevUser);
+  console.log("[auth:debug]   enableDebugging      =", config.enableDebugging);
+  console.log("[auth:debug] ─────────────────────────");
+}
 
 // Build providers list conditionally to avoid Configuration errors
 // when Google OAuth credentials are not set (e.g. dev-only deployments)
@@ -46,7 +49,7 @@ function buildProviders(): Provider[] {
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
-  debug: true, // Enable Auth.js verbose debug logging
+  debug: config.enableDebugging, // Enable Auth.js verbose debug logging only when ENABLED_DEBUGGING is set
   trustHost: config.trustHost,
   secret: config.nextAuthSecret,
   // Explicitly use database sessions when adapter is configured
@@ -83,6 +86,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       }
       return session;
+    },
+  },
+  events: {
+    async signIn({ user, account }) {
+      if (config.enableDebugging) {
+        console.log("[auth:debug][event] signIn:", {
+          userId: user.id,
+          email: user.email,
+          accountProvider: account?.provider,
+        });
+      }
     },
   },
 });
@@ -127,10 +141,36 @@ async function getOrCreateDevUser() {
  * Use this instead of `auth()` in API routes.
  */
 export async function getSession(): Promise<Session | null> {
-  const session = await auth();
-  if (session) return session;
+  try {
+    const session = await auth();
+    if (session) {
+      if (config.enableDebugging) {
+        console.log("[auth:debug] Session retrieved successfully", {
+          userId: session.user?.id,
+          email: session.user?.email,
+          expires: session.expires,
+        });
+      }
+      return session;
+    }
+  } catch (error) {
+    // Enhanced error logging for JWT/session errors
+    if (config.enableDebugging) {
+      console.error("[auth:debug] Error retrieving session:", {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined,
+        cause: error instanceof Error && error.cause ? String(error.cause) : undefined,
+      });
+    }
+    // Re-throw to let callers handle it
+    throw error;
+  }
 
   if (config.enableDevUser) {
+    if (config.enableDebugging) {
+      console.log("[auth:debug] No session found, using dev user fallback");
+    }
     const devUser = await getOrCreateDevUser();
     return {
       user: {
