@@ -64,7 +64,7 @@ export async function GET(
   // Average quality
   const avgQuality = shotCount > 0
     ? parseFloat(
-        (beanShots.reduce((acc, s) => acc + s.shotQuality, 0) / shotCount).toFixed(1)
+        (beanShots.reduce((acc, s) => acc + parseFloat(s.shotQuality), 0) / shotCount).toFixed(1)
       )
     : null;
 
@@ -72,7 +72,7 @@ export async function GET(
   const ratedShots = beanShots.filter((s) => s.rating != null);
   const avgRating = ratedShots.length > 0
     ? parseFloat(
-        (ratedShots.reduce((acc, s) => acc + (s.rating ?? 0), 0) / ratedShots.length).toFixed(1)
+        (ratedShots.reduce((acc, s) => acc + parseFloat(s.rating ?? "0"), 0) / ratedShots.length).toFixed(1)
       )
     : null;
 
@@ -108,7 +108,7 @@ export async function GET(
   // Average brew time
   const avgBrewTime = shotCount > 0
     ? parseFloat(
-        (beanShots.reduce((acc, s) => acc + parseFloat(s.brewTimeSecs), 0) / shotCount).toFixed(1)
+        (beanShots.reduce((acc, s) => acc + parseFloat(s.brewTimeSecs ?? "0"), 0) / shotCount).toFixed(1)
       )
     : null;
 

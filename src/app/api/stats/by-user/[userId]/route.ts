@@ -55,7 +55,7 @@ export async function GET(
   // Average quality
   const avgQuality = shotCount > 0
     ? parseFloat(
-        (userShots.reduce((acc, s) => acc + s.shotQuality, 0) / shotCount).toFixed(1)
+        (userShots.reduce((acc, s) => acc + parseFloat(s.shotQuality), 0) / shotCount).toFixed(1)
       )
     : null;
 
@@ -63,7 +63,7 @@ export async function GET(
   const ratedShots = userShots.filter((s) => s.rating != null);
   const avgRating = ratedShots.length > 0
     ? parseFloat(
-        (ratedShots.reduce((acc, s) => acc + (s.rating ?? 0), 0) / ratedShots.length).toFixed(1)
+        (ratedShots.reduce((acc, s) => acc + parseFloat(s.rating ?? "0"), 0) / ratedShots.length).toFixed(1)
       )
     : null;
 
