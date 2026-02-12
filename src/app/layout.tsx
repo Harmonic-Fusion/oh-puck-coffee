@@ -34,6 +34,7 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta name="commit-sha" content={process.env.NEXT_PUBLIC_COMMIT_SHA ?? "unknown"} />
       </head>
       <body className={inter.className}>
         <Providers>{children}</Providers>

@@ -1,7 +1,23 @@
 import type { NextConfig } from "next";
+import { execSync } from "child_process";
+
+function getCommitSha(): string {
+  // Railway provides this automatically
+  if (process.env.RAILWAY_GIT_COMMIT_SHA) {
+    return process.env.RAILWAY_GIT_COMMIT_SHA;
+  }
+  try {
+    return execSync("git rev-parse HEAD", { encoding: "utf-8" }).trim();
+  } catch {
+    return "unknown";
+  }
+}
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  env: {
+    NEXT_PUBLIC_COMMIT_SHA: getCommitSha(),
+  },
 };
 
 export default nextConfig;
