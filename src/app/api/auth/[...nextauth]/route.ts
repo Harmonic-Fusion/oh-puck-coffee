@@ -8,7 +8,8 @@ async function handleAuthRequest(
   req: NextRequest
 ): Promise<Response> {
   try {
-    return await handler(req);
+    // NextRequest extends Request, so we can pass it directly
+    return await handler(req as Request);
   } catch (error) {
     // Handle JWT session errors gracefully
     if (
