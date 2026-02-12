@@ -49,6 +49,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   debug: true, // Enable Auth.js verbose debug logging
   trustHost: config.trustHost,
   secret: config.nextAuthSecret,
+  // Explicitly use database sessions when adapter is configured
+  // This prevents Auth.js from falling back to JWT sessions
+  session: {
+    strategy: "database",
+  },
   // Explicitly lock the cookie prefix so it stays consistent between
   // the sign-in request (cookie set) and the OAuth callback (cookie read).
   // Behind Railway / Vercel reverse proxies the auto-detection can flip
