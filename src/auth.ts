@@ -87,6 +87,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      // Handle redirect after successful sign-in
+      // If url is relative, make it absolute
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // If url is on the same origin, allow it
+      if (new URL(url).origin === baseUrl) return url;
+      // Default to home page
+      return baseUrl;
+    },
   },
   events: {
     async signIn({ user, account }) {
