@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
           preInfusionDuration: shot.preInfusionDuration,
           brewPressure: shot.brewPressure,
           flowRate: shot.flowRate,
-          shotQuality: shot.shotQuality,
+          shotQuality: parseFloat(shot.shotQuality),
           rating: shot.rating ? parseFloat(shot.rating) : null,
           flavorWheelCategories: shot.flavorWheelCategories as Record<string, string[]> | null,
           flavorWheelBody: shot.flavorWheelBody,
