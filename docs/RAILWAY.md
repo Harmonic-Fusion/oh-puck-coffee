@@ -211,6 +211,14 @@ Or via Railway dashboard:
 - Check Railway Postgres service is running
 - Ensure migrations completed successfully
 
+#### `CONNECT_TIMEOUT` to `postgres.railway.internal`
+
+If your logs show a connection timeout to `postgres.railway.internal`, your `DATABASE_URL` is pointing at a **Railway private hostname**.
+
+- This hostname is only reachable from services running **inside the same Railway project/environment** (private network).
+- If you’re running locally, or deploying outside Railway, switch `DATABASE_URL` to the **public** Postgres connection string (from the Postgres service “Connect” / variables).
+- If you are deploying on Railway, ensure the app service and Postgres service are in the **same project/environment**, and that you’re not accidentally using a private URL from a different project.
+
 ### OAuth Not Working
 
 - Verify `NEXTAUTH_URL` matches your Railway domain

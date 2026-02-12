@@ -32,7 +32,9 @@ Create a `.env` file in the project root and copy the following:
 # ── Required Variables ──────────────────────────────────────────────────
 
 # PostgreSQL connection string
-DATABASE_URL=postgresql://coffee:coffee@localhost:5432/coffee
+# If you use the included `docker-compose up db -d`, Postgres is exposed on port 8788.
+# If you run Postgres directly on your machine, use whatever port you configured (often 5432).
+DATABASE_URL=postgresql://coffee:coffee@localhost:8788/coffee
 
 # Application URL (defaults to http://localhost:3000; Railway may omit protocol, auto-prefixed in production)
 NEXTAUTH_URL=http://localhost:8787

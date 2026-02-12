@@ -66,9 +66,67 @@ function determinePort(): number {
   return 3000;
 }
 
+function isRunningOnRailway(): boolean {
+  return !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_PUBLIC_DOMAIN;
+}
+
+function sanitizeDatabaseUrlForLogs(rawUrl: string): string {
+  // Best-effort redaction. Prefer URL parsing, fall back to simple string heuristics.
+  try {
+    const url = new URL(rawUrl);
+
+    // Redact credentials in authority.
+    if (url.username) url.username = "****";
+    if (url.password) url.password = "****";
+
+    // Redact common password-like query params.
+    const redactedParams = ["password", "pass", "pwd", "secret", "token"];
+    for (const key of redactedParams) {
+      if (url.searchParams.has(key)) url.searchParams.set(key, "****");
+    }
+
+    return url.toString();
+  } catch {
+    // Remove basic auth segment (user[:pass]@) if present.
+    const withoutAuth = rawUrl.replace(/\/\/[^/@]*@/g, "//****@");
+    // If we still have a user:pass pattern, redact the password part.
+    return withoutAuth.replace(/:([^@/]+)@/g, ":****@");
+  }
+}
+
+function readDatabaseUrl(): string | undefined {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) return undefined;
+
+  let hostname: string | undefined;
+  try {
+    hostname = new URL(databaseUrl).hostname;
+  } catch {
+    throw new Error(
+      `[config] Invalid DATABASE_URL. Expected a valid URL like ` +
+        `"postgresql://user:password@host:5432/db". Got: "${sanitizeDatabaseUrlForLogs(
+          databaseUrl
+        )}"`
+    );
+  }
+
+  const isRailwayInternalHost =
+    hostname === "postgres.railway.internal" || hostname.endsWith(".railway.internal");
+
+  if (isRailwayInternalHost && !isRunningOnRailway()) {
+    throw new Error(
+      `[config] DATABASE_URL points to a Railway private hostname ("${hostname}") which is not reachable ` +
+        `outside Railway. Use the Railway *public* Postgres connection string for local/dev or non-Railway ` +
+        `deployments, or run this app inside the same Railway project/environment as the Postgres service.`
+    );
+  }
+
+  return databaseUrl;
+}
+
 export const config = {
   /** Database connection string */
-  databaseUrl: process.env.DATABASE_URL!,
+  databaseUrl: readDatabaseUrl(),
 
   /** Server port (defaults to 3000, or inferred from NEXTAUTH_URL if PORT is not set) */
   port: determinePort(),
@@ -99,7 +157,7 @@ export const config = {
     
     // In production, trust host if on Railway/Vercel or explicitly production
     const isProduction = process.env.NODE_ENV === "production";
-    const isRailway = !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_PUBLIC_DOMAIN;
+    const isRailway = isRunningOnRailway();
     const isVercel = !!process.env.VERCEL;
     return isProduction || isRailway || isVercel;
   })(),
