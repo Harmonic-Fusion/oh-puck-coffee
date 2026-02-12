@@ -17,12 +17,13 @@ export function SectionFlavorWheel() {
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
+        tabIndex={-1}
         className="flex w-full items-center justify-between rounded-lg bg-stone-50 px-4 py-3 text-left transition-colors hover:bg-stone-100 dark:bg-stone-800 dark:hover:bg-stone-700"
       >
-        <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+        <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
           🎨 Describe flavors in detail?
         </h2>
-        <span className="text-stone-400 dark:text-stone-500">
+        <span className="text-stone-400 dark:text-stone-500" tabIndex={-1}>
           {expanded ? "▲ Collapse" : "▼ Expand"}
         </span>
       </button>

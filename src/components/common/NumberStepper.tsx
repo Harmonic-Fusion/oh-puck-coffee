@@ -125,6 +125,16 @@ export function NumberStepper({
     [commitEdit]
   );
 
+  const handleValueDisplayKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        startEditing();
+      }
+    },
+    [startEditing]
+  );
+
   const canDecrement = value != null && value > min;
   const canIncrement = value == null || value < max;
 
@@ -135,7 +145,7 @@ export function NumberStepper({
         <div className="mb-2.5">
           <div className="flex items-center justify-between">
             {label && (
-              <span className="text-base font-semibold text-stone-800 dark:text-stone-200">
+              <span className="text-base font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
                 {label}
               </span>
             )}
@@ -155,6 +165,7 @@ export function NumberStepper({
           onClick={handleDecrement}
           disabled={disabled || !canDecrement}
           aria-label={`Decrease ${label ?? "value"}`}
+          tabIndex={-1}
           className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
         >
           −
@@ -163,7 +174,11 @@ export function NumberStepper({
         {/* Value display / editable input */}
         <div
           onClick={startEditing}
-          className={`flex h-14 min-w-0 flex-1 cursor-text items-center justify-center rounded-xl border-2 transition-colors ${
+          onKeyDown={handleValueDisplayKeyDown}
+          tabIndex={disabled ? -1 : 0}
+          role="textbox"
+          aria-label={label ?? "Value"}
+          className={`flex h-14 min-w-0 flex-1 cursor-text items-center justify-center rounded-xl border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
             isEditing
               ? "border-amber-500 bg-white ring-2 ring-amber-500/20 dark:bg-stone-900"
               : error
@@ -212,6 +227,7 @@ export function NumberStepper({
           onClick={handleIncrement}
           disabled={disabled || !canIncrement}
           aria-label={`Increase ${label ?? "value"}`}
+          tabIndex={-1}
           className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
         >
           +

@@ -173,7 +173,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
 
   return (
     <div className="w-full">
-      <label className="mb-2.5 block text-base font-semibold text-stone-800 dark:text-stone-200">
+      <label className="mb-2.5 block text-base font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
         Bean
       </label>
       {!showCreate && !showEdit ? (
@@ -208,6 +208,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
               <button
                 type="button"
                 onClick={handleEdit}
+                tabIndex={-1}
                 className="h-14 rounded-xl border-2 border-stone-300 px-4 text-base font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800"
               >
                 Edit
@@ -216,6 +217,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
             <button
               type="button"
               onClick={() => setShowCreate(true)}
+              tabIndex={-1}
               className="h-14 rounded-xl border-2 border-stone-300 px-4 text-base font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800"
             >
               + New
@@ -285,6 +287,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
             <label
               htmlFor="isRoastDateBestGuess"
               className="text-sm font-medium text-stone-700 dark:text-stone-300 cursor-pointer"
+              tabIndex={-1}
             >
               Best Guess Roast Date
             </label>
@@ -294,6 +297,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
               role="switch"
               aria-checked={newIsRoastDateBestGuess}
               onClick={() => setNewIsRoastDateBestGuess(!newIsRoastDateBestGuess)}
+              tabIndex={-1}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
                 newIsRoastDateBestGuess
                   ? "bg-amber-600"
@@ -316,6 +320,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
                   ? updateBean.isPending
                   : createBean.isPending) || !newName.trim()
               }
+              tabIndex={-1}
               className="rounded-md bg-amber-700 px-3 py-1.5 text-sm text-white hover:bg-amber-800 disabled:opacity-50"
             >
               {showEdit
@@ -329,6 +334,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
             <button
               type="button"
               onClick={showEdit ? handleCancelEdit : () => setShowCreate(false)}
+              tabIndex={-1}
               className="rounded-md px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-200 dark:text-stone-400"
             >
               Cancel

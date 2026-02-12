@@ -85,7 +85,7 @@ export function Slider({
     <div className="w-full">
       {label && (
         <div className="mb-2.5 flex items-center justify-between">
-          <span className="text-base font-semibold text-stone-800 dark:text-stone-200">
+          <span className="text-base font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
             {label}
           </span>
           {showValue && value > 0 && (

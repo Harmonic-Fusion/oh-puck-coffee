@@ -203,6 +203,7 @@ export function SectionRecipe() {
                       key={d}
                       type="button"
                       onClick={() => applyDose(d)}
+                      tabIndex={-1}
                       className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeDose === d
                           ? "bg-amber-600 text-white"
                           : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
@@ -242,6 +243,7 @@ export function SectionRecipe() {
                       key={r}
                       type="button"
                       onClick={() => applyRatio(r)}
+                      tabIndex={-1}
                       className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeRatio === r
                           ? "bg-amber-600 text-white"
                           : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
@@ -315,6 +317,7 @@ export function SectionRecipe() {
                   <button
                     type="button"
                     onClick={handleTempUnitToggle}
+                    tabIndex={-1}
                     className="rounded-lg px-2 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30"
                   >
                     Switch to °F
@@ -339,6 +342,7 @@ export function SectionRecipe() {
               <button
                 type="button"
                 onClick={handleTempUnitToggle}
+                tabIndex={-1}
                 className="rounded-lg px-2 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30"
               >
                 Switch to °C
@@ -381,6 +385,7 @@ export function SectionRecipe() {
                         setActivePressure(p);
                         setValue("brewPressure", p, { shouldValidate: true });
                       }}
+                      tabIndex={-1}
                       className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activePressure === p
                           ? "bg-amber-600 text-white"
                           : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
@@ -440,6 +445,7 @@ export function SectionRecipe() {
           size="sm"
           onClick={() => setShowQRCode(true)}
           title="Generate QR code for this recipe"
+          tabIndex={-1}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

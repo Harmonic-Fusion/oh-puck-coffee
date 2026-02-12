@@ -17,6 +17,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           <label
             htmlFor={textareaId}
             className="mb-2.5 block text-base font-semibold text-stone-800 dark:text-stone-200"
+            tabIndex={-1}
           >
             {label}
           </label>

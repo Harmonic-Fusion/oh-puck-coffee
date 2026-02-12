@@ -22,7 +22,7 @@ export function RadioGroup({
   return (
     <div className="w-full">
       {label && (
-        <span className="mb-2 block text-sm font-medium text-stone-700 dark:text-stone-300">
+        <span className="mb-2 block text-sm font-medium text-stone-700 dark:text-stone-300" tabIndex={-1}>
           {label}
         </span>
       )}

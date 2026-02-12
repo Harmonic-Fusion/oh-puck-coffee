@@ -53,7 +53,7 @@ export function ToolSelector({ value, onChange }: ToolSelectorProps) {
 
   return (
     <div className="w-full">
-      <span className="mb-2.5 block text-base font-semibold text-stone-800 dark:text-stone-200">
+      <span className="mb-2.5 block text-base font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
         Tools Used
       </span>
 
@@ -95,6 +95,7 @@ export function ToolSelector({ value, onChange }: ToolSelectorProps) {
         <button
           type="button"
           onClick={() => setShowCreate(true)}
+          tabIndex={-1}
           className="mt-2 rounded-lg border border-dashed border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-500 transition-colors hover:border-amber-400 hover:text-amber-700 dark:border-stone-600 dark:text-stone-400 dark:hover:border-amber-600 dark:hover:text-amber-400"
         >
           + New Tool
@@ -121,6 +122,7 @@ export function ToolSelector({ value, onChange }: ToolSelectorProps) {
               type="button"
               onClick={handleCreate}
               disabled={createTool.isPending || !newName.trim()}
+              tabIndex={-1}
               className="rounded-md bg-amber-700 px-3 py-1.5 text-sm text-white hover:bg-amber-800 disabled:opacity-50"
             >
               {createTool.isPending ? "..." : "Add"}
@@ -132,6 +134,7 @@ export function ToolSelector({ value, onChange }: ToolSelectorProps) {
                 setNewName("");
                 setNewDescription("");
               }}
+              tabIndex={-1}
               className="rounded-md px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-200 dark:text-stone-400"
             >
               Cancel
