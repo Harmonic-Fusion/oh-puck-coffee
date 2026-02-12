@@ -32,6 +32,9 @@ export const ApiRoutes = {
   auth: {
     path: "/api/auth/[...nextauth]",
   },
+  authDebug: {
+    path: "/api/auth/debug",
+  },
   // Users
   users: {
     path: "/api/users",

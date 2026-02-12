@@ -8,6 +8,20 @@ import { users, accounts, sessions, verificationTokens } from "./db/schema";
 import { authConfig } from "./auth.config";
 import { config } from "./shared/config";
 
+// ── Auth debug diagnostics ───────────────────────────────────────────
+const useSecureCookies = config.nextAuthUrl.startsWith("https://");
+
+console.log("[auth:debug] ── Auth configuration ──");
+console.log("[auth:debug]   NEXTAUTH_URL        =", config.nextAuthUrl);
+console.log("[auth:debug]   useSecureCookies     =", useSecureCookies);
+console.log("[auth:debug]   trustHost            =", config.trustHost);
+console.log("[auth:debug]   NEXTAUTH_SECRET set? =", !!config.nextAuthSecret);
+console.log("[auth:debug]   SECRET length        =", config.nextAuthSecret?.length ?? 0);
+console.log("[auth:debug]   NODE_ENV             =", process.env.NODE_ENV);
+console.log("[auth:debug]   GOOGLE_CLIENT_ID set?=", !!config.googleClientId);
+console.log("[auth:debug]   enableDevUser        =", config.enableDevUser);
+console.log("[auth:debug] ─────────────────────────");
+
 // Build providers list conditionally to avoid Configuration errors
 // when Google OAuth credentials are not set (e.g. dev-only deployments)
 function buildProviders(): Provider[] {
@@ -32,13 +46,14 @@ function buildProviders(): Provider[] {
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
+  debug: true, // Enable Auth.js verbose debug logging
   trustHost: config.trustHost,
   secret: config.nextAuthSecret,
   // Explicitly lock the cookie prefix so it stays consistent between
   // the sign-in request (cookie set) and the OAuth callback (cookie read).
   // Behind Railway / Vercel reverse proxies the auto-detection can flip
   // between requests, causing the PKCE code_verifier cookie to "vanish".
-  useSecureCookies: config.nextAuthUrl.startsWith("https://"),
+  useSecureCookies,
   adapter: DrizzleAdapter(db, {
     usersTable: users,
     accountsTable: accounts,
