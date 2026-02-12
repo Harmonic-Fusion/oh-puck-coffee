@@ -40,5 +40,12 @@ export const db: PostgresJsDatabase<typeof schema> = new Proxy(
       const value = Reflect.get(real, prop, receiver);
       return typeof value === "function" ? value.bind(real) : value;
     },
+    // DrizzleAdapter uses Drizzle's `is()` helper which walks the
+    // prototype chain via Object.getPrototypeOf / instanceof.
+    // Without this trap those checks see the bare `{}` target and fail
+    // with "Unsupported database type (object)".
+    getPrototypeOf() {
+      return Object.getPrototypeOf(getDb());
+    },
   },
 );
