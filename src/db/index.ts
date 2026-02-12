@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/postgres-js";
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
 import { config } from "@/shared/config";
@@ -14,6 +15,30 @@ function requireDatabaseUrl(): string {
   return config.databaseUrl;
 }
 
-const client = postgres(requireDatabaseUrl());
+// Lazy-initialised so that importing this module during `next build`
+// (which has no DATABASE_URL) doesn't crash.
+let _db: PostgresJsDatabase<typeof schema> | undefined;
 
-export const db = drizzle(client, { schema });
+function getDb(): PostgresJsDatabase<typeof schema> {
+  if (!_db) {
+    const client = postgres(requireDatabaseUrl());
+    _db = drizzle(client, { schema });
+  }
+  return _db;
+}
+
+/**
+ * Drizzle database instance. The underlying Postgres connection is created
+ * lazily on first property access so the module can be safely imported at
+ * build time without a DATABASE_URL.
+ */
+export const db: PostgresJsDatabase<typeof schema> = new Proxy(
+  {} as PostgresJsDatabase<typeof schema>,
+  {
+    get(_target, prop, receiver) {
+      const real = getDb();
+      const value = Reflect.get(real, prop, receiver);
+      return typeof value === "function" ? value.bind(real) : value;
+    },
+  },
+);
