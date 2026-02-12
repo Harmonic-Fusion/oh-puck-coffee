@@ -49,3 +49,14 @@ export const db: PostgresJsDatabase<typeof schema> = new Proxy(
     },
   },
 );
+
+/**
+ * Returns the underlying (non-Proxy) Drizzle instance.
+ *
+ * Use this when a library needs the real object for class/prototype checks
+ * (e.g. `DrizzleAdapter` from @auth/drizzle-adapter which uses `is()` to
+ * detect the DB dialect). The Proxy can interfere with those checks.
+ */
+export function getUnderlyingDb(): PostgresJsDatabase<typeof schema> {
+  return getDb();
+}
