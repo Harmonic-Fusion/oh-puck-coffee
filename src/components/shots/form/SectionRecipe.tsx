@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { NumberStepper } from "@/components/common/NumberStepper";
 import { QRCode } from "@/components/common/QRCode";
@@ -10,9 +10,29 @@ import { AppRoutes } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
 
 const TEMP_UNIT_KEY = "coffee-temp-unit";
+const RECIPE_ORDER_KEY = "coffee-recipe-order";
+const RECIPE_VISIBILITY_KEY = "coffee-recipe-visibility";
 const RATIO_OPTIONS = [1, 2, 3, 4] as const;
 const DOSE_OPTIONS = [16, 18, 20, 22] as const;
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
+
+type RecipeStepId = "dose" | "yield" | "grindLevel" | "brewTime" | "brewTemp" | "brewPressure" | "preInfusion";
+
+interface RecipeStepConfig {
+  id: RecipeStepId;
+  label: string;
+  visible: boolean;
+}
+
+const DEFAULT_STEPS: RecipeStepConfig[] = [
+  { id: "dose", label: "Dose", visible: true },
+  { id: "yield", label: "Yield", visible: true },
+  { id: "grindLevel", label: "Grind Level", visible: true },
+  { id: "brewTime", label: "Brew Time", visible: true },
+  { id: "brewTemp", label: "Brew Temp", visible: true },
+  { id: "brewPressure", label: "Brew Pressure", visible: true },
+  { id: "preInfusion", label: "Pre-infusion", visible: true },
+];
 
 const fToC = (f: number) => parseFloat(((f - 32) * (5 / 9)).toFixed(1));
 const cToF = (c: number) => parseFloat((c * (9 / 5) + 32).toFixed(1));
@@ -20,6 +40,48 @@ const cToF = (c: number) => parseFloat((c * (9 / 5) + 32).toFixed(1));
 function getSavedTempUnit(): "C" | "F" {
   if (typeof window === "undefined") return "F";
   return (localStorage.getItem(TEMP_UNIT_KEY) as "C" | "F") || "F";
+}
+
+function getSavedRecipeOrder(): RecipeStepId[] {
+  if (typeof window === "undefined") return DEFAULT_STEPS.map((s) => s.id);
+  const saved = localStorage.getItem(RECIPE_ORDER_KEY);
+  if (!saved) return DEFAULT_STEPS.map((s) => s.id);
+  try {
+    const parsed = JSON.parse(saved) as RecipeStepId[];
+    // Validate that all default steps are present
+    const defaultIds = DEFAULT_STEPS.map((s) => s.id);
+    const valid = defaultIds.every((id) => parsed.includes(id));
+    return valid ? parsed : DEFAULT_STEPS.map((s) => s.id);
+  } catch {
+    return DEFAULT_STEPS.map((s) => s.id);
+  }
+}
+
+function getSavedRecipeVisibility(): Record<RecipeStepId, boolean> {
+  if (typeof window === "undefined") {
+    return DEFAULT_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<RecipeStepId, boolean>);
+  }
+  const saved = localStorage.getItem(RECIPE_VISIBILITY_KEY);
+  if (!saved) {
+    return DEFAULT_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<RecipeStepId, boolean>);
+  }
+  try {
+    const parsed = JSON.parse(saved) as Record<string, boolean>;
+    // Merge with defaults to ensure all steps have visibility
+    return DEFAULT_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: parsed[step.id] ?? step.visible }), {} as Record<RecipeStepId, boolean>);
+  } catch {
+    return DEFAULT_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<RecipeStepId, boolean>);
+  }
+}
+
+function saveRecipeOrder(order: RecipeStepId[]): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(RECIPE_ORDER_KEY, JSON.stringify(order));
+}
+
+function saveRecipeVisibility(visibility: Record<RecipeStepId, boolean>): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(RECIPE_VISIBILITY_KEY, JSON.stringify(visibility));
 }
 
 export function SectionRecipe() {
@@ -37,11 +99,32 @@ export function SectionRecipe() {
   const [activeDose, setActiveDose] = useState<number | null>(null);
   const [activePressure, setActivePressure] = useState<number | null>(9);
   const [showQRCode, setShowQRCode] = useState(false);
+  
+  // ── Recipe order and visibility ──
+  const [recipeOrder, setRecipeOrder] = useState<RecipeStepId[]>(() => getSavedRecipeOrder());
+  const [recipeVisibility, setRecipeVisibility] = useState<Record<RecipeStepId, boolean>>(() => getSavedRecipeVisibility());
+  const [showMenu, setShowMenu] = useState(false);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   // Hydrate from localStorage on mount
   useEffect(() => {
     setTempUnit(getSavedTempUnit());
+    setRecipeOrder(getSavedRecipeOrder());
+    setRecipeVisibility(getSavedRecipeVisibility());
   }, []);
+
+  // Handle click outside to close menu
+  useEffect(() => {
+    if (!showMenu) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showMenu]);
 
   // Watch brewTempC early so it can be used in useEffect
   const brewTempC = watch("brewTempC");
@@ -172,133 +255,151 @@ export function SectionRecipe() {
     [setValue]
   );
 
-  return (
-    <section className="space-y-6">
-      <div className="text-center">
-        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-          Recipe
-        </h2>
-      </div>
+  // ── Recipe order modal handlers ──
+  const handleOrderChange = useCallback((newOrder: RecipeStepId[], newVisibility: Record<RecipeStepId, boolean>) => {
+    setRecipeOrder(newOrder);
+    setRecipeVisibility(newVisibility);
+    saveRecipeOrder(newOrder);
+    saveRecipeVisibility(newVisibility);
+  }, []);
 
-      <div className="space-y-7">
-        {/* ── Dose with quick-select ── */}
-        <Controller
-          name="doseGrams"
-          control={control}
-          render={({ field }) => (
-            <NumberStepper
-              label="Dose"
-              suffix="g"
-              value={field.value}
-              onChange={handleDoseChange}
-              min={0}
-              max={50}
-              step={0.1}
-              placeholder="—"
-              error={errors.doseGrams?.message}
-              labelExtra={
-                <div className="flex items-center gap-1">
-                  {DOSE_OPTIONS.map((d) => (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => applyDose(d)}
-                      tabIndex={-1}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeDose === d
-                          ? "bg-amber-600 text-white"
-                          : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                        }`}
-                    >
-                      {d}g
-                    </button>
-                  ))}
-                </div>
-              }
-            />
-          )}
-        />
+  // Get ordered steps (all steps in order, visibility checked during render)
+  const orderedSteps = useMemo(() => {
+    return recipeOrder.map((id) => DEFAULT_STEPS.find((s) => s.id === id)).filter((step): step is RecipeStepConfig => step !== undefined);
+  }, [recipeOrder]);
 
-        {/* ── Yield with ratio quick-select ── */}
-        <Controller
-          name="yieldGrams"
-          control={control}
-          render={({ field }) => (
-            <NumberStepper
-              label="Yield"
-              suffix="g"
-              value={field.value}
-              onChange={handleYieldChange}
-              min={0}
-              max={200}
-              step={0.1}
-              placeholder="—"
-              error={errors.yieldGrams?.message}
-              labelExtra={
-                <div className="flex items-center gap-1">
-                  <span className="mr-1 text-xs text-stone-400 dark:text-stone-500">
-                    Ratio
-                  </span>
-                  {RATIO_OPTIONS.map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => applyRatio(r)}
-                      tabIndex={-1}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeRatio === r
-                          ? "bg-amber-600 text-white"
-                          : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                        }`}
-                    >
-                      1:{r}
-                    </button>
-                  ))}
-                </div>
-              }
-            />
-          )}
-        />
+  // Render a step component based on its ID
+  const renderStep = (stepId: RecipeStepId) => {
+    if (!recipeVisibility[stepId]) return null;
 
-        {/* ── Grind Level ── */}
-        <Controller
-          name="grindLevel"
-          control={control}
-          render={({ field }) => (
-            <NumberStepper
-              label="Grind Level"
-              value={field.value}
-              onChange={(val) => setValue("grindLevel", val as number, { shouldValidate: true })}
-              min={0}
-              max={50}
-              step={0.1}
-              placeholder="—"
-              error={errors.grindLevel?.message}
-            />
-          )}
-        />
-
-        {/* ── Brew Time ── */}
-        <Controller
-          name="brewTimeSecs"
-          control={control}
-          render={({ field }) => (
-            <NumberStepper
-              label="Brew Time"
-              suffix="sec"
-              value={field.value}
-              onChange={(val) => setValue("brewTimeSecs", val as number, { shouldValidate: true })}
-              min={0}
-              max={120}
-              step={1}
-              placeholder="—"
-              error={errors.brewTimeSecs?.message}
-              noRound={true}
-            />
-          )}
-        />
-
-        {/* ── Brew Temp with °F / °C toggle ── */}
-        {tempUnit === "C" ? (
+    switch (stepId) {
+      case "dose":
+        return (
           <Controller
+            key="dose"
+            name="doseGrams"
+            control={control}
+            render={({ field }) => (
+              <NumberStepper
+                label="Dose"
+                suffix="g"
+                value={field.value}
+                onChange={handleDoseChange}
+                min={0}
+                max={50}
+                step={0.1}
+                placeholder="—"
+                error={errors.doseGrams?.message}
+                labelExtra={
+                  <div className="flex items-center gap-1">
+                    {DOSE_OPTIONS.map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => applyDose(d)}
+                        tabIndex={-1}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeDose === d
+                            ? "bg-amber-600 text-white"
+                            : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                          }`}
+                      >
+                        {d}g
+                      </button>
+                    ))}
+                  </div>
+                }
+              />
+            )}
+          />
+        );
+      case "yield":
+        return (
+          <Controller
+            key="yield"
+            name="yieldGrams"
+            control={control}
+            render={({ field }) => (
+              <NumberStepper
+                label="Yield"
+                suffix="g"
+                value={field.value}
+                onChange={handleYieldChange}
+                min={0}
+                max={200}
+                step={0.1}
+                placeholder="—"
+                error={errors.yieldGrams?.message}
+                labelExtra={
+                  <div className="flex items-center gap-1">
+                    <span className="mr-1 text-xs text-stone-400 dark:text-stone-500">
+                      Ratio
+                    </span>
+                    {RATIO_OPTIONS.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => applyRatio(r)}
+                        tabIndex={-1}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeRatio === r
+                            ? "bg-amber-600 text-white"
+                            : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                          }`}
+                      >
+                        1:{r}
+                      </button>
+                    ))}
+                  </div>
+                }
+              />
+            )}
+          />
+        );
+      case "grindLevel":
+        return (
+          <Controller
+            key="grindLevel"
+            name="grindLevel"
+            control={control}
+            render={({ field }) => (
+              <NumberStepper
+                label="Grind Level"
+                value={field.value}
+                onChange={(val) => setValue("grindLevel", val as number, { shouldValidate: true })}
+                min={0}
+                max={50}
+                step={0.1}
+                placeholder="—"
+                error={errors.grindLevel?.message}
+              />
+            )}
+          />
+        );
+      case "brewTime":
+        return (
+          <Controller
+            key="brewTime"
+            name="brewTimeSecs"
+            control={control}
+            render={({ field }) => (
+              <NumberStepper
+                label="Brew Time"
+                suffix="sec"
+                value={field.value}
+                onChange={(val) => setValue("brewTimeSecs", val as number, { shouldValidate: true })}
+                min={0}
+                max={120}
+                step={1}
+                placeholder="—"
+                error={errors.brewTimeSecs?.message}
+                noRound={true}
+              />
+            )}
+          />
+        );
+      case "brewTemp":
+        return tempUnit === "C" ? (
+          <Controller
+            key="brewTemp"
             name="brewTempC"
             control={control}
             render={({ field }) => (
@@ -328,6 +429,7 @@ export function SectionRecipe() {
           />
         ) : (
           <NumberStepper
+            key="brewTemp"
             label={`Brew Temp`}
             suffix="°F"
             secondarySuffix={brewTempC != null ? `${brewTempC.toFixed(1)}°C` : undefined}
@@ -349,77 +451,131 @@ export function SectionRecipe() {
               </button>
             }
           />
-        )}
-
-
-        {/* ── Brew Pressure with quick-select ── */}
-        <Controller
-          name="brewPressure"
-          control={control}
-          render={({ field }) => (
-            <NumberStepper
-              label="Brew Pressure"
-              suffix="bar"
-              value={field.value ?? undefined}
-              onChange={(val) => {
-                setValue("brewPressure", val, { shouldValidate: true });
-                if (val != null) {
-                  const match = PRESSURE_OPTIONS.find((p) => Math.abs(p - val) < 0.01);
-                  setActivePressure(match ?? null);
-                } else {
-                  setActivePressure(null);
+        );
+      case "brewPressure":
+        return (
+          <Controller
+            key="brewPressure"
+            name="brewPressure"
+            control={control}
+            render={({ field }) => (
+              <NumberStepper
+                label="Brew Pressure"
+                suffix="bar"
+                value={field.value ?? undefined}
+                onChange={(val) => {
+                  setValue("brewPressure", val, { shouldValidate: true });
+                  if (val != null) {
+                    const match = PRESSURE_OPTIONS.find((p) => Math.abs(p - val) < 0.01);
+                    setActivePressure(match ?? null);
+                  } else {
+                    setActivePressure(null);
+                  }
+                }}
+                min={0}
+                max={20}
+                step={0.5}
+                placeholder="—"
+                error={errors.brewPressure?.message}
+                labelExtra={
+                  <div className="flex items-center gap-1">
+                    {PRESSURE_OPTIONS.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => {
+                          setActivePressure(p);
+                          setValue("brewPressure", p, { shouldValidate: true });
+                        }}
+                        tabIndex={-1}
+                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activePressure === p
+                            ? "bg-amber-600 text-white"
+                            : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                          }`}
+                      >
+                        {p} bar
+                      </button>
+                    ))}
+                  </div>
                 }
-              }}
-              min={0}
-              max={20}
-              step={0.5}
-              placeholder="—"
-              error={errors.brewPressure?.message}
-              labelExtra={
-                <div className="flex items-center gap-1">
-                  {PRESSURE_OPTIONS.map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => {
-                        setActivePressure(p);
-                        setValue("brewPressure", p, { shouldValidate: true });
-                      }}
-                      tabIndex={-1}
-                      className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activePressure === p
-                          ? "bg-amber-600 text-white"
-                          : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                        }`}
-                    >
-                      {p} bar
-                    </button>
-                  ))}
-                </div>
-              }
-            />
+              />
+            )}
+          />
+        );
+      case "preInfusion":
+        return (
+          <Controller
+            key="preInfusion"
+            name="preInfusionDuration"
+            control={control}
+            render={({ field }) => (
+              <NumberStepper
+                label="Pre-infusion"
+                suffix="sec"
+                value={field.value ?? undefined}
+                onChange={(val) => setValue("preInfusionDuration", val, { shouldValidate: true })}
+                min={0}
+                max={30}
+                step={0.5}
+                placeholder="—"
+                hint="Optional"
+                error={errors.preInfusionDuration?.message}
+              />
+            )}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <section className="space-y-6">
+      <div className="flex items-center justify-center gap-2">
+        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
+          Recipe
+        </h2>
+        <div className="relative" ref={menuRef}>
+          <button
+            type="button"
+            onClick={() => setShowMenu(!showMenu)}
+            className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+            aria-label="Recipe menu"
+          >
+            <svg
+              className="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+              />
+            </svg>
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowOrderModal(true);
+                  setShowMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+              >
+                Edit Order
+              </button>
+            </div>
           )}
-        />
+        </div>
       </div>
 
-      {/* ── Pre-infusion ── */}
-      <Controller
-        name="preInfusionDuration"
-        control={control}
-        render={({ field }) => (
-          <NumberStepper
-            label="Pre-infusion"
-            suffix="sec"
-            value={field.value ?? undefined}
-            onChange={(val) => setValue("preInfusionDuration", val, { shouldValidate: true })}
-            min={0}
-            max={30}
-            step={0.5}
-            placeholder="—"
-            hint="Optional"
-            error={errors.preInfusionDuration?.message}
-          />
-        )}
-      />
+      <div className="space-y-7">
+        {orderedSteps.map((step) => renderStep(step.id))}
+      </div>
 
       {/* Computed preview */}
       <div className="flex items-center justify-between gap-6 rounded-xl bg-stone-100 px-4 py-3 text-sm dark:bg-stone-800">
@@ -492,6 +648,317 @@ export function SectionRecipe() {
           )}
         </div>
       </Modal>
+
+      {/* Recipe Order Modal */}
+      <RecipeOrderModal
+        open={showOrderModal}
+        onClose={() => setShowOrderModal(false)}
+        order={recipeOrder}
+        visibility={recipeVisibility}
+        onChange={handleOrderChange}
+      />
     </section>
+  );
+}
+
+// ── Recipe Order Modal Component ──
+interface RecipeOrderModalProps {
+  open: boolean;
+  onClose: () => void;
+  order: RecipeStepId[];
+  visibility: Record<RecipeStepId, boolean>;
+  onChange: (order: RecipeStepId[], visibility: Record<RecipeStepId, boolean>) => void;
+}
+
+function RecipeOrderModal({ open, onClose, order, visibility, onChange }: RecipeOrderModalProps) {
+  const [localOrder, setLocalOrder] = useState<RecipeStepId[]>(order);
+  const [localVisibility, setLocalVisibility] = useState<Record<RecipeStepId, boolean>>(visibility);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [draggedItemY, setDraggedItemY] = useState<number | null>(null);
+
+  // Handle drag end (mouse)
+  const handleDragEnd = useCallback(() => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    setTouchStartY(null);
+    setDraggedItemY(null);
+    // Restore body scroll
+    document.body.style.overflow = "";
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      setLocalOrder(order);
+      setLocalVisibility(visibility);
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      setTouchStartY(null);
+      setDraggedItemY(null);
+    }
+  }, [open, order, visibility]);
+
+  // Global mouse move handler for dragging
+  useEffect(() => {
+    if (draggedIndex === null) return;
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (draggedIndex === null || touchStartY === null) return;
+      
+      const currentY = e.clientY;
+      setDraggedItemY(currentY);
+      
+      // Find which item we're over
+      const items = document.querySelectorAll('[data-drag-item]');
+      let newDragOverIndex: number | null = null;
+      
+      items.forEach((item, idx) => {
+        if (idx === draggedIndex) return; // Skip the dragged item itself
+        
+        const itemRect = item.getBoundingClientRect();
+        const itemCenterY = itemRect.top + itemRect.height / 2;
+        
+        if (currentY >= itemRect.top && currentY <= itemRect.bottom) {
+          // Determine if we're in the upper or lower half
+          if (currentY < itemCenterY) {
+            newDragOverIndex = idx;
+          } else {
+            newDragOverIndex = idx + 1;
+          }
+        }
+      });
+      
+      // Check if we're at the top or bottom
+      if (newDragOverIndex === null) {
+        const firstItem = items[0] as HTMLElement;
+        const lastItem = items[items.length - 1] as HTMLElement;
+        if (firstItem && currentY < firstItem.getBoundingClientRect().top) {
+          newDragOverIndex = 0;
+        } else if (lastItem && currentY > lastItem.getBoundingClientRect().bottom) {
+          newDragOverIndex = localOrder.length;
+        }
+      }
+      
+      if (newDragOverIndex !== null && newDragOverIndex !== dragOverIndex) {
+        setDragOverIndex(newDragOverIndex);
+        
+        // Reorder if we've moved to a different position
+        const insertIndex = newDragOverIndex > draggedIndex ? newDragOverIndex - 1 : newDragOverIndex;
+        if (insertIndex !== draggedIndex && insertIndex >= 0 && insertIndex < localOrder.length) {
+          setLocalOrder((prevOrder) => {
+            const newOrder = [...prevOrder];
+            const [removed] = newOrder.splice(draggedIndex, 1);
+            newOrder.splice(insertIndex, 0, removed);
+            return newOrder;
+          });
+          setDraggedIndex(insertIndex);
+        }
+      }
+    };
+
+    document.addEventListener("mousemove", handleGlobalMouseMove);
+    document.addEventListener("mouseup", handleDragEnd);
+
+    return () => {
+      document.removeEventListener("mousemove", handleGlobalMouseMove);
+      document.removeEventListener("mouseup", handleDragEnd);
+    };
+  }, [draggedIndex, dragOverIndex, touchStartY, localOrder, handleDragEnd]);
+
+  const toggleVisibility = (stepId: RecipeStepId) => {
+    setLocalVisibility((prev) => ({ ...prev, [stepId]: !prev[stepId] }));
+  };
+
+  const handleSave = () => {
+    onChange(localOrder, localVisibility);
+    onClose();
+  };
+
+  const handleReset = () => {
+    const defaultOrder = DEFAULT_STEPS.map((s) => s.id);
+    const defaultVisibility = DEFAULT_STEPS.reduce(
+      (acc, step) => ({ ...acc, [step.id]: step.visible }),
+      {} as Record<RecipeStepId, boolean>
+    );
+    setLocalOrder(defaultOrder);
+    setLocalVisibility(defaultVisibility);
+    onChange(defaultOrder, defaultVisibility);
+  };
+
+  // Handle drag start (mouse)
+  const handleDragStart = (e: React.MouseEvent, index: number) => {
+    e.preventDefault();
+    setDraggedIndex(index);
+    setTouchStartY(e.clientY);
+    setDraggedItemY(e.clientY);
+  };
+
+  // Handle touch start
+  const handleTouchStart = (e: React.TouchEvent, index: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const touch = e.touches[0];
+    setDraggedIndex(index);
+    setTouchStartY(touch.clientY);
+    setDraggedItemY(touch.clientY);
+    // Prevent body scroll while dragging
+    document.body.style.overflow = "hidden";
+  };
+
+  // Handle touch move
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (draggedIndex === null || touchStartY === null) return;
+    e.preventDefault();
+    
+    const touch = e.touches[0];
+    const currentY = touch.clientY;
+    setDraggedItemY(currentY);
+    
+    // Find which item we're over
+    const items = document.querySelectorAll('[data-drag-item]');
+    let newDragOverIndex: number | null = null;
+    
+    items.forEach((item, idx) => {
+      if (idx === draggedIndex) return; // Skip the dragged item itself
+      
+      const itemRect = item.getBoundingClientRect();
+      const itemCenterY = itemRect.top + itemRect.height / 2;
+      
+      if (currentY >= itemRect.top && currentY <= itemRect.bottom) {
+        // Determine if we're in the upper or lower half
+        if (currentY < itemCenterY) {
+          newDragOverIndex = idx;
+        } else {
+          newDragOverIndex = idx + 1;
+        }
+      }
+    });
+    
+    // Check if we're at the top or bottom
+    if (newDragOverIndex === null) {
+      const firstItem = items[0] as HTMLElement;
+      const lastItem = items[items.length - 1] as HTMLElement;
+      if (firstItem && currentY < firstItem.getBoundingClientRect().top) {
+        newDragOverIndex = 0;
+      } else if (lastItem && currentY > lastItem.getBoundingClientRect().bottom) {
+        newDragOverIndex = localOrder.length;
+      }
+    }
+    
+    if (newDragOverIndex !== null && newDragOverIndex !== dragOverIndex) {
+      setDragOverIndex(newDragOverIndex);
+      
+      // Reorder if we've moved to a different position
+      const insertIndex = newDragOverIndex > draggedIndex ? newDragOverIndex - 1 : newDragOverIndex;
+      if (insertIndex !== draggedIndex && insertIndex >= 0 && insertIndex < localOrder.length) {
+        const newOrder = [...localOrder];
+        const [removed] = newOrder.splice(draggedIndex, 1);
+        newOrder.splice(insertIndex, 0, removed);
+        setLocalOrder(newOrder);
+        setDraggedIndex(insertIndex);
+      }
+    }
+  };
+
+  // Handle touch end
+  const handleTouchEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    setTouchStartY(null);
+    setDraggedItemY(null);
+    // Restore body scroll
+    document.body.style.overflow = "";
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Change Recipe Order"
+      footer={
+        <div className="flex justify-between">
+          <Button type="button" variant="ghost" onClick={handleReset}>
+            Reset to Default
+          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="secondary" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSave}>
+              Save
+            </Button>
+          </div>
+        </div>
+      }
+    >
+      <div className="space-y-2">
+        <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
+          Drag items to reorder and show or hide items. Changes are saved automatically.
+        </p>
+        {localOrder.map((stepId, index) => {
+          const step = DEFAULT_STEPS.find((s) => s.id === stepId);
+          if (!step) return null;
+          const isDragging = draggedIndex === index;
+          const isDragOver = dragOverIndex === index;
+          
+          return (
+            <div
+              key={stepId}
+              data-drag-item
+              className={`flex items-center gap-3 rounded-lg border p-3 transition-all ${
+                isDragging
+                  ? "border-amber-500 bg-amber-50 shadow-lg opacity-75 dark:border-amber-400 dark:bg-amber-900/20"
+                  : isDragOver
+                  ? "border-amber-400 bg-amber-50/50 dark:border-amber-500 dark:bg-amber-900/10"
+                  : "border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800"
+              }`}
+              style={
+                isDragging && draggedItemY !== null && touchStartY !== null
+                  ? {
+                      transform: `translateY(${draggedItemY - touchStartY}px)`,
+                      zIndex: 1000,
+                      position: "relative",
+                    }
+                  : {}
+              }
+            >
+              <div
+                className="touch-none cursor-grab active:cursor-grabbing select-none flex-shrink-0"
+                onMouseDown={(e) => handleDragStart(e, index)}
+                onTouchStart={(e) => handleTouchStart(e, index)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                style={{ touchAction: "none", userSelect: "none" }}
+              >
+                <svg
+                  className="h-5 w-5 text-stone-400"
+                  fill="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <circle cx="9" cy="5" r="1.5" />
+                  <circle cx="9" cy="12" r="1.5" />
+                  <circle cx="9" cy="19" r="1.5" />
+                  <circle cx="15" cy="5" r="1.5" />
+                  <circle cx="15" cy="12" r="1.5" />
+                  <circle cx="15" cy="19" r="1.5" />
+                </svg>
+              </div>
+              <label className="flex flex-1 items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={localVisibility[stepId]}
+                  onChange={() => toggleVisibility(stepId)}
+                  className="h-4 w-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
+                />
+                <span className="flex-1 text-sm font-medium text-stone-800 dark:text-stone-200">
+                  {step.label}
+                </span>
+              </label>
+            </div>
+          );
+        })}
+      </div>
+    </Modal>
   );
 }
