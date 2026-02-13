@@ -12,14 +12,23 @@ async function handleAuthRequest(
     return await handler(req);
   } catch (error) {
     // Check if this is a JWT/JWE encryption error
+    // Auth.js throws JWTSessionError with various formats
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorName = error instanceof Error ? error.name : "";
+    const errorCause = error instanceof Error && error.cause ? String(error.cause) : "";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
     const isJWTError =
-      error instanceof Error &&
-      (error.name === "JWTSessionError" ||
-        error.message.includes("JWTSessionError") ||
-        error.message.includes("Invalid Compact JWE") ||
-        error.message.includes("JWE") ||
-        String(error.cause || "").includes("Invalid Compact JWE") ||
-        String(error.cause || "").includes("JWE"));
+      errorName === "JWTSessionError" ||
+      errorMessage.includes("JWTSessionError") ||
+      errorMessage.includes("Invalid Compact JWE") ||
+      errorMessage.includes("JWE") ||
+      errorMessage.includes("jwt") ||
+      errorCause.includes("Invalid Compact JWE") ||
+      errorCause.includes("JWE") ||
+      errorCause.includes("jwt") ||
+      (errorStack?.includes("JWTSessionError") ?? false) ||
+      (errorStack?.includes("Invalid Compact JWE") ?? false);
 
     if (isJWTError) {
       if (config.enableDebugging) {
