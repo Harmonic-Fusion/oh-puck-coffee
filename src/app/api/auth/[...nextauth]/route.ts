@@ -18,21 +18,28 @@ async function handleAuthRequest(
     const errorCause = error instanceof Error && error.cause ? String(error.cause) : "";
     const errorStack = error instanceof Error ? error.stack : undefined;
     
+    // Convert error cause to string for comparison
+    const causeString = errorCause ? String(errorCause) : "";
+    
     const isJWTError =
       errorName === "JWTSessionError" ||
       errorMessage.includes("JWTSessionError") ||
       errorMessage.includes("Invalid Compact JWE") ||
       errorMessage.includes("JWE") ||
       errorMessage.includes("jwt") ||
-      errorCause.includes("Invalid Compact JWE") ||
-      errorCause.includes("JWE") ||
-      errorCause.includes("jwt") ||
+      errorMessage.toLowerCase().includes("jwe") ||
+      causeString.includes("Invalid Compact JWE") ||
+      causeString.includes("JWE") ||
+      causeString.includes("jwt") ||
+      causeString.toLowerCase().includes("jwe") ||
       (errorStack?.includes("JWTSessionError") ?? false) ||
-      (errorStack?.includes("Invalid Compact JWE") ?? false);
+      (errorStack?.includes("Invalid Compact JWE") ?? false) ||
+      (errorStack?.toLowerCase().includes("jwe") ?? false);
 
     if (isJWTError) {
-      if (config.enableDebugging) {
-        console.error("[auth:debug] JWT session error caught, clearing cookies:", {
+      // Always log JWT errors (not just in debug mode) since they indicate a serious issue
+      // This helps diagnose secret mismatches or corrupted cookies in production
+      console.error("[auth][error] JWT session error caught, clearing cookies:", {
           error: error instanceof Error ? error.message : String(error),
           name: error instanceof Error ? error.name : undefined,
           cause: error instanceof Error ? error.cause : undefined,
@@ -40,8 +47,11 @@ async function handleAuthRequest(
           pathname: new URL(req.url).pathname,
           hasSecret: !!config.nextAuthSecret,
           secretLength: config.nextAuthSecret?.length ?? 0,
+          // Log cookie names to help diagnose (but not values for security)
+          cookieNames: req.cookies.getAll().map((c) => c.name).filter((name) =>
+            name.includes("auth") || name.includes("session") || name.includes("pkce") || name.includes("csrf")
+          ),
         });
-      }
 
       // Determine redirect URL - if this is an OAuth callback, redirect to login
       // Otherwise, redirect to the login page
