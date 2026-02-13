@@ -38,5 +38,8 @@ export default async function middleware(
 
 export const config = {
   // https://nextjs.org/docs/app/building-your-application/routing/middleware#matcher
-  matcher: ["/((?!api/auth|api/health|_next/static|_next/image|favicon.ico|login).*)"],
+  // Exclude: API auth routes, health check, Next.js internals, static assets, service worker, manifest, and login page
+  matcher: [
+    "/((?!api/auth|api/health|_next/static|_next/image|favicon.ico|login|sw.js|manifest.json|icons).*)",
+  ],
 };
