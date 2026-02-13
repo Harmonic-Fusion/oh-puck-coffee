@@ -20,15 +20,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_ENABLE_DEBUGGING: process.env.ENABLE_DEBUGGING ?? "false",
   },
   headers: async () => [
-    {
-      source: "/(.*)",
-      headers: [
-        {
-          key: "Permissions-Policy",
-          value: "browsing-topics=()",
-        },
-      ],
-    },
+    // ServiceWorker headers are handled by the route handler at /sw.js/route.ts
   ],
 };
 
