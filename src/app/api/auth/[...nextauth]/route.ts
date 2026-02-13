@@ -1,6 +1,12 @@
 import { handlers } from "@/auth";
 import { config } from "@/shared/config";
 import { NextRequest, NextResponse } from "next/server";
+import { createLogger } from "@/lib/logger";
+
+// Initialize logger early
+import "@/lib/logger-init";
+
+const authRouteLogger = createLogger("auth", "error");
 
 // Wrap handlers to catch JWT errors and provide better error handling
 async function handleAuthRequest(
@@ -39,7 +45,7 @@ async function handleAuthRequest(
     if (isJWTError) {
       // Always log JWT errors (not just in debug mode) since they indicate a serious issue
       // This helps diagnose secret mismatches or corrupted cookies in production
-      console.error("[auth][error] JWT session error caught, clearing cookies:", {
+      authRouteLogger.error("JWT session error caught, clearing cookies:", {
           error: error instanceof Error ? error.message : String(error),
           name: error instanceof Error ? error.name : undefined,
           cause: error instanceof Error ? error.cause : undefined,

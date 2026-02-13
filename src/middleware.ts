@@ -2,6 +2,12 @@ import NextAuth from "next-auth";
 import type { NextFetchEvent, NextRequest } from "next/server";
 import { authConfig } from "./auth.config";
 import { config as appConfig } from "./shared/config";
+import { createLogger } from "./lib/logger";
+
+// Initialize logger early
+import "./lib/logger-init";
+
+const middlewareLogger = createLogger("auth", "debug", "middleware");
 
 const baseAuth = NextAuth(authConfig).auth;
 
@@ -20,7 +26,7 @@ export default async function middleware(
   } catch (error) {
     // Enhanced error logging for JWT/session errors in middleware
     if (appConfig.enableDebugging) {
-      console.error("[auth:debug][middleware] Error in auth middleware:", {
+      middlewareLogger.error("Error in auth middleware:", {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         name: error instanceof Error ? error.name : undefined,

@@ -177,4 +177,54 @@ export const config = {
    * Defaults to false if not set.
    */
   enableDebugging: process.env.ENABLE_DEBUGGING === "true",
+
+  /**
+   * Log level: "error" | "warn" | "info" | "debug"
+   * Defaults to "info" in production, "debug" in development.
+   */
+  logLevel: (() => {
+    const envLevel = process.env.LOG_LEVEL;
+    if (envLevel && ["error", "warn", "info", "debug"].includes(envLevel)) {
+      return envLevel as "error" | "warn" | "info" | "debug";
+    }
+    return process.env.NODE_ENV === "production" ? "info" : "debug";
+  })(),
+
+  /**
+   * Python-style logging configuration.
+   * JSON object mapping module paths to log levels.
+   * 
+   * Example:
+   *   LOG_CONFIG='{"root":"info","auth":"debug","auth.middleware":"warn","api":"error"}'
+   * 
+   * Module paths use dot notation (e.g., "auth.middleware" for nested contexts).
+   * The "root" key sets the default log level (overrides LOG_LEVEL if set).
+   * Falls back to root level if no module-specific level is set.
+   */
+  logConfig: (() => {
+    const envConfig = process.env.LOG_CONFIG;
+    if (!envConfig) return undefined;
+
+    try {
+      const parsed = JSON.parse(envConfig) as Record<string, string>;
+      const moduleLevels: Record<string, "error" | "warn" | "info" | "debug"> = {};
+      
+      for (const [path, level] of Object.entries(parsed)) {
+        if (["error", "warn", "info", "debug"].includes(level)) {
+          moduleLevels[path] = level as "error" | "warn" | "info" | "debug";
+        }
+      }
+
+      return Object.keys(moduleLevels).length > 0 ? moduleLevels : undefined;
+    } catch {
+      // Invalid JSON, ignore
+      return undefined;
+    }
+  })(),
+
+  /**
+   * When true, filters out unwanted log messages (e.g., AppIntegration messages).
+   * Defaults to true.
+   */
+  logFilteringEnabled: process.env.LOG_FILTERING_ENABLED !== "false",
 } as const;

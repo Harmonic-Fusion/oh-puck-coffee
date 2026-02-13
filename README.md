@@ -64,6 +64,29 @@ ENABLE_DEBUGGING=
 # Set to "true" when running behind a reverse proxy
 # NEXTAUTH_TRUST_HOST is also accepted as an alias
 AUTH_TRUST_HOST=
+
+# ── Logging Configuration ──────────────────────────────────────────────────
+
+# Log level: "error" | "warn" | "info" | "debug"
+# Defaults to "info" in production, "debug" in development
+# This sets the root/default log level for all loggers
+LOG_LEVEL=
+
+# Python-style logging configuration (JSON format)
+# Allows setting different log levels for different modules/contexts
+# Example: LOG_CONFIG='{"root":"info","auth":"debug","auth.middleware":"warn","api":"error"}'
+# - "root": Sets the default log level (overrides LOG_LEVEL if set)
+# - Module paths use dot notation (e.g., "auth.middleware" for nested contexts)
+# - Falls back to root level if no module-specific level is set
+# Server-side: LOG_CONFIG
+# Client-side: NEXT_PUBLIC_LOG_CONFIG
+LOG_CONFIG=
+
+# Set to "false" to disable filtering of unwanted log messages (e.g., AppIntegration messages)
+# Defaults to "true" (filtering enabled)
+# Server-side: LOG_FILTERING_ENABLED
+# Client-side: NEXT_PUBLIC_LOG_FILTERING_ENABLED
+LOG_FILTERING_ENABLED=
 ```
 
 ### Google OAuth Setup

@@ -7,22 +7,28 @@ import { db } from "./db";
 import { users, accounts, sessions, verificationTokens } from "./db/schema";
 import { authConfig } from "./auth.config";
 import { config } from "./shared/config";
+import { createLogger } from "./lib/logger";
+
+// Initialize logger early
+import "./lib/logger-init";
+
+const authLogger = createLogger("auth", "debug");
 
 // ── Auth debug diagnostics ───────────────────────────────────────────
 const useSecureCookies = config.nextAuthUrl.startsWith("https://");
 
 if (config.enableDebugging) {
-  console.log("[auth:debug] ── Auth configuration ──");
-  console.log("[auth:debug]   NEXTAUTH_URL        =", config.nextAuthUrl);
-  console.log("[auth:debug]   useSecureCookies     =", useSecureCookies);
-  console.log("[auth:debug]   trustHost            =", config.trustHost);
-  console.log("[auth:debug]   NEXTAUTH_SECRET set? =", !!config.nextAuthSecret);
-  console.log("[auth:debug]   SECRET length        =", config.nextAuthSecret?.length ?? 0);
-  console.log("[auth:debug]   NODE_ENV             =", process.env.NODE_ENV);
-  console.log("[auth:debug]   GOOGLE_CLIENT_ID set?=", !!config.googleClientId);
-  console.log("[auth:debug]   enableDevUser        =", config.enableDevUser);
-  console.log("[auth:debug]   enableDebugging      =", config.enableDebugging);
-  console.log("[auth:debug] ─────────────────────────");
+  authLogger.debug("── Auth configuration ──");
+  authLogger.debug("  NEXTAUTH_URL        =", config.nextAuthUrl);
+  authLogger.debug("  useSecureCookies     =", useSecureCookies);
+  authLogger.debug("  trustHost            =", config.trustHost);
+  authLogger.debug("  NEXTAUTH_SECRET set? =", !!config.nextAuthSecret);
+  authLogger.debug("  SECRET length        =", config.nextAuthSecret?.length ?? 0);
+  authLogger.debug("  NODE_ENV             =", process.env.NODE_ENV);
+  authLogger.debug("  GOOGLE_CLIENT_ID set?=", !!config.googleClientId);
+  authLogger.debug("  enableDevUser        =", config.enableDevUser);
+  authLogger.debug("  enableDebugging      =", config.enableDebugging);
+  authLogger.debug("─────────────────────────");
 }
 
 // Build providers list conditionally to avoid Configuration errors
@@ -38,8 +44,8 @@ function buildProviders(): Provider[] {
       })
     );
   } else if (!config.enableDevUser) {
-    console.warn(
-      "[auth] GOOGLE_CLIENT_ID and/or GOOGLE_CLIENT_SECRET are not set. " +
+    authLogger.warn(
+      "GOOGLE_CLIENT_ID and/or GOOGLE_CLIENT_SECRET are not set. " +
         "Google OAuth will be unavailable. Set ENABLE_DEV_USER=true for local development."
     );
   }
@@ -144,7 +150,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   events: {
     async signIn({ user, account }) {
       if (config.enableDebugging) {
-        console.log("[auth:debug][event] signIn:", {
+        authLogger.child("event").debug("signIn:", {
           userId: user.id,
           email: user.email,
           accountProvider: account?.provider,
@@ -206,7 +212,7 @@ export async function getSession(): Promise<Session | null> {
     const session = await auth();
     if (session) {
       if (config.enableDebugging) {
-        console.log("[auth:debug] Session retrieved successfully", {
+        authLogger.debug("Session retrieved successfully", {
           userId: session.user?.id,
           email: session.user?.email,
           expires: session.expires,
@@ -217,7 +223,7 @@ export async function getSession(): Promise<Session | null> {
   } catch (error) {
     // Enhanced error logging for JWT/session errors
     if (config.enableDebugging) {
-      console.error("[auth:debug] Error retrieving session:", {
+      authLogger.error("Error retrieving session:", {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
         name: error instanceof Error ? error.name : undefined,
@@ -230,7 +236,7 @@ export async function getSession(): Promise<Session | null> {
 
   if (config.enableDevUser) {
     if (config.enableDebugging) {
-      console.log("[auth:debug] No session found, using dev user fallback");
+      authLogger.debug("No session found, using dev user fallback");
     }
     const devUser = await getOrCreateDevUser();
     return {

@@ -3,6 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
+// Initialize logger early (server-side)
+import "./lib/logger-init";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
