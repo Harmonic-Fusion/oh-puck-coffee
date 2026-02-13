@@ -47,6 +47,24 @@ function buildProviders(): Provider[] {
   return providers;
 }
 
+// Validate NEXTAUTH_SECRET in production
+if (!config.enableDevUser) {
+  if (!config.nextAuthSecret) {
+    throw new Error(
+      "[auth] NEXTAUTH_SECRET is required in production. " +
+      "Set it in your environment variables or use ENABLE_DEV_USER=true for local development."
+    );
+  }
+  // Auth.js requires the secret to be at least 32 characters
+  if (config.nextAuthSecret.length < 32) {
+    throw new Error(
+      "[auth] NEXTAUTH_SECRET must be at least 32 characters long. " +
+      `Current length: ${config.nextAuthSecret.length}. ` +
+      "Generate a secure secret with: openssl rand -base64 32"
+    );
+  }
+}
+
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
   debug: config.enableDebugging, // Enable Auth.js verbose debug logging only when ENABLED_DEBUGGING is set
@@ -95,6 +113,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (new URL(url).origin === baseUrl) return url;
       // Default to home page
       return baseUrl;
+    },
+    async signIn({ user, account, profile }) {
+      // This callback runs before the session is created
+      // If there's a JWT error, it will be caught by the route handler
+      return true;
     },
   },
   events: {
