@@ -1,9 +1,6 @@
 const CACHE_NAME = "coffee-tracker-v1";
+// Only pre-cache truly static assets that are guaranteed to exist
 const STATIC_ASSETS = [
-  "/",
-  "/log",
-  "/history",
-  "/dashboard",
   "/manifest.json",
   "/icons/icon-192.svg",
   "/icons/icon-512.svg",
@@ -14,7 +11,17 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .then((cache) => {
+        // Use Promise.allSettled to handle individual failures gracefully
+        return Promise.allSettled(
+          STATIC_ASSETS.map((url) =>
+            cache.add(url).catch((err) => {
+              console.warn(`[SW] Failed to cache ${url}:`, err);
+              return null;
+            })
+          )
+        );
+      })
       .then(() => self.skipWaiting())
   );
 });
