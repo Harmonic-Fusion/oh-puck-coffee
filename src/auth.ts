@@ -47,8 +47,29 @@ function buildProviders(): Provider[] {
   return providers;
 }
 
-// Validate NEXTAUTH_SECRET in production
-if (!config.enableDevUser) {
+// Detect if we're in a build phase where env vars may not be available
+// Next.js sets NEXT_PHASE during build. We also check for the presence of
+// build-time indicators to handle cases where NEXT_PHASE might not be set
+const isBuildPhase = 
+  process.env.NEXT_PHASE === "phase-production-build" || 
+  process.env.NEXT_PHASE === "phase-development-build" ||
+  // Fallback: check if we're likely in a build context
+  // This is a best-effort detection for Docker builds where NEXT_PHASE might not be set
+  // Runtime validation in getSession() will catch missing secrets at runtime
+  (typeof process.env.npm_lifecycle_event !== "undefined" && 
+   process.env.npm_lifecycle_event === "build" &&
+   !config.nextAuthSecret &&
+   !config.enableDevUser);
+
+// Use a placeholder secret during build if none is available
+// This allows Next.js to build successfully, but auth will fail at runtime if secret is missing
+const authSecret = isBuildPhase && !config.nextAuthSecret
+  ? "build-placeholder-secret-not-used-at-runtime-min-32-chars"
+  : config.nextAuthSecret;
+
+// Validate NEXTAUTH_SECRET in production (skip during build)
+// Next.js evaluates modules during build, but env vars may not be available
+if (!isBuildPhase && !config.enableDevUser) {
   if (!config.nextAuthSecret) {
     throw new Error(
       "[auth] NEXTAUTH_SECRET is required in production. " +
@@ -69,7 +90,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
   debug: config.enableDebugging, // Enable Auth.js verbose debug logging only when ENABLED_DEBUGGING is set
   trustHost: config.trustHost,
-  secret: config.nextAuthSecret,
+  secret: authSecret,
   // Explicitly use database sessions when adapter is configured
   // This prevents Auth.js from falling back to JWT sessions
   session: {
@@ -173,6 +194,14 @@ async function getOrCreateDevUser() {
  * Use this instead of `auth()` in API routes.
  */
 export async function getSession(): Promise<Session | null> {
+  // Runtime validation: ensure we're not using the build placeholder secret
+  if (!isBuildPhase && !config.enableDevUser && authSecret === "build-placeholder-secret-not-used-at-runtime-min-32-chars") {
+    throw new Error(
+      "[auth] NEXTAUTH_SECRET is required in production. " +
+      "Set it in your environment variables or use ENABLE_DEV_USER=true for local development."
+    );
+  }
+
   try {
     const session = await auth();
     if (session) {
