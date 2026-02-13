@@ -4,7 +4,7 @@ import "./globals.css";
 import { Providers } from "./providers";
 
 // Initialize logger early (server-side)
-import "./lib/logger-init";
+import "../lib/logger-init";
 
 const inter = Inter({ subsets: ["latin"] });
 
