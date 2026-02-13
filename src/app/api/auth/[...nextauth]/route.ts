@@ -11,37 +11,66 @@ async function handleAuthRequest(
     // NextRequest extends Request, so we can pass it directly
     return await handler(req);
   } catch (error) {
-    // Handle JWT session errors gracefully
-    if (
+    // Check if this is a JWT/JWE encryption error
+    const isJWTError =
       error instanceof Error &&
-      (error.message.includes("JWTSessionError") ||
+      (error.name === "JWTSessionError" ||
+        error.message.includes("JWTSessionError") ||
         error.message.includes("Invalid Compact JWE") ||
-        String(error.cause || "").includes("Invalid Compact JWE"))
-    ) {
+        error.message.includes("JWE") ||
+        String(error.cause || "").includes("Invalid Compact JWE") ||
+        String(error.cause || "").includes("JWE"));
+
+    if (isJWTError) {
       if (config.enableDebugging) {
         console.error("[auth:debug] JWT session error caught, clearing cookies:", {
-          error: error.message,
-          cause: error.cause,
+          error: error instanceof Error ? error.message : String(error),
+          name: error instanceof Error ? error.name : undefined,
+          cause: error instanceof Error ? error.cause : undefined,
           url: req.url,
+          pathname: new URL(req.url).pathname,
+          hasSecret: !!config.nextAuthSecret,
+          secretLength: config.nextAuthSecret?.length ?? 0,
         });
       }
 
-      // Clear auth cookies by setting them to expire
-      const response = NextResponse.redirect(new URL("/login", req.url));
+      // Determine redirect URL - if this is an OAuth callback, redirect to login
+      // Otherwise, redirect to the login page
+      const url = new URL(req.url);
+      const isCallback = url.pathname.includes("/callback/");
+      const redirectUrl = isCallback
+        ? new URL("/login", req.url)
+        : new URL("/login", req.url);
+
+      // Clear all auth-related cookies by setting them to expire
+      const response = NextResponse.redirect(redirectUrl);
       const cookieNames = [
+        // Session tokens
         "__Secure-authjs.session-token",
         "authjs.session-token",
         "__Secure-next-auth.session-token",
         "next-auth.session-token",
         "__Host-authjs.session-token",
+        // PKCE code verifier
+        "__Secure-authjs.pkce.code_verifier",
+        "authjs.pkce.code_verifier",
+        "__Secure-next-auth.pkce.code_verifier",
+        "next-auth.pkce.code_verifier",
+        // CSRF tokens
+        "__Secure-authjs.csrf-token",
+        "authjs.csrf-token",
+        "__Secure-next-auth.csrf-token",
+        "next-auth.csrf-token",
       ];
 
+      const useSecure = config.nextAuthUrl.startsWith("https://");
       cookieNames.forEach((name) => {
         response.cookies.set(name, "", {
           expires: new Date(0),
           path: "/",
           sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
+          secure: useSecure,
+          httpOnly: true,
         });
       });
 
