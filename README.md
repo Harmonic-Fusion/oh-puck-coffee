@@ -50,6 +50,12 @@ GOOGLE_CLIENT_SECRET=your-google-client-secret
 
 # ── Optional Variables ──────────────────────────────────────────────────
 
+# Database configuration (used by docker-compose.yml)
+# Defaults shown below if not set
+DB_USER=coffee
+DB_PASSWORD=coffee
+DB_NAME=coffee
+
 # Port to run the application on. Will use the NEXTAUTH_URL port if not set if possible. Otherwise, defaults to 3000.
 PORT=
 

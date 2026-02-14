@@ -169,3 +169,41 @@ export function useDeleteShot() {
     },
   });
 }
+
+export function useShot(id: string | null) {
+  return useQuery<ShotWithJoins>({
+    queryKey: ["shots", id],
+    queryFn: async () => {
+      if (!id) throw new Error("Shot ID is required");
+      const res = await fetch(resolvePath(ApiRoutes.shots.shotId, { id }));
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to fetch shot");
+      }
+      return res.json();
+    },
+    enabled: !!id,
+  });
+}
+
+export function useUpdateShot() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: CreateShot }) => {
+      const res = await fetch(resolvePath(ApiRoutes.shots.shotId, { id }), {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to update shot");
+      }
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["shots"] });
+      queryClient.invalidateQueries({ queryKey: ["shots", variables.id] });
+    },
+  });
+}

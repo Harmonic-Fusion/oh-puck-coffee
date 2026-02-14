@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   useShots,
   useDeleteShot,
   useToggleReference,
   useToggleHidden,
+  useShot,
   type ShotWithJoins,
 } from "@/components/shots/hooks";
 import { ShotTable } from "@/components/shots/log/ShotTable";
@@ -16,6 +18,7 @@ import { useToast } from "@/components/common/Toast";
 import { TableSkeleton } from "@/components/common/Skeleton";
 
 export default function HistoryPage() {
+  const searchParams = useSearchParams();
   const [userId, setUserId] = useState("");
   const [beanId, setBeanId] = useState("");
   const [dateFrom, setDateFrom] = useState("");
@@ -32,7 +35,16 @@ export default function HistoryPage() {
   const toggleHidden = useToggleHidden();
   const { showToast } = useToast();
 
+  const shotIdFromUrl = searchParams.get("shotId");
+  const { data: shotFromUrl } = useShot(shotIdFromUrl);
   const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
+
+  // Open shot modal if shotId is in URL
+  useEffect(() => {
+    if (shotFromUrl) {
+      setSelectedShot(shotFromUrl);
+    }
+  }, [shotFromUrl]);
 
   const handleDelete = async (id: string) => {
     deleteShot.mutate(id);

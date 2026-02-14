@@ -141,6 +141,26 @@ useEffect(() => { fetchData() }, [fetchData])
 useEffect(() => { fetchData() }, [fetchData, url, skip]) // url/skip already in fetchData deps
 ```
 
+## Button Placement
+
+**Prioritize right-side placement for mobile-friendly access**: Buttons should be positioned on the right side of containers when possible, as this aligns with thumb-friendly zones on mobile devices and improves accessibility.
+
+```tsx
+// ✅ Right-aligned button (mobile-friendly)
+<div className="flex items-center justify-between">
+  <span>Content</span>
+  <Button>Action</Button>
+</div>
+
+// ✅ Right-side button in header
+<div className="flex items-center justify-between">
+  <h3>Title</h3>
+  <Button>Action</Button>
+</div>
+
+// ⚠️ Consider: Left-aligned buttons are acceptable when following established patterns or when right placement would conflict with other UI elements
+```
+
 ## Component Extraction
 
 Extract JSX blocks that are more than a few lines, or when mapping over data to render similar structures.

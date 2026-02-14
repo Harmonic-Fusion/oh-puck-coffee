@@ -169,7 +169,8 @@ export function Slider({
             return (
               <span
                 key={tickValue}
-                className="text-xs text-stone-500 dark:text-stone-400 max-w-[20%] text-center"
+                className="text-xs text-stone-500 dark:text-stone-400 max-w-[25%] text-center truncate"
+                title={labelText}
               >
                 {labelText}
               </span>

@@ -11,10 +11,12 @@ export function SectionResults() {
     register,
     control,
     watch,
+    setValue,
     formState: { errors },
   } = useFormContext<CreateShot>();
 
   const dose = watch("doseGrams");
+  const yieldTarget = watch("yieldGrams");
   const yieldActual = watch("yieldActualGrams");
   const brewTime = watch("brewTimeSecs");
 
@@ -23,6 +25,9 @@ export function SectionResults() {
   
   // Calculate flow rate (g/s) from actual yield and brew time
   const flowRate = yieldActual && brewTime ? (yieldActual / brewTime).toFixed(2) : null;
+
+  // Time quick-select options
+  const TIME_OPTIONS = [10, 15, 20, 25, 30] as const;
 
   return (
     <section className="space-y-6">
@@ -47,6 +52,18 @@ export function SectionResults() {
             step={0.5}
             placeholder="—"
             error={errors.yieldActualGrams?.message}
+            labelExtra={
+              yieldTarget ? (
+                <button
+                  type="button"
+                  onClick={() => setValue("yieldActualGrams", yieldTarget, { shouldValidate: true })}
+                  tabIndex={-1}
+                  className="rounded-lg px-2.5 py-1 text-xs font-medium transition-colors bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                >
+                  Target
+                </button>
+              ) : undefined
+            }
           />
         )}
       />
@@ -63,10 +80,29 @@ export function SectionResults() {
             onChange={(val) => field.onChange(val)}
             min={0}
             max={120}
-            step={1}
+            step={0.1}
             placeholder="—"
             error={errors.brewTimeSecs?.message}
             noRound={true}
+            labelExtra={
+              <div className="flex items-center gap-1">
+                {TIME_OPTIONS.map((time) => (
+                  <button
+                    key={time}
+                    type="button"
+                    onClick={() => setValue("brewTimeSecs", time, { shouldValidate: true })}
+                    tabIndex={-1}
+                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                      field.value === time
+                        ? "bg-amber-600 text-white"
+                        : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                    }`}
+                  >
+                    {time}s
+                  </button>
+                ))}
+              </div>
+            }
           />
         )}
       />
@@ -84,7 +120,7 @@ export function SectionResults() {
             step={0.5}
             error={errors.shotQuality?.message}
             labels={{
-              1: "Severe channeling/spraying",
+              1: "Failed to Extract",
               2: "Severe channeling/spraying",
               3: "Channeling detected",
               4: "Good - Minor unevenness",

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { shots, beans, users, grinders, machines } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { validateMemberAccess } from "@/lib/api-auth";
+import { createShotSchema } from "@/shared/shots/schema";
 
 export async function GET(
   _request: NextRequest,
@@ -88,6 +89,83 @@ export async function GET(
     brewRatio,
     daysPostRoast,
   });
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getSession();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+
+  const [existingShot] = await db
+    .select()
+    .from(shots)
+    .where(eq(shots.id, id))
+    .limit(1);
+
+  if (!existingShot) {
+    return NextResponse.json({ error: "Shot not found" }, { status: 404 });
+  }
+
+  // Check if member can access this shot
+  const accessError = validateMemberAccess(
+    session.user.id,
+    existingShot.userId,
+    session.user.role
+  );
+  if (accessError) return accessError;
+
+  const body = await request.json();
+  const parsed = createShotSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const data = parsed.data;
+
+  // Compute flow rate (stored on write) - use actual yield if available, otherwise target yield
+  const yieldForFlow = data.yieldActualGrams ?? data.yieldGrams;
+  const flowRate =
+    data.brewTimeSecs && data.brewTimeSecs > 0 && yieldForFlow
+      ? parseFloat((yieldForFlow / data.brewTimeSecs).toFixed(2))
+      : null;
+
+  const [updatedShot] = await db
+    .update(shots)
+    .set({
+      beanId: data.beanId,
+      grinderId: data.grinderId,
+      machineId: data.machineId || null,
+      doseGrams: String(data.doseGrams),
+      yieldGrams: String(data.yieldGrams),
+      grindLevel: String(data.grindLevel),
+      brewTempC: data.brewTempC ? String(data.brewTempC) : null,
+      brewTimeSecs: data.brewTimeSecs ? String(data.brewTimeSecs) : null,
+      yieldActualGrams: data.yieldActualGrams ? String(data.yieldActualGrams) : null,
+      preInfusionDuration: data.preInfusionDuration ? String(data.preInfusionDuration) : null,
+      brewPressure: data.brewPressure ? String(data.brewPressure) : null,
+      flowRate: flowRate ? String(flowRate) : null,
+      shotQuality: String(data.shotQuality),
+      rating: data.rating ? String(data.rating) : null,
+      toolsUsed: data.toolsUsed || null,
+      notes: data.notes || null,
+      flavorWheelCategories: data.flavorWheelCategories || null,
+      flavorWheelBody: data.flavorWheelBody || null,
+      flavorWheelAdjectives: data.flavorWheelAdjectives || null,
+    })
+    .where(eq(shots.id, id))
+    .returning();
+
+  return NextResponse.json(updatedShot);
 }
 
 export async function DELETE(

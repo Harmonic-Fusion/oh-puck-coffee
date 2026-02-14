@@ -1,6 +1,8 @@
 services:
   db:
     image: postgres:16-alpine
+    env_file:
+      - .env
     environment:
       POSTGRES_USER: ${DB_USER:-coffee}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-coffee}
@@ -18,13 +20,9 @@ services:
   app:
     build: .
     ports:
-      - "8787:3000"
-    environment:
-      DATABASE_URL: postgresql://${DB_USER:-coffee}:${DB_PASSWORD:-coffee}@db:5432/${DB_NAME:-coffee}
-      NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      - "8789:3000"
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
