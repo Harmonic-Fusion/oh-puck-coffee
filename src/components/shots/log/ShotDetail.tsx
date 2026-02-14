@@ -8,6 +8,8 @@ import { QRCode } from "@/components/common/QRCode";
 import { useTools } from "@/components/equipment/hooks";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { AppRoutes } from "@/app/routes";
+import { ShotEditForm } from "@/components/shots/form/ShotEditForm";
+import { useShot } from "@/components/shots/hooks";
 
 interface ShotDetailProps {
   shot: ShotWithJoins | null;
@@ -55,6 +57,11 @@ export function ShotDetail({
   }, [allTools]);
 
   const [duplicateUrl, setDuplicateUrl] = useState<string>("");
+  const [isEditMode, setIsEditMode] = useState(false);
+  
+  // Fetch fresh shot data when in edit mode
+  const { data: freshShot, refetch } = useShot(isEditMode && shot ? shot.id : null);
+  const currentShot = isEditMode && freshShot ? freshShot : shot;
 
   useEffect(() => {
     if (shot && typeof window !== "undefined") {
@@ -79,6 +86,21 @@ export function ShotDetail({
 
   if (!shot) return null;
 
+  const handleEditSuccess = () => {
+    setIsEditMode(false);
+    refetch();
+    if (onToggleReference) {
+      // Refetch to get updated shot data
+      setTimeout(() => {
+        refetch();
+      }, 100);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setIsEditMode(false);
+  };
+
   const handleDuplicate = () => {
     if (duplicateUrl) {
       onClose();
@@ -86,6 +108,7 @@ export function ShotDetail({
     } else {
       // Fallback to sessionStorage for backward compatibility
       const duplicateData = {
+        shotId: shot.id, // Store shot ID for previous shot display
         beanId: shot.beanId,
         grinderId: shot.grinderId,
         machineId: shot.machineId || undefined,
@@ -100,15 +123,6 @@ export function ShotDetail({
       sessionStorage.setItem("duplicateShot", JSON.stringify(duplicateData));
       onClose();
       router.push(AppRoutes.log.path);
-    }
-  };
-
-  const handleDelete = () => {
-    if (confirm("Delete this shot?")) {
-      if (onDelete) {
-        onDelete(shot.id);
-      }
-      onClose();
     }
   };
 
@@ -132,13 +146,14 @@ export function ShotDetail({
 
   const footer = (
     <div className="flex items-center gap-2">
-      {onDelete ? (
+      {!isEditMode && (
         <Button
-          variant="danger"
+          type="button"
+          variant="secondary"
           size="md"
-          onClick={handleDelete}
+          onClick={() => setIsEditMode(true)}
           className="flex-1"
-          title="Delete shot"
+          title="Edit shot"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -151,15 +166,10 @@ export function ShotDetail({
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M3 6h18" />
-            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-            <line x1="10" y1="11" x2="10" y2="17" />
-            <line x1="14" y1="11" x2="14" y2="17" />
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
           </svg>
         </Button>
-      ) : (
-        <div className="flex-1" />
       )}
       {onToggleReference && (
         <Button
@@ -245,8 +255,16 @@ export function ShotDetail({
   );
 
   return (
-    <Modal open={open} onClose={onClose} title="Shot Detail" footer={footer}>
-      <div className="space-y-6">
+    <Modal open={open} onClose={onClose} title={isEditMode ? "Edit Shot" : "Shot Detail"} footer={isEditMode ? null : footer}>
+      {isEditMode && currentShot ? (
+        <ShotEditForm
+          shot={currentShot}
+          onSuccess={handleEditSuccess}
+          onCancel={handleEditCancel}
+          onDelete={onDelete}
+        />
+      ) : (
+        <div className="space-y-6">
         {/* Meta */}
         <div className="flex items-center justify-between">
           <div>
@@ -466,8 +484,8 @@ export function ShotDetail({
             <QRCode value={duplicateUrl} size={200} title="Duplicate Shot Recipe" />
           </div>
         )}
-
-      </div>
+        </div>
+      )}
     </Modal>
   );
 }

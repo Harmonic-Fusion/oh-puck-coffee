@@ -9,6 +9,8 @@ import { Button } from "@/components/common/Button";
 import { ToolSelector } from "@/components/equipment/ToolSelector";
 import { AppRoutes } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
+import { PreviousShotRow } from "./PreviousShotRow";
+import type { ShotWithJoins } from "@/components/shots/hooks";
 
 const TEMP_UNIT_KEY = "coffee-temp-unit";
 const RECIPE_ORDER_KEY = "coffee-recipe-order";
@@ -98,7 +100,12 @@ function saveToolsExpanded(expanded: boolean): void {
   localStorage.setItem(TOOLS_EXPANDED_KEY, expanded ? "true" : "false");
 }
 
-export function SectionRecipe() {
+interface SectionRecipeProps {
+  previousShotId?: string | null;
+  onViewShot?: (shot: ShotWithJoins) => void;
+}
+
+export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps) {
   const {
     watch,
     setValue,
@@ -617,6 +624,10 @@ export function SectionRecipe() {
           )}
         </div>
       </div>
+
+      {previousShotId && (
+        <PreviousShotRow shotId={previousShotId} onViewShot={onViewShot} />
+      )}
 
       <div className="space-y-7">
         {orderedSteps.map((step) => renderStep(step.id))}

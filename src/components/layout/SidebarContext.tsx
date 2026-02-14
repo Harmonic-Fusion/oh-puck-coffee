@@ -23,9 +23,14 @@ function saveSidebarCollapsed(collapsed: boolean): void {
 }
 
 export function SidebarProvider({ children }: { children: ReactNode }) {
+  // Always initialize with false to match SSR (prevents hydration mismatch)
+  // After mount, we'll hydrate from localStorage
   const [collapsed, setCollapsedState] = useState<boolean>(false);
+  const [isHydrated, setIsHydrated] = useState<boolean>(false);
 
   useEffect(() => {
+    setIsHydrated(true);
+    // Hydrate from localStorage after mount
     setCollapsedState(getSavedSidebarCollapsed());
   }, []);
 
@@ -34,8 +39,12 @@ export function SidebarProvider({ children }: { children: ReactNode }) {
     saveSidebarCollapsed(newCollapsed);
   };
 
+  // During SSR and initial client render, always use false to prevent hydration mismatch
+  // After hydration, use the actual collapsed state from localStorage
+  const collapsedValue = isHydrated ? collapsed : false;
+
   return (
-    <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
+    <SidebarContext.Provider value={{ collapsed: collapsedValue, setCollapsed }}>
       {children}
     </SidebarContext.Provider>
   );

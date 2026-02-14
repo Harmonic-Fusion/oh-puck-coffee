@@ -121,15 +121,15 @@ Transform existing `<select>` elements into searchable dropdowns:
 
 ## Phase 3: Previous Shot Display and Editing
 
-- [ ] Track pre-population source shot ID in `ShotForm.tsx` (store when using lastShot or duplicate)
-- [ ] Add "Previous Shot" recipe step type to `SectionRecipe.tsx` (render conditionally when previous shot exists)
-- [ ] Create `PreviousShotRow` component displaying notes (truncated), Quality/Rating/Brew Time/Ratio badges, and "View Shot" button
-- [ ] Add shotId query param support to history page to open specific shot modal
-- [ ] Create PATCH `/api/shots/[id]` endpoint for editing shots (validate with same schema as create)
-- [ ] Create `useUpdateShot` hook in `shots/hooks.ts`
-- [ ] Create `ShotEditForm` component (reuse form sections, pre-populate with shot data)
-- [ ] Add edit mode toggle to `ShotDetail` modal (view/edit states)
-- [ ] Integrate edit form into `ShotDetail` modal
+- [x] Track pre-population source shot ID in `ShotForm.tsx` (store when using lastShot or duplicate)
+- [x] Add "Previous Shot" recipe step type to `SectionRecipe.tsx` (render conditionally when previous shot exists)
+- [x] Create `PreviousShotRow` component displaying notes (truncated), Quality/Rating/Brew Time/Ratio badges, and "View Shot" button
+- [x] Add shotId query param support to history page to open specific shot modal
+- [x] Create PATCH `/api/shots/[id]` endpoint for editing shots (validate with same schema as create)
+- [x] Create `useUpdateShot` hook in `shots/hooks.ts`
+- [x] Create `ShotEditForm` component (reuse form sections, pre-populate with shot data)
+- [x] Add edit mode toggle to `ShotDetail` modal (view/edit states)
+- [x] Integrate edit form into `ShotDetail` modal
 
 ## Phase 4: Settings Page and Selector Search
 

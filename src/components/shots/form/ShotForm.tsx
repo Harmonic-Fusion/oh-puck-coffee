@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -12,8 +12,9 @@ import { SectionRecipe } from "./SectionRecipe";
 import { SectionResults } from "./SectionResults";
 import { SectionFlavorWheel } from "./SectionFlavorWheel";
 import { AppRoutes } from "@/app/routes";
-import { useLastShot } from "@/components/shots/hooks";
+import { useLastShot, useDeleteShot, useToggleReference, useToggleHidden, type ShotWithJoins } from "@/components/shots/hooks";
 import { useToast } from "@/components/common/Toast";
+import { ShotDetail } from "@/components/shots/log/ShotDetail";
 
 export function ShotForm() {
   const router = useRouter();
@@ -21,6 +22,12 @@ export function ShotForm() {
   const createShot = useCreateShot();
   const { data: lastShot } = useLastShot();
   const { showToast } = useToast();
+  const deleteShot = useDeleteShot();
+  const toggleReference = useToggleReference();
+  const toggleHidden = useToggleHidden();
+
+  // State for shot detail modal
+  const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
 
   const methods = useForm<CreateShot>({
     resolver: zodResolver(createShotSchema),
@@ -46,6 +53,9 @@ export function ShotForm() {
     },
   });
 
+  // Track the previous shot ID used for pre-population
+  const [previousShotId, setPreviousShotId] = useState<string | null>(null);
+
   // Pre-populate from URL params, duplicate shot (sessionStorage), or last shot - only recipe fields, not Results & Tasting
   const hasPrePopulated = useRef(false);
   useEffect(() => {
@@ -55,6 +65,12 @@ export function ShotForm() {
     const urlParams = new URLSearchParams(searchParams.toString());
     if (urlParams.toString()) {
       hasPrePopulated.current = true;
+      
+      // Track shot ID if provided in URL params
+      const shotIdFromUrl = urlParams.get("shotId");
+      if (shotIdFromUrl) {
+        setPreviousShotId(shotIdFromUrl);
+      }
       
       // Setup section
       const beanId = urlParams.get("beanId");
@@ -124,6 +140,11 @@ export function ShotForm() {
         hasPrePopulated.current = true;
         sessionStorage.removeItem("duplicateShot"); // Clear after use
         
+        // Track the shot ID if it was stored
+        if (duplicateData.shotId) {
+          setPreviousShotId(duplicateData.shotId);
+        }
+        
         // Setup section
         if (duplicateData.beanId)
           methods.setValue("beanId", duplicateData.beanId);
@@ -158,6 +179,8 @@ export function ShotForm() {
     // Priority 3: Fall back to last shot if no duplicate data
     if (lastShot) {
       hasPrePopulated.current = true;
+      setPreviousShotId(lastShot.id);
+      
       // Setup section
       if (lastShot.beanId)
         methods.setValue("beanId", lastShot.beanId);
@@ -207,7 +230,10 @@ export function ShotForm() {
 
         <hr className="border-stone-200 dark:border-stone-700" />
 
-        <SectionRecipe />
+        <SectionRecipe 
+          previousShotId={previousShotId} 
+          onViewShot={(shot) => setSelectedShot(shot)}
+        />
 
         <hr className="border-stone-200 dark:border-stone-700" />
 
@@ -237,6 +263,40 @@ export function ShotForm() {
           )}
         </div>
       </form>
+
+      <ShotDetail
+        shot={selectedShot}
+        open={!!selectedShot}
+        onClose={() => setSelectedShot(null)}
+        onDelete={async (id) => {
+          await deleteShot.mutateAsync(id);
+          if (selectedShot?.id === id) {
+            setSelectedShot(null);
+          }
+        }}
+        onToggleReference={(id) => {
+          toggleReference.mutate(id, {
+            onSuccess: (updatedShot) => {
+              if (selectedShot?.id === id) {
+                setSelectedShot((prev) => 
+                  prev ? { ...prev, isReferenceShot: updatedShot.isReferenceShot } : null
+                );
+              }
+            },
+          });
+        }}
+        onToggleHidden={(id) => {
+          toggleHidden.mutate(id, {
+            onSuccess: (updatedShot) => {
+              if (selectedShot?.id === id) {
+                setSelectedShot((prev) => 
+                  prev ? { ...prev, isHidden: updatedShot.isHidden } : null
+                );
+              }
+            },
+          });
+        }}
+      />
     </FormProvider>
   );
 }
