@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans } from "@/db/schema";
+import { beans, shots } from "@/db/schema";
 import { createBeanSchema } from "@/shared/beans/schema";
-import { ilike, desc, eq, and } from "drizzle-orm";
+import { ilike, desc, eq, and, max, sql } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -13,22 +13,67 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search");
+  const orderBy = searchParams.get("orderBy");
 
   // Members can only see beans they created, admins can see all
-  const conditions = [];
+  const beanConditions = [];
   if (session.user.role !== "admin") {
-    conditions.push(eq(beans.createdBy, session.user.id));
+    beanConditions.push(eq(beans.createdBy, session.user.id));
   }
   if (search) {
-    conditions.push(ilike(beans.name, `%${search}%`));
+    beanConditions.push(ilike(beans.name, `%${search}%`));
   }
 
-  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+  const beanWhereClause =
+    beanConditions.length > 0 ? and(...beanConditions) : undefined;
 
+  // If ordering by recent usage, join with shots and order by max createdAt
+  if (orderBy === "recent") {
+    // Members can only see their own shots, admins see all shots
+    const joinCondition =
+      session.user.role !== "admin"
+        ? and(eq(shots.beanId, beans.id), eq(shots.userId, session.user.id))
+        : eq(shots.beanId, beans.id);
+
+    const results = await db
+      .select({
+        id: beans.id,
+        name: beans.name,
+        origin: beans.origin,
+        roaster: beans.roaster,
+        processingMethod: beans.processingMethod,
+        roastLevel: beans.roastLevel,
+        roastDate: beans.roastDate,
+        isRoastDateBestGuess: beans.isRoastDateBestGuess,
+        createdBy: beans.createdBy,
+        createdAt: beans.createdAt,
+        lastUsedAt: max(shots.createdAt).as("lastUsedAt"),
+      })
+      .from(beans)
+      .leftJoin(shots, joinCondition)
+      .where(beanWhereClause)
+      .groupBy(
+        beans.id,
+        beans.name,
+        beans.origin,
+        beans.roaster,
+        beans.processingMethod,
+        beans.roastLevel,
+        beans.roastDate,
+        beans.isRoastDateBestGuess,
+        beans.createdBy,
+        beans.createdAt
+      )
+      .orderBy(desc(sql`max(${shots.createdAt})`), desc(beans.createdAt));
+
+    return NextResponse.json(results);
+  }
+
+  // Default: order by createdAt desc
   const results = await db
     .select()
     .from(beans)
-    .where(whereClause)
+    .where(beanWhereClause)
     .orderBy(desc(beans.createdAt));
 
   return NextResponse.json(results);

@@ -133,12 +133,12 @@ Transform existing `<select>` elements into searchable dropdowns:
 
 ## Phase 4: Settings Page and Selector Search
 
-- [ ] Enhance Settings page profile section to prominently display Google account details
-- [ ] Create `SearchableSelect` component with search input, scrollable list, and "Add new" button
-- [ ] Add API endpoint or hook to fetch equipment/beans ordered by most recent shot usage
-- [ ] Replace native `<select>` with `SearchableSelect` in `GrinderSelector.tsx`
-- [ ] Replace native `<select>` with `SearchableSelect` in `MachineSelector.tsx`
-- [ ] Replace native `<select>` with `SearchableSelect` in `BeanSelector.tsx`
+- [x] Enhance Settings page profile section to prominently display Google account details
+- [x] Create `SearchableSelect` component with search input, scrollable list, and "Add new" button
+- [x] Add API endpoint or hook to fetch equipment/beans ordered by most recent shot usage
+- [x] Replace native `<select>` with `SearchableSelect` in `GrinderSelector.tsx`
+- [x] Replace native `<select>` with `SearchableSelect` in `MachineSelector.tsx`
+- [x] Replace native `<select>` with `SearchableSelect` in `BeanSelector.tsx`
 
 ## Phase 5: Bonus Features
 

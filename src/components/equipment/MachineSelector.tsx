@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMachines, useCreateMachine } from "./hooks";
+import { SearchableSelect } from "@/components/common/SearchableSelect";
 
 interface MachineSelectorProps {
   value: string;
@@ -34,6 +35,12 @@ export function MachineSelector({
     }
   };
 
+  const options =
+    machines?.map((m) => ({
+      value: m.id,
+      label: m.name,
+    })) || [];
+
   return (
     <div className="w-full">
       <label className="mb-2.5 block text-base font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
@@ -41,32 +48,18 @@ export function MachineSelector({
       </label>
       {!showCreate ? (
         <div className="flex gap-2">
-          <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className={`h-14 flex-1 rounded-xl border-2 px-4 text-base transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
-              error
-                ? "border-red-400"
-                : "border-stone-300 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            }`}
-          >
-            <option value="">
-              {isLoading ? "Loading..." : "Select a machine..."}
-            </option>
-            {machines?.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={() => setShowCreate(true)}
-            tabIndex={-1}
-            className="h-14 rounded-xl border-2 border-stone-300 px-4 text-base font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800"
-          >
-            + New
-          </button>
+          <div className="flex-1">
+            <SearchableSelect
+              value={value}
+              onChange={onChange}
+              options={options}
+              placeholder="Select a machine..."
+              isLoading={isLoading}
+              error={error}
+              onAddNew={() => setShowCreate(true)}
+              emptyMessage="No machines found"
+            />
+          </div>
         </div>
       ) : (
         <div className="flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
@@ -97,7 +90,6 @@ export function MachineSelector({
           </button>
         </div>
       )}
-      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
 }

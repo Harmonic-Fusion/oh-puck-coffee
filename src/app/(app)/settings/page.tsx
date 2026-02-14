@@ -28,24 +28,29 @@ export default function SettingsPage() {
       <div className="space-y-4">
         {/* Profile section */}
         <div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900">
-          <h2 className="mb-4 text-lg font-semibold text-stone-800 dark:text-stone-200">
+          <h2 className="mb-6 text-xl font-semibold text-stone-800 dark:text-stone-200">
             Profile
           </h2>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             {session?.user?.image && (
               <img
                 src={session.user.image}
                 alt={session.user.name || "User"}
-                className="h-14 w-14 rounded-full"
+                className="h-20 w-20 rounded-full border-2 border-stone-200 dark:border-stone-700"
               />
             )}
-            <div>
-              <p className="font-medium text-stone-800 dark:text-stone-200">
+            <div className="flex-1">
+              <p className="text-lg font-semibold text-stone-800 dark:text-stone-200">
                 {session?.user?.name || "User"}
               </p>
-              <p className="text-sm text-stone-500 dark:text-stone-400">
+              <p className="mt-1 text-base text-stone-600 dark:text-stone-400">
                 {session?.user?.email}
               </p>
+              {session?.user?.email && (
+                <p className="mt-2 text-xs text-stone-500 dark:text-stone-500">
+                  Signed in with Google
+                </p>
+              )}
             </div>
           </div>
         </div>
