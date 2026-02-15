@@ -12,6 +12,8 @@ import { SectionResults } from "./SectionResults";
 import { SectionFlavorWheel } from "./SectionFlavorWheel";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { useToast } from "@/components/common/Toast";
+import { BODY_ADJECTIVES } from "@/shared/flavor-wheel/constants";
+import type { BodyAdjective } from "@/shared/flavor-wheel/constants";
 
 interface ShotEditFormProps {
   shot: ShotWithJoins;
@@ -41,7 +43,9 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
       brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : undefined,
       shotQuality: shot.shotQuality,
       rating: shot.rating || undefined,
-      flavorWheelBody: shot.flavorWheelBody || undefined,
+      flavorWheelBody: (shot.flavorWheelBody && BODY_ADJECTIVES.includes(shot.flavorWheelBody as BodyAdjective))
+        ? (shot.flavorWheelBody as BodyAdjective)
+        : undefined,
       flavorWheelCategories: shot.flavorWheelCategories || undefined,
       flavorWheelAdjectives: shot.flavorWheelAdjectives || [],
       toolsUsed: shot.toolsUsed || [],

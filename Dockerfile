@@ -14,6 +14,8 @@ RUN pnpm install --frozen-lockfile
 FROM base AS builder
 WORKDIR /app
 RUN corepack enable
+# Install git for next.config.ts commit SHA generation
+RUN apk add --no-cache git
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Build the application
