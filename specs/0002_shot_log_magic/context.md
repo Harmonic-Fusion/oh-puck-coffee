@@ -100,7 +100,6 @@ Transform existing `<select>` elements into searchable dropdowns:
 ## Bonus Features
 
 1. **Random phrases**: Create array of encouraging phrases, use `useMemo` with random selection on mount
-2. **Steam animation**: Create `SteamOverlay` component with CSS animations or SVG paths, trigger on "Log Shot" button click, fade in/out over 2-3 seconds
 
 # Tasks
 
@@ -142,11 +141,9 @@ Transform existing `<select>` elements into searchable dropdowns:
 
 ## Phase 5: Bonus Features
 
-- [ ] Create array of encouraging phrases and implement random selection in `log/page.tsx`
-- [ ] Create `SteamOverlay` component with CSS/SVG animations
-- [ ] Integrate steam animation trigger on "Log Shot" button click in `ShotForm.tsx`
+- [x] Create array of encouraging phrases and implement random selection in `log/page.tsx`
 
 ## Additional Tasks
 
-- [ ] Make the "Log Shot" button 100% width and taller. Center it in the form.
-- [ ] After clicking "Log Shot", show a modal summary with a share link. The link should be the current shot detail page URL. Include summary of details, rating, and notes. Bottom should have buttons "Dashboard", "Log Another", "Share". X to close the modal large at the top right.
+- [x] Make the "Log Shot" button 100% width and taller. Center it in the form.
+- [x] After clicking "Log Shot", show a modal summary with a share link. The link should be the current shot detail page URL. Include summary of details, rating, and notes. Bottom should have buttons "Dashboard", "Log Another", "Share". X to close the modal large at the top right.
