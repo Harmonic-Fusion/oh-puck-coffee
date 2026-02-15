@@ -11,6 +11,7 @@ import { SectionBasics } from "./SectionBasics";
 import { SectionRecipe } from "./SectionRecipe";
 import { SectionResults } from "./SectionResults";
 import { SectionFlavorWheel } from "./SectionFlavorWheel";
+import { ShotSuccessModal } from "./ShotSuccessModal";
 import { AppRoutes } from "@/app/routes";
 import { useLastShot, useDeleteShot, useToggleReference, useToggleHidden, type ShotWithJoins } from "@/components/shots/hooks";
 import { useToast } from "@/components/common/Toast";
@@ -28,6 +29,18 @@ export function ShotForm() {
 
   // State for shot detail modal
   const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
+
+  // State for success modal
+  const [successSummary, setSuccessSummary] = useState<{
+    shotId: string;
+    doseGrams: number;
+    yieldGrams: number;
+    yieldActualGrams?: number;
+    brewTimeSecs?: number;
+    shotQuality: number;
+    rating?: number;
+    notes?: string;
+  } | null>(null);
 
   const methods = useForm<CreateShot>({
     resolver: zodResolver(createShotSchema),
@@ -211,10 +224,18 @@ export function ShotForm() {
 
   const onSubmit = async (data: CreateShot) => {
     try {
-      await createShot.mutateAsync(data);
+      const shot = await createShot.mutateAsync(data);
       methods.reset();
-      showToast("success", "Shot logged successfully!");
-      router.push(AppRoutes.history.path);
+      setSuccessSummary({
+        shotId: shot.id,
+        doseGrams: data.doseGrams,
+        yieldGrams: data.yieldGrams,
+        yieldActualGrams: data.yieldActualGrams,
+        brewTimeSecs: data.brewTimeSecs,
+        shotQuality: data.shotQuality,
+        rating: data.rating,
+        notes: data.notes,
+      });
     } catch (error) {
       showToast("error", error instanceof Error ? error.message : "Failed to log shot");
     }
@@ -243,11 +264,12 @@ export function ShotForm() {
 
         <SectionFlavorWheel />
 
-        <div className="flex items-center gap-4 pt-4">
+        <div className="flex flex-col items-center gap-3 pt-6">
           <Button
             type="submit"
             loading={createShot.isPending}
             size="lg"
+            className="w-full py-4 text-lg"
           >
             Log Shot
           </Button>
@@ -263,6 +285,12 @@ export function ShotForm() {
           )}
         </div>
       </form>
+
+      <ShotSuccessModal
+        open={!!successSummary}
+        onClose={() => setSuccessSummary(null)}
+        summary={successSummary}
+      />
 
       <ShotDetail
         shot={selectedShot}
