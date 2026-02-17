@@ -52,9 +52,9 @@ async function checkMigrations() {
         WHERE table_schema = 'public' 
         AND table_name = '__drizzle_migrations'
       );
-    `);
+    `) as { rows: Array<{ exists: boolean }> };
 
-    const tableExists = (migrationsTableExists.rows[0] as { exists: boolean } | undefined)?.exists;
+    const tableExists = migrationsTableExists.rows[0]?.exists;
     if (!tableExists) {
       console.log("⚠️  Migration tracking table doesn't exist yet.");
       console.log("   This means no migrations have been run.\n");
@@ -68,12 +68,11 @@ async function checkMigrations() {
       SELECT hash, created_at 
       FROM __drizzle_migrations 
       ORDER BY created_at;
-    `);
+    `) as { rows: Array<{ hash: string; created_at: Date }> };
 
     console.log(`✅ Found ${appliedMigrations.rows.length} applied migration(s):`);
     appliedMigrations.rows.forEach((row, idx) => {
-      const r = row as { hash: string; created_at: Date };
-      console.log(`   ${idx + 1}. ${r.hash} (${r.created_at})`);
+      console.log(`   ${idx + 1}. ${row.hash} (${row.created_at})`);
     });
 
     // Check for common schema issues
@@ -87,9 +86,9 @@ async function checkMigrations() {
         AND table_name = 'shots' 
         AND column_name = 'flow_control'
       );
-    `);
+    `) as { rows: Array<{ exists: boolean }> };
 
-    const flowControlColumnExists = (flowControlExists.rows[0] as { exists: boolean } | undefined)?.exists;
+    const flowControlColumnExists = flowControlExists.rows[0]?.exists;
     if (!flowControlColumnExists) {
       console.log("⚠️  Missing column: shots.flow_control");
       console.log("   This should have been added in migration 0001_phase3_schema_changes\n");
@@ -105,9 +104,9 @@ async function checkMigrations() {
         AND table_name = 'shots' 
         AND column_name = 'flow_rate'
       );
-    `);
+    `) as { rows: Array<{ exists: boolean }> };
 
-    const flowRateColumnExists = (flowRateExists.rows[0] as { exists: boolean } | undefined)?.exists;
+    const flowRateColumnExists = flowRateExists.rows[0]?.exists;
     if (!flowRateColumnExists) {
       console.log("⚠️  Missing column: shots.flow_rate");
       console.log("   This should have been added in migration 0000_kind_spacker_dave\n");
@@ -123,9 +122,9 @@ async function checkMigrations() {
         AND table_name = 'users' 
         AND column_name = 'is_custom_name'
       );
-    `);
+    `) as { rows: Array<{ exists: boolean }> };
 
-    const isCustomNameColumnExists = (isCustomNameExists.rows[0] as { exists: boolean } | undefined)?.exists;
+    const isCustomNameColumnExists = isCustomNameExists.rows[0]?.exists;
     if (!isCustomNameColumnExists) {
       console.log("⚠️  Missing column: users.is_custom_name");
       console.log("   This should have been added in migration 0003_add_is_custom_name\n");
