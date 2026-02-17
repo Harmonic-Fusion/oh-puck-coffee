@@ -7,6 +7,7 @@
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { sql } from "drizzle-orm";
 import { existsSync } from "fs";
 import { readdir } from "fs/promises";
 import { join } from "path";
@@ -40,6 +41,39 @@ async function checkMigrationsFolder(): Promise<void> {
     console.error("❌ Error reading migrations folder:", error);
     throw error;
   }
+}
+
+async function verifyCriticalColumns(db: ReturnType<typeof drizzle>): Promise<void> {
+  console.log("🔍 Verifying critical database columns...");
+  
+  // Check if users table has is_custom_name column (matches pattern from check-migrations.ts)
+  try {
+    const isCustomNameExists = await db.execute(sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.columns 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users' 
+        AND column_name = 'is_custom_name'
+      );
+    `) as { rows: Array<{ exists: boolean }> };
+
+    const isCustomNameColumnExists = isCustomNameExists.rows[0]?.exists;
+    if (!isCustomNameColumnExists) {
+      console.error("❌ Missing critical column: users.is_custom_name");
+      console.error("   Expected from migration: 0003_add_is_custom_name");
+      throw new Error("Critical column users.is_custom_name is missing. Migration 0003_add_is_custom_name may not have been applied.");
+    } else {
+      console.log("✅ Verified: users.is_custom_name exists");
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Critical column")) {
+      throw error;
+    }
+    console.error("⚠️  Error checking users.is_custom_name:", error);
+    throw error; // Re-throw to fail the migration
+  }
+  
+  console.log("✅ Critical column verification complete");
 }
 
 async function runMigrations() {
@@ -81,6 +115,17 @@ async function runMigrations() {
     const duration = Date.now() - startTime;
 
     console.log(`✅ Migrations completed successfully in ${duration}ms`);
+    
+    // Verify critical columns exist after migrations
+    try {
+      await verifyCriticalColumns(db);
+    } catch (error) {
+      console.error("❌ Critical column verification failed:", error);
+      // Still exit with error to prevent server start with incomplete schema
+      await client.end();
+      process.exit(1);
+    }
+    
     await client.end();
     console.log("✅ Database connection closed");
     process.exit(0);
