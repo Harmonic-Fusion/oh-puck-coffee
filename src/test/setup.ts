@@ -2,6 +2,7 @@ import "@testing-library/jest-dom";
 import { vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import React from "react";
 
 // Mock Next.js router
 vi.mock("next/navigation", () => ({
@@ -35,7 +36,9 @@ export function createTestQueryClient() {
 // Test wrapper with QueryClientProvider
 export function TestWrapper({ children }: { children: ReactNode }) {
   const queryClient = createTestQueryClient();
-  return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  return React.createElement(
+    QueryClientProvider,
+    { client: queryClient },
+    children
   );
 }
