@@ -21,6 +21,8 @@ interface NumberStepperProps {
   labelExtra?: React.ReactNode;
   /** If true, preserves exact values without rounding (useful for precise measurements like time) */
   noRound?: boolean;
+  /** Extra button(s) rendered between the value display and the −/+ buttons */
+  extraButtons?: React.ReactNode;
 }
 
 export function NumberStepper({
@@ -39,6 +41,7 @@ export function NumberStepper({
   disabled = false,
   labelExtra,
   noRound = false,
+  extraButtons,
 }: NumberStepperProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -99,6 +102,8 @@ export function NumberStepper({
     }
   }, [isEditing]);
 
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const commitEdit = useCallback(() => {
     setIsEditing(false);
     const trimmed = editValue.trim();
@@ -113,16 +118,36 @@ export function NumberStepper({
     }
   }, [editValue, onChange, clamp, decimals, noRound]);
 
+  /** Advance focus to the next focusable field in the form */
+  const focusNextField = useCallback(() => {
+    if (!containerRef.current) return;
+    const form = containerRef.current.closest("form");
+    if (!form) return;
+    const focusable = Array.from(
+      form.querySelectorAll<HTMLElement>(
+        '[tabindex="0"], input:not([tabindex="-1"]):not([disabled]), textarea:not([tabindex="-1"]):not([disabled]), select:not([tabindex="-1"]):not([disabled]), [role="slider"]:not([aria-disabled="true"])'
+      )
+    ).filter((el) => el.offsetParent !== null); // visible only
+    const currentIdx = focusable.findIndex(
+      (el) => containerRef.current?.contains(el)
+    );
+    if (currentIdx !== -1 && currentIdx < focusable.length - 1) {
+      focusable[currentIdx + 1].focus();
+    }
+  }, []);
+
   const handleEditKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
         commitEdit();
+        // Defer focus advance so the DOM has updated after commitEdit
+        requestAnimationFrame(() => focusNextField());
       } else if (e.key === "Escape") {
         setIsEditing(false);
       }
     },
-    [commitEdit]
+    [commitEdit, focusNextField]
   );
 
   const handleValueDisplayKeyDown = useCallback(
@@ -139,7 +164,7 @@ export function NumberStepper({
   const canIncrement = value == null || value < max;
 
   return (
-    <div className="w-full">
+    <div ref={containerRef} className="w-full">
       {/* Label row */}
       {(label || labelExtra) && (
         <div className="mb-2.5">
@@ -159,18 +184,6 @@ export function NumberStepper({
 
       {/* Stepper controls */}
       <div className="flex items-center gap-2">
-        {/* Decrement button */}
-        <button
-          type="button"
-          onClick={handleDecrement}
-          disabled={disabled || !canDecrement}
-          aria-label={`Decrease ${label ?? "value"}`}
-          tabIndex={-1}
-          className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
-        >
-          −
-        </button>
-
         {/* Value display / editable input */}
         <div
           onClick={startEditing}
@@ -221,17 +234,32 @@ export function NumberStepper({
           )}
         </div>
 
-        {/* Increment button */}
-        <button
-          type="button"
-          onClick={handleIncrement}
-          disabled={disabled || !canIncrement}
-          aria-label={`Increase ${label ?? "value"}`}
-          tabIndex={-1}
-          className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
-        >
-          +
-        </button>
+        {/* Extra buttons (e.g. play/pause timer) */}
+        {extraButtons}
+
+        {/* Decrement & Increment buttons side-by-side */}
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={handleDecrement}
+            disabled={disabled || !canDecrement}
+            aria-label={`Decrease ${label ?? "value"}`}
+            tabIndex={-1}
+            className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            onClick={handleIncrement}
+            disabled={disabled || !canIncrement}
+            aria-label={`Increase ${label ?? "value"}`}
+            tabIndex={-1}
+            className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
+          >
+            +
+          </button>
+        </div>
       </div>
 
       {/* Error */}

@@ -16,6 +16,7 @@ import { AppRoutes } from "@/app/routes";
 import { useLastShot, useDeleteShot, useToggleReference, useToggleHidden, type ShotWithJoins } from "@/components/shots/hooks";
 import { useToast } from "@/components/common/Toast";
 import { ShotDetail } from "@/components/shots/log/ShotDetail";
+import { ValidationBanner } from "@/components/common/ValidationBanner";
 
 export function ShotForm() {
   const router = useRouter();
@@ -54,6 +55,7 @@ export function ShotForm() {
       brewTempC: undefined,
       yieldActualGrams: undefined,
       brewTimeSecs: undefined,
+      estimateMaxPressure: undefined,
       preInfusionDuration: undefined,
       brewPressure: 9,
       shotQuality: undefined,
@@ -247,6 +249,10 @@ export function ShotForm() {
         onSubmit={methods.handleSubmit(onSubmit)}
         className="space-y-8"
       >
+        {methods.formState.isSubmitted && (
+          <ValidationBanner errors={methods.formState.errors} />
+        )}
+
         <SectionBasics />
 
         <hr className="border-stone-200 dark:border-stone-700" />

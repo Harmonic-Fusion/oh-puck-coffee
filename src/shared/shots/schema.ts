@@ -14,13 +14,14 @@ export const createShotSchema = z.object({
   // Results
   brewTimeSecs: z.coerce.number().positive().max(120).optional(),
   yieldActualGrams: z.coerce.number().positive().max(200).optional(),
-  shotQuality: z.coerce.number().min(1).max(5).refine((val) => {
+  estimateMaxPressure: z.coerce.number().positive().max(20).optional(),
+  shotQuality: z.coerce.number({ invalid_type_error: "Required" }).min(1, "Required").max(5).refine((val) => {
     // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
     const step = 0.5;
     const normalized = Math.round(val / step) * step;
     return Math.abs(val - normalized) < 0.01;
   }, { message: "Quality must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }),
-  rating: z.coerce.number().min(1).max(5).refine((val) => {
+  rating: z.coerce.number({ invalid_type_error: "Required" }).min(1, "Required").max(5).refine((val) => {
     // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
     const step = 0.5;
     const normalized = Math.round(val / step) * step;
@@ -49,6 +50,7 @@ export const shotSchema = z.object({
   // Results
   brewTimeSecs: z.coerce.number().nullable(),
   yieldActualGrams: z.coerce.number().nullable(),
+  estimateMaxPressure: z.coerce.number().nullable(),
   flowRate: z.coerce.number().nullable(),
   shotQuality: z.number(),
   rating: z.number().nullable(),

@@ -6,18 +6,21 @@ config:
 
 # Goal
 
-Route to CREATE, CLARIFY, or PLAN mode based on specification state. Creates/updates **DOCUMENTATION ONLY** - never source code. Uses Claude Code's tools and agents for intelligent planning.
+Route to CREATE, CLARIFY, or PLAN mode based on specification state. Creates/updates **DOCUMENTATION ONLY** - never source code.
 
 # Instructions
 
-**Note**: Claude Code's Task tool will handle variable replacement and context management. Use specialized agents for different aspects of planning.
+**Note**: As you proceed, replace variables with the actual values. Use the config frontmatter for some of the global variable replacement.Example:
+
+- Input: "Set `${EXAMPLE}` as $(echo "hello world)"
+- Output: Everywhere ${EXAMPLE} is replaced with "hello world" when evaluating.
 
 # Routing
 
-1. Use Bash tool to get current branch → `${CURRENT_BRANCH}` (stop if `main`)
+1. Get branch: `git branch --show-current` → `${CURRENT_BRANCH}` (stop if `main`)
 2. Set `${FEATURE_DIR}` = `${SPECS_DIR}/${CURRENT_BRANCH}`, `${FEATURE_CONTEXT}` = `${FEATURE_DIR}/context.md`
-3. Use Read tool to check if context exists
-4. Route based on context state:
+3. Replace all env variables with actual values.
+4. Route if:
    - No `context.md` exists → **CREATE** mode
    - `context.md` exists with `[NEEDS CLARIFICATION]` markers → **CLARIFY** mode
    - `context.md` exists without `[NEEDS CLARIFICATION]` markers → **PLAN** mode
@@ -26,8 +29,8 @@ Route to CREATE, CLARIFY, or PLAN mode based on specification state. Creates/upd
 
 **When:** `${FEATURE_CONTEXT}` does not exist
 
-1. Use Bash tool to create directory ${FEATURE_DIR} if needed
-2. Use Write tool to create `${FEATURE_CONTEXT}` with template:
+1. Make the directory ${FEATURE_DIR}` if it doesn't exist
+2. Create `${FEATURE_CONTEXT}` from:
 
 ```markdown
 # Problem Statement
@@ -51,80 +54,50 @@ Route to CREATE, CLARIFY, or PLAN mode based on specification state. Creates/upd
 - [ ] task 1
 ```
 
-3. Use Read tool to examine `${AGENTS_MD}` for project context
-4. Use Task tool with subagent_type=Plan to:
-   - Analyze user input from `${ARGUMENTS}`
-   - Explore codebase for context
-   - Generate specification content
-   - Focus on **WHAT** needs to be specified, not **HOW**
-5. Add `[NEEDS CLARIFICATION: question?]` markers for ambiguous areas
-6. Validate: only `${SPECS_DIR}/${CURRENT_BRANCH}/` files modified
+3. Read `${AGENTS_MD}` if exists for project context
+4. Populate from user input `${ARGUMENTS}`: analyze request, scan project, research if needed.
+   - Focus on **WHAT** needs to be specified, not **HOW** to implement
+   - "Implement X" means "create specification for X"
+   - "Change Y" means "specify requirement for Y"
+   - "Fix Z" means "document Z needs fixing in spec"
+5. Add `[NEEDS CLARIFICATION: question?]` for ambiguous areas where you need user input.
+6. Validate: only `${SPECS_DIR}/${CURRENT_BRANCH}/` files modified.
 
 # Mode: CLARIFY
 
 **When:** `${FEATURE_CONTEXT}` exists with `[NEEDS CLARIFICATION]` markers
 
-1. Use Read tool to examine `${FEATURE_CONTEXT}` and related files
-2. Use Grep tool to find all `[NEEDS CLARIFICATION]` markers
+1. Read `${FEATURE_CONTEXT}` and related files, identify all `[NEEDS CLARIFICATION]` markers
+2. Read `${AGENTS_MD}` if relevant
 3. **If user input provided:**
-   - Use Edit tool to update spec sections
-   - Add new clarification markers as needed
+   - Update `${FEATURE_CONTEXT}` sections (Overview, Scope, Solution, Tasks)
+   - Add new `[NEEDS CLARIFICATION]` markers as needed
    - Remove resolved markers
 4. **If NO user input:**
-   - Use Task tool with subagent_type=general-purpose to:
-     - Present ONE question at a time with options
-     - Format as table (A/B/Custom)
-   - Wait for answer, update spec, continue (max 7 per session)
-   - Track questions asked to avoid duplicates
+   - Present ONE question at a time with options table (A/B/Custom)
+   - Wait for answer, update spec, continue (max 7 per session). Do not ask the same question twice.
+   - If none found → report complete
 5. Validate: only `${SPECS_DIR}/${CURRENT_BRANCH}/` files modified
 
 # Mode: PLAN
 
 **When:** `${FEATURE_CONTEXT}` exists without `[NEEDS CLARIFICATION]` markers
 
-1. Use Read tool to extract requirements from `${FEATURE_CONTEXT}`
-2. Check for `${FEATURE_DIR}/analyzed.md`:
-   - If exists: Use Read tool to review
-   - If not: Use Task tool with subagent_type=Explore to scan project
-3. Use Task tool with subagent_type=Plan to generate implementation plan:
-   - Maximum 10 tasks organized in phases
-   - Use `- [ ]` checkbox syntax
-   - Reference solution and scope sections
-   - Keep tasks concrete and measurable
-   - Prioritize by dependencies
-4. Use Edit tool to update `${FEATURE_CONTEXT}` with plan
-5. Use TodoWrite tool to track planning progress
-6. Validate: only `${SPECS_DIR}/${CURRENT_BRANCH}/` files modified
-
-# Claude Code Specific Features
-
-**Leverage Specialized Agents:**
-- `Plan` subagent for architectural planning and design decisions
-- `Explore` subagent for thorough codebase analysis
-- `general-purpose` subagent for complex reasoning tasks
-
-**Use Tools Effectively:**
-- Read/Write/Edit tools for all file operations
-- Grep tool with regex for pattern matching
-- Task tool for intelligent analysis and planning
-- TodoWrite for tracking multi-step planning processes
-
-**Parallel Processing:**
-- Execute multiple Read operations in parallel when analyzing files
-- Run multiple Task agents concurrently for different planning aspects
+1. Extract requirements/acceptance criteria from `${FEATURE_CONTEXT}`
+2. Review `${FEATURE_DIR}/analyzed.md` if exists, else scan project code
+3. Generate plan: max 10 tasks, organized in phases, use `- [ ]` syntax. DRY. Reference the solution and scope sections. Be concise. Keep requirements concrete and measurable. Prioritize by dependencies.
+4. Update `${FEATURE_CONTEXT}` with plan summary.
+5. Validate: only `${SPECS_DIR}/${CURRENT_BRANCH}/` files modified
 
 # ⚠️ FINAL CHECKPOINT
 
 **Before finishing:**
 
-- [ ] Verify modifications ONLY in `${SPECS_DIR}/${CURRENT_BRANCH}/`
-- [ ] Confirm created documentation, NOT implementation
-- [ ] Check all clarification markers are properly formatted
-- [ ] Ensure plan tasks use checkbox syntax `- [ ]`
+- [ ] Verify that you modified ONLY `${SPECS_DIR}/${CURRENT_BRANCH}/` files otherwise you did it WRONG. Do not modify any other source files.
+- [ ] Verify that you created documentation, NOT implementation.
 
 # Next Steps
 
-- Review the `${FEATURE_CONTEXT}` file to see the plan
-- Run `/plan [description]` again to refine the plan
-- Run `/implement [phase]` to execute the plan
-- Use `/commit` to save specification changes
+- Review the `${FEATURE_CONTEXT}` file to see the plan.
+- Run `/plan [description]` again to continue updating the plan.
+- Run `/implement [phase]` to execute phase the plan.

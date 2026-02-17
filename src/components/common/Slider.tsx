@@ -47,16 +47,6 @@ export function Slider({
     (e: React.PointerEvent) => {
       if (disabled) return;
       e.preventDefault();
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-      handleInteraction(e.clientX);
-    },
-    [disabled, handleInteraction]
-  );
-
-  const handlePointerMove = useCallback(
-    (e: React.PointerEvent) => {
-      if (disabled) return;
-      if (e.buttons === 0) return; // not pressed
       handleInteraction(e.clientX);
     },
     [disabled, handleInteraction]
@@ -113,7 +103,6 @@ export function Slider({
             disabled ? "cursor-not-allowed opacity-50" : ""
           }`}
           onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
           onKeyDown={handleKeyDown}
         >
           {/* Track background */}

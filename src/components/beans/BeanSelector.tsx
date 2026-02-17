@@ -146,54 +146,50 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
             className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
             autoFocus
           />
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              placeholder="Origin"
-              value={newOrigin}
-              onChange={(e) => setNewOrigin(e.target.value)}
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            />
-            <input
-              type="text"
-              placeholder="Roaster"
-              value={newRoaster}
-              onChange={(e) => setNewRoaster(e.target.value)}
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <select
-              value={newProcessing}
-              onChange={(e) => setNewProcessing(e.target.value)}
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            >
-              <option value="">Processing...</option>
-              {PROCESSING_METHODS.map((method) => (
-                <option key={method} value={method}>
-                  {method}
-                </option>
-              ))}
-            </select>
-            <select
-              value={newRoast}
-              onChange={(e) => setNewRoast(e.target.value)}
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            >
-              {ROAST_LEVELS.map((level) => (
-                <option key={level} value={level}>
-                  {level}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={newRoastDate}
-              onChange={(e) => setNewRoastDate(e.target.value)}
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-              placeholder="Roast date"
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Origin"
+            value={newOrigin}
+            onChange={(e) => setNewOrigin(e.target.value)}
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          />
+          <input
+            type="text"
+            placeholder="Roaster"
+            value={newRoaster}
+            onChange={(e) => setNewRoaster(e.target.value)}
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          />
+          <select
+            value={newProcessing}
+            onChange={(e) => setNewProcessing(e.target.value)}
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          >
+            <option value="">Processing...</option>
+            {PROCESSING_METHODS.map((method) => (
+              <option key={method} value={method}>
+                {method}
+              </option>
+            ))}
+          </select>
+          <select
+            value={newRoast}
+            onChange={(e) => setNewRoast(e.target.value)}
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          >
+            {ROAST_LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {level}
+              </option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={newRoastDate}
+            onChange={(e) => setNewRoastDate(e.target.value)}
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+            placeholder="Roast date"
+          />
           <div className="flex items-center justify-between">
             <label
               htmlFor="isRoastDateBestGuess"
@@ -243,7 +239,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
           </div>
         </div>
       ) : (
-        // View mode - read-only fields with same layout as edit mode
+        // View mode - read-only fields stacked single column
         <div className="space-y-3">
           <input
             type="text"
@@ -252,49 +248,45 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
             disabled
             className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-800 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200 cursor-not-allowed"
           />
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              value={selectedBean.origin || "-"}
-              readOnly
-              disabled
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
-            />
-            <input
-              type="text"
-              value={selectedBean.roaster || "-"}
-              readOnly
-              disabled
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <select
-              value={selectedBean.processingMethod || ""}
-              disabled
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
-            >
-              <option value="">{selectedBean.processingMethod || "Processing..."}</option>
-            </select>
-            <select
-              value={selectedBean.roastLevel}
-              disabled
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
-            >
-              <option value={selectedBean.roastLevel}>{selectedBean.roastLevel}</option>
-            </select>
-            <input
-              type="date"
-              value={
-                selectedBean.roastDate
-                  ? new Date(selectedBean.roastDate).toISOString().split("T")[0]
-                  : ""
-              }
-              readOnly
-              disabled
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
-            />
-          </div>
+          <input
+            type="text"
+            value={selectedBean.origin || "-"}
+            readOnly
+            disabled
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
+          />
+          <input
+            type="text"
+            value={selectedBean.roaster || "-"}
+            readOnly
+            disabled
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
+          />
+          <select
+            value={selectedBean.processingMethod || ""}
+            disabled
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
+          >
+            <option value="">{selectedBean.processingMethod || "Processing..."}</option>
+          </select>
+          <select
+            value={selectedBean.roastLevel}
+            disabled
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
+          >
+            <option value={selectedBean.roastLevel}>{selectedBean.roastLevel}</option>
+          </select>
+          <input
+            type="date"
+            value={
+              selectedBean.roastDate
+                ? new Date(selectedBean.roastDate).toISOString().split("T")[0]
+                : ""
+            }
+            readOnly
+            disabled
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
+          />
           <div className="flex items-center justify-between">
             <label
               htmlFor="isRoastDateBestGuessView"
@@ -388,54 +380,50 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
             className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
             autoFocus
           />
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="text"
-              placeholder="Origin"
-              value={newOrigin}
-              onChange={(e) => setNewOrigin(e.target.value)}
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            />
-            <input
-              type="text"
-              placeholder="Roaster"
-              value={newRoaster}
-              onChange={(e) => setNewRoaster(e.target.value)}
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <select
-              value={newProcessing}
-              onChange={(e) => setNewProcessing(e.target.value)}
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            >
-              <option value="">Processing...</option>
-              {PROCESSING_METHODS.map((method) => (
-                <option key={method} value={method}>
-                  {method}
-                </option>
-              ))}
-            </select>
-            <select
-              value={newRoast}
-              onChange={(e) => setNewRoast(e.target.value)}
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            >
-              {ROAST_LEVELS.map((level) => (
-                <option key={level} value={level}>
-                  {level}
-                </option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={newRoastDate}
-              onChange={(e) => setNewRoastDate(e.target.value)}
-              className="h-12 rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-              placeholder="Roast date"
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Origin"
+            value={newOrigin}
+            onChange={(e) => setNewOrigin(e.target.value)}
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          />
+          <input
+            type="text"
+            placeholder="Roaster"
+            value={newRoaster}
+            onChange={(e) => setNewRoaster(e.target.value)}
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          />
+          <select
+            value={newProcessing}
+            onChange={(e) => setNewProcessing(e.target.value)}
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          >
+            <option value="">Processing...</option>
+            {PROCESSING_METHODS.map((method) => (
+              <option key={method} value={method}>
+                {method}
+              </option>
+            ))}
+          </select>
+          <select
+            value={newRoast}
+            onChange={(e) => setNewRoast(e.target.value)}
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          >
+            {ROAST_LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {level}
+              </option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={newRoastDate}
+            onChange={(e) => setNewRoastDate(e.target.value)}
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+            placeholder="Roast date"
+          />
           <div className="flex items-center justify-between">
             <label
               htmlFor="isRoastDateBestGuess"

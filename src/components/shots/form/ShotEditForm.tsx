@@ -12,6 +12,7 @@ import { SectionResults } from "./SectionResults";
 import { SectionFlavorWheel } from "./SectionFlavorWheel";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { useToast } from "@/components/common/Toast";
+import { ValidationBanner } from "@/components/common/ValidationBanner";
 import { BODY_ADJECTIVES } from "@/shared/flavor-wheel/constants";
 import type { BodyAdjective } from "@/shared/flavor-wheel/constants";
 
@@ -41,6 +42,7 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
       brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : undefined,
       yieldActualGrams: shot.yieldActualGrams ? parseFloat(shot.yieldActualGrams) : undefined,
       brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : undefined,
+      estimateMaxPressure: shot.estimateMaxPressure ? parseFloat(shot.estimateMaxPressure) : undefined,
       shotQuality: shot.shotQuality,
       rating: shot.rating || undefined,
       flavorWheelBody: (shot.flavorWheelBody && BODY_ADJECTIVES.includes(shot.flavorWheelBody as BodyAdjective))
@@ -69,6 +71,10 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
         onSubmit={methods.handleSubmit(onSubmit)}
         className="space-y-8"
       >
+        {methods.formState.isSubmitted && (
+          <ValidationBanner errors={methods.formState.errors} />
+        )}
+
         <SectionBasics />
 
         <hr className="border-stone-200 dark:border-stone-700" />

@@ -5,11 +5,14 @@ config:
 
 # Goal
 
-Implement tasks from spec (spec-driven) OR execute a single task (task mode) using Claude Code's tools and agents.
+Implement tasks from spec (spec-driven) OR execute a single task (task mode).
 
 # Instructions
 
-**Note**: Use Claude Code's Task tool with appropriate subagent types for complex operations. The Task tool will handle variable replacement and context management automatically.
+**Note**: As you proceed, replace variables with the actual values. Use the config frontmatter for some of the global variable replacement.Example:
+
+- Input: "Set `${EXAMPLE}` as $(echo "hello world)"
+- Output: Everywhere ${EXAMPLE} is replaced with "hello world" when evaluating.
 
 # User Input
 
@@ -19,83 +22,65 @@ ${ARGUMENTS}
 
 # Routing
 
-1. Use Bash tool to get current branch → `${CURRENT_BRANCH}` (stop if `main`)
+1. Get branch: `git branch --show-current` → `${CURRENT_BRANCH}` (stop if `main`)
 2. Set `${FEATURE_DIR}` = `${SPECS_DIR}/${CURRENT_BRANCH}`, `${FEATURE_CONTEXT}` = `${FEATURE_DIR}/context.md`
-3. Use Task tool with subagent_type=general-purpose to validate context
+3. Replace all env variables with actual values.
 4. If context doesn't exist → error, warn the user to run `/plan` first
-5. Use Read tool to examine ${FEATURE_CONTEXT} for existing tasks
+5. Read ${FEATURE_CONTEXT} to see what tasks exist
 6. Route based on user input:
-   - User input references existing phase/task/section → **SPEC-DRIVEN** mode
+   - User input references existing phase/task/section → **SPEC-DRIVEN** mode (implement tasks in the phase/task/section)
    - User input is a new instruction → **TASK** mode
-   - User input is empty → **SPEC-DRIVEN** mode (next phase)
+   - User input is empty → **SPEC-DRIVEN** mode (next phase of uncompleted tasks)
 
 # Mode: TASK
 
 **When:** User input is a new instruction (not referencing existing spec tasks)
 
-1. Use TodoWrite tool to break down the task into subtasks
-2. Use Task tool with subagent_type=general-purpose to:
-   - Analyze and implement the requested task
-   - Validate implementation and handle errors
-3. Track progress with TodoWrite tool throughout execution
-4. Update ${FEATURE_CONTEXT} using Edit tool:
+1. Analyze task based on user input.
+2. Break down into subtasks and execute them systematically.
+3. Validate implementation and handle errors
+4. Track in ${FEATURE_CONTEXT}:
+   - Read `${FEATURE_CONTEXT}`
    - Create "# Additional Tasks" section if needed
-   - Add `- [x] ${ARGUMENTS}` to track completion
+   - Add `- [x] ${ARGUMENTS}` and save
 
 # Mode: SPEC-DRIVEN
 
 **When:** User input references existing phase/task/section OR is empty
 
-1. **Find linked files**: Use Task tool with subagent_type=Explore to:
-   - Scan ${FEATURE_CONTEXT} for links and references
-   - Follow links recursively (depth: 3)
+1. **Find linked files**: Scan ${FEATURE_CONTEXT} for links, follow recursively (depth: 3)
+
    - Patterns: `[text](path)`, `@file`, `./path`, `[[link]]`, `$VAR`
    - Types: .md, .txt, .json, .yaml, .js, .ts, .py, .sh
    - Skip: External URLs, binaries
 
-2. **Extract tasks** using Grep tool:
-   - Search for uncompleted: `- [ ]`, `* [ ]`, `+ [ ]`
-   - Identify markers: `[HIGH]`, `[MEDIUM]`, `[LOW]`, `[CRITICAL]`, `TODO:`, `FIXME:`
+2. **Extract tasks** from all files:
+
+   - Uncompleted: `- [ ]`, `* [ ]`, `+ [ ]`
    - Ignore completed: `- [x]`, `* [x]`, `+ [x]`
+   - Markers: `[HIGH]`, `[MEDIUM]`, `[LOW]`, `[CRITICAL]`, `TODO:`, `FIXME:`
 
 3. **Filter tasks** (if user input provided):
-   - Use Task tool to match phase/section names
-   - Filter by task number or keywords
-   - Default to next phase of uncompleted tasks
+
+   - Phase/section name → tasks in that section
+   - Task number → specific task
+   - Keywords → matching descriptions
+   - None → next phase of uncompleted tasks
 
 4. **Execute**:
-   - Use TodoWrite tool to organize tasks by priority
-   - Use appropriate Task subagents for implementation:
-     - `general-purpose` for complex multi-step tasks
-     - `Explore` for codebase exploration
-     - `Plan` for architectural planning
-   - Use Edit tool to mark tasks `- [x]` after completion
-   - Continue on non-critical failures (document issues)
+   - Organize by priority and dependencies
+   - Implement tasks, mark `- [x]` in ALL files containing the task after each
+   - Continue on non-critical failures (document issues, only halt for critical errors)
 
 # Both Modes: Tracking
 
-- Use TodoWrite tool throughout to track progress
-- Use Edit tool to update files with `- [x]` markers
-- Provide brief summary of changes implemented
-- Suggest commit message: `"feat: implement ${FEATURE}"`
-
-# Claude Code Specific Guidelines
-
-**Use Tools Instead of Bash Commands:**
-- Read tool for file reading (not cat/head/tail)
-- Edit tool for file modifications (not sed/awk)
-- Write tool for new files (not echo/heredoc)
-- Grep tool for searching (not grep/rg commands)
-- Task tool for complex operations
-
-**Leverage Specialized Agents:**
-- Use Task with subagent_type=Explore for codebase discovery
-- Use Task with subagent_type=general-purpose for multi-step implementations
-- Use parallel tool calls when tasks are independent
+- Update all files with `- [x]` completed markers for all tasks completed.
+- Brief summary of changes implemented.
+- Suggested commit message: `"feat: implement ${FEATURE}"`
 
 # Next Steps
 
 1. Review implementation results
 2. Review changes in ${FEATURE_CONTEXT}
-3. Use `/plan` to continue updating the plan
-4. Use `/commit` to commit changes
+3. Use `/plan` to continue updating the plan.
+4. Use `/commit` to commit changes.

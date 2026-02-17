@@ -352,7 +352,7 @@ export function ShotDetail({
         </div>
 
         {/* Results */}
-        {(shot.brewTimeSecs || shot.yieldActualGrams) && (
+        {(shot.brewTimeSecs || shot.yieldActualGrams || shot.estimateMaxPressure) && (
           <div>
             <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Results
@@ -368,6 +368,12 @@ export function ShotDetail({
                 <DetailRow 
                   label="Brew Time" 
                   value={`${shot.brewTimeSecs}s${shot.flowRate ? ` · ${shot.flowRate} g/s` : ""}`} 
+                />
+              )}
+              {shot.estimateMaxPressure && (
+                <DetailRow 
+                  label="Est. Max Pressure" 
+                  value={`${shot.estimateMaxPressure} bar`} 
                 />
               )}
             </div>

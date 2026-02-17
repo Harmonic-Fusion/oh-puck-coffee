@@ -4,7 +4,7 @@ config:
 ---
 # Goal
 
-Create a git commit with a conventional commit message based on current changes using Claude Code's built-in git tools.
+Create a git commit with a conventional commit message based on current changes.
 
 # User Input
 
@@ -18,9 +18,8 @@ Optional: Commit message or specific files to stage.
 
 ## 1. Check Git Status
 
-Use the Task tool with subagent_type=general-purpose to:
-- Analyze git status and determine what files have changed
-- If no changes → notify user and exit
+1. Run: `git status --porcelain` → `${CHANGED_FILES}`
+2. If no changes → notify user and exit
 
 ## 2. Generate Commit Message
 
@@ -28,7 +27,7 @@ Use the Task tool with subagent_type=general-purpose to:
 - Use ${ARGUMENTS} as commit message
 
 **If no message provided:**
-1. Use the Task tool to analyze changes and determine commit type:
+1. Analyze ${CHANGED_FILES} to determine commit type:
    - `feat` → New feature
    - `fix` → Bug fix
    - `docs` → Documentation only
@@ -50,10 +49,11 @@ Use the Task tool with subagent_type=general-purpose to:
 
 ## 3. Stage and Commit
 
-Use Claude Code's built-in git commit functionality:
-1. Stage changes (all or specific files as requested)
-2. Create commit with conventional message format
-3. The commit will automatically include Claude Code attribution
+1. Stage changes:
+   - All: `git add .`
+   - Specific: `git add ${ARGUMENTS}` (if files specified)
+
+2. Commit: `git commit -m "${COMMIT_MESSAGE}"`
 
 # Output
 
@@ -61,16 +61,10 @@ Summary of commit with message and files changed.
 
 # Next Steps
 
-1. Push changes: Use Bash tool with `git push`
+1. Push changes: `git push`
 2. Use `/merge` to merge to ${MAIN_BRANCH}
 
 # Guidelines
-
-**Important for Claude Code:**
-- Use the built-in git commit functionality instead of raw bash commands
-- The system will automatically add Claude Code attribution to commits
-- Follow the git safety protocol (never force push, skip hooks, etc.)
-- Use Task tools for complex analysis instead of direct bash commands
 
 **Commit Types:**
 - Use `feat` for new functionality, `fix` for bugs, `docs` for documentation
