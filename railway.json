@@ -18,7 +18,7 @@
     ]
   },
   "deploy": {
-    "startCommand": "node server.js",
+    "startCommand": "tsx scripts/start-with-migrations.ts",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 5000,
     "restartPolicyType": "ON_FAILURE",
