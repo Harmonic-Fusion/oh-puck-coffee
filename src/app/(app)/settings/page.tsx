@@ -6,6 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppRoutes, ApiRoutes } from "@/app/routes";
 import { QRCode } from "@/components/common/QRCode";
+import { FeedbackModal } from "@/components/common/FeedbackModal";
 
 interface LinkedAccount {
   provider: string;
@@ -73,6 +74,7 @@ export default function SettingsPage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [nameInput, setNameInput] = useState("");
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   // Sync input when profile loads
   useEffect(() => {
@@ -317,6 +319,14 @@ export default function SettingsPage() {
           </dl>
         </div>
 
+        {/* Send Feedback */}
+        <button
+          onClick={() => setIsFeedbackModalOpen(true)}
+          className="w-full rounded-xl border-2 border-stone-300 bg-white px-6 py-4 text-base font-semibold text-stone-700 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
+        >
+          Send Feedback
+        </button>
+
         {/* Integrations link */}
         <Link
           href={AppRoutes.settings.integrations.path}
@@ -368,6 +378,11 @@ export default function SettingsPage() {
           Sign Out
         </button>
       </div>
+
+      <FeedbackModal
+        open={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
     </div>
   );
 }

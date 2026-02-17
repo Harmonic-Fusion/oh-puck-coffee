@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { StatCard } from "@/components/stats/StatCard";
 import { FlavorProfileChart } from "@/components/stats/FlavorProfileChart";
 import { BeanComparisonTable } from "@/components/stats/BeanComparisonTable";
@@ -10,22 +11,32 @@ import { DialInChart } from "@/components/stats/DialInChart";
 import { BeanAgeChart } from "@/components/stats/BeanAgeChart";
 import { useOverviewStats } from "@/components/stats/hooks";
 import { useShots } from "@/components/shots/hooks";
+import { FeedbackModal } from "@/components/common/FeedbackModal";
 
 export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = useOverviewStats();
   const { data: shots, isLoading: shotsLoading } = useShots({ limit: 100 });
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
   const isLoading = statsLoading || shotsLoading;
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          Your espresso analytics at a glance
-        </p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
+            Dashboard
+          </h1>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+            Your espresso analytics at a glance
+          </p>
+        </div>
+        <button
+          onClick={() => setIsFeedbackModalOpen(true)}
+          className="rounded-lg border-2 border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
+        >
+          Send Feedback
+        </button>
       </div>
 
       {/* Stat Cards */}
@@ -130,6 +141,11 @@ export default function DashboardPage() {
           <BeanComparisonTable shots={shots ?? []} />
         )}
       </div>
+
+      <FeedbackModal
+        open={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
     </div>
   );
 }

@@ -36,6 +36,13 @@
       "when": 1771350446094,
       "tag": "0004_unique_reavers",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1771354211021,
+      "tag": "0005_sparkling_dragon_man",
+      "breakpoints": true
     }
   ]
 }

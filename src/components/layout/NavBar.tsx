@@ -11,8 +11,10 @@ import {
   UserIcon,
   Cog6ToothIcon,
   ArrowRightStartOnRectangleIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
+import { FeedbackModal } from "@/components/common/FeedbackModal";
 
 // Desktop top bar: Dashboard, Log, User Menu (dropdown)
 const desktopNavItems = [
@@ -32,6 +34,7 @@ export function NavBar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
@@ -153,6 +156,16 @@ export function NavBar() {
                     <Cog6ToothIcon className="h-4 w-4 text-stone-400 dark:text-stone-500" />
                     Profile
                   </Link>
+                  <button
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setIsFeedbackModalOpen(true);
+                    }}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
+                  >
+                    <ChatBubbleLeftRightIcon className="h-4 w-4 text-stone-400 dark:text-stone-500" />
+                    Send Feedback
+                  </button>
                   <div className="my-1 border-t border-stone-100 dark:border-stone-800" />
                   <button
                     onClick={() => signOut({ callbackUrl: AppRoutes.login.path })}
@@ -191,6 +204,11 @@ export function NavBar() {
           );
         })}
       </nav>
+
+      <FeedbackModal
+        open={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
     </>
   );
 }

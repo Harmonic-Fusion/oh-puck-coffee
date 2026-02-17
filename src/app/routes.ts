@@ -13,6 +13,10 @@ export const AppRoutes = routesBuilder({
     integrations: "/integrations",
   },
   login: "/login",
+  company: "/company",
+  careers: "/careers",
+  contact: "/contact",
+  socialMedia: "/social-media",
   share: {
     path: "/share",
     uid: {
@@ -89,5 +93,13 @@ export const ApiRoutes = routesBuilder({
       path: "/:id",
     },
     validate: "/validate",
+  },
+  // Contact
+  contact: {
+    path: "/api/contact",
+  },
+  // Feedback
+  feedback: {
+    path: "/api/feedback",
   },
 });
