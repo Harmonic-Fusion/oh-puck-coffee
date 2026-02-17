@@ -4,13 +4,12 @@
  * Used in Railway deployment at container startup.
  */
 
-import { migrate } from "drizzle-orm/postgres-js/migrator";
+import { execSync } from "child_process";
+import { existsSync } from "fs";
+import { readdir } from "fs/promises";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { sql } from "drizzle-orm";
-import { existsSync } from "fs";
-import { readdir } from "fs/promises";
-import { join } from "path";
 
 function maskDatabaseUrl(url: string): string {
   return url.replace(/:[^:@]*@/, ":***@").replace(/\/\/[^:]*:/, "//***:");
@@ -100,35 +99,33 @@ async function runMigrations() {
     process.exit(1);
   }
 
-  console.log("🔄 Connecting to database...");
-  let client: postgres.Sql | null = null;
+  console.log("🔄 Running migrations with drizzle-kit...");
 
   try {
-    client = postgres(databaseUrl, { max: 1 });
-    const db = drizzle(client);
-
-    console.log("✅ Database connection established");
-    console.log("🔄 Running migrations...");
-
     const startTime = Date.now();
-    await migrate(db, { migrationsFolder: "./drizzle/migrations" });
+    execSync("drizzle-kit migrate", {
+      stdio: "inherit",
+      env: process.env,
+    });
     const duration = Date.now() - startTime;
 
     console.log(`✅ Migrations completed successfully in ${duration}ms`);
     
     // Verify critical columns exist after migrations
+    console.log("🔍 Verifying critical database columns...");
+    const client = postgres(databaseUrl, { max: 1 });
+    const db = drizzle(client);
+    
     try {
       await verifyCriticalColumns(db);
+      await client.end();
+      console.log("✅ Database connection closed");
+      process.exit(0);
     } catch (error) {
       console.error("❌ Critical column verification failed:", error);
-      // Still exit with error to prevent server start with incomplete schema
       await client.end();
       process.exit(1);
     }
-    
-    await client.end();
-    console.log("✅ Database connection closed");
-    process.exit(0);
   } catch (error) {
     console.error("❌ Migration failed:");
     
@@ -140,15 +137,6 @@ async function runMigrations() {
       }
     } else {
       console.error("   Unknown error:", error);
-    }
-
-    if (client) {
-      try {
-        await client.end();
-        console.log("✅ Database connection closed after error");
-      } catch (closeError) {
-        console.error("⚠️  Error closing database connection:", closeError);
-      }
     }
 
     process.exit(1);

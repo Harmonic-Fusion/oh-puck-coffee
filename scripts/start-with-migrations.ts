@@ -4,10 +4,7 @@
  * Used in Railway deployment to ensure migrations run at startup.
  */
 
-import { migrate } from "drizzle-orm/postgres-js/migrator";
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
-import { spawn } from "child_process";
+import { execSync, spawn } from "child_process";
 import { join } from "path";
 
 async function runMigrations() {
@@ -18,16 +15,15 @@ async function runMigrations() {
   }
 
   console.log("🔄 Running database migrations...");
-  const client = postgres(databaseUrl, { max: 1 });
-  const db = drizzle(client);
 
   try {
-    await migrate(db, { migrationsFolder: "./drizzle/migrations" });
+    execSync("drizzle-kit migrate", {
+      stdio: "inherit",
+      env: process.env,
+    });
     console.log("✅ Migrations completed successfully");
-    await client.end();
   } catch (error) {
     console.error("❌ Migration failed:", error);
-    await client.end();
     // Don't exit - let the server start anyway in case migrations partially succeeded
     // This allows the app to run even if there are minor migration issues
     console.log("⚠️  Continuing with server start despite migration error");
