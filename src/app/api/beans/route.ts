@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   // Members can only see beans they created, admins can see all
   const beanConditions = [];
   if (session.user.role !== "admin") {
-    beanConditions.push(eq(beans.createdBy, session.user.id));
+    beanConditions.push(eq(beans.userId, session.user.id));
   }
   if (search) {
     beanConditions.push(ilike(beans.name, `%${search}%`));
@@ -41,11 +41,15 @@ export async function GET(request: NextRequest) {
         name: beans.name,
         origin: beans.origin,
         roaster: beans.roaster,
+        originId: beans.originId,
+        roasterId: beans.roasterId,
+        originDetails: beans.originDetails,
         processingMethod: beans.processingMethod,
         roastLevel: beans.roastLevel,
         roastDate: beans.roastDate,
+        openBagDate: beans.openBagDate,
         isRoastDateBestGuess: beans.isRoastDateBestGuess,
-        createdBy: beans.createdBy,
+        userId: beans.userId,
         createdAt: beans.createdAt,
         lastUsedAt: max(shots.createdAt).as("lastUsedAt"),
       })
@@ -57,11 +61,15 @@ export async function GET(request: NextRequest) {
         beans.name,
         beans.origin,
         beans.roaster,
+        beans.originId,
+        beans.roasterId,
+        beans.originDetails,
         beans.processingMethod,
         beans.roastLevel,
         beans.roastDate,
+        beans.openBagDate,
         beans.isRoastDateBestGuess,
-        beans.createdBy,
+        beans.userId,
         beans.createdAt
       )
       .orderBy(desc(sql`max(${shots.createdAt})`), desc(beans.createdAt));
@@ -99,7 +107,7 @@ export async function POST(request: NextRequest) {
     .insert(beans)
     .values({
       ...parsed.data,
-      createdBy: session.user.id,
+      userId: session.user.id,
     })
     .returning();
 

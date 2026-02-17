@@ -145,3 +145,4 @@ The project is configured for deployment on Railway. See `docs/RAILWAY.md` for d
 ## License
 
 Private project.
+

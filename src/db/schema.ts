@@ -8,6 +8,7 @@ import {
   numeric,
   jsonb,
   primaryKey,
+  serial,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 
@@ -20,6 +21,7 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified", { mode: "date" }),
   image: text("image"),
   role: text("role").$type<"member" | "admin">().default("member").notNull(),
+  isCustomName: boolean("is_custom_name").default(false).notNull(),
 });
 
 export const accounts = pgTable(
@@ -68,16 +70,30 @@ export const verificationTokens = pgTable(
 
 // ============ Domain Tables ============
 
+export const origins = pgTable("origins", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+});
+
+export const roasters = pgTable("roasters", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+});
+
 export const beans = pgTable("beans", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
-  origin: text("origin"),
-  roaster: text("roaster"),
+  origin: text("origin"), // legacy text column — kept for historical reference
+  roaster: text("roaster"), // legacy text column — kept for historical reference
+  originId: integer("origin_id").references(() => origins.id),
+  roasterId: integer("roaster_id").references(() => roasters.id),
+  originDetails: text("origin_details"),
   processingMethod: text("processing_method"),
   roastLevel: text("roast_level").notNull(),
   roastDate: timestamp("roast_date", { mode: "date" }),
+  openBagDate: timestamp("open_bag_date", { mode: "date" }),
   isRoastDateBestGuess: boolean("is_roast_date_best_guess").default(false).notNull(),
-  createdBy: uuid("created_by")
+  userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
@@ -126,6 +142,8 @@ export const shots = pgTable("shots", {
   // Results
   brewTimeSecs: numeric("brew_time_secs", { precision: 5, scale: 1 }),
   yieldActualGrams: numeric("yield_actual_grams", { precision: 5, scale: 1 }),
+  estimateMaxPressure: numeric("estimate_max_pressure", { precision: 4, scale: 1 }),
+  flowControl: numeric("flow_control", { precision: 4, scale: 1 }),
   // Computed (stored on write)
   flowRate: numeric("flow_rate", { precision: 4, scale: 2 }),
   // Subjective
@@ -142,6 +160,17 @@ export const shots = pgTable("shots", {
   isHidden: boolean("is_hidden").default(false).notNull(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const shotShares = pgTable("shot_shares", {
+  id: text("id").primaryKey(), // short random uid for URL
+  shotId: uuid("shot_id")
+    .notNull()
+    .references(() => shots.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
 export const integrations = pgTable("integrations", {

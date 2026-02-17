@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useMemo, useState } from "react";
 
 interface SliderProps {
   value: number;
@@ -28,9 +28,20 @@ export function Slider({
   labels,
 }: SliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const percentage = ((value - min) / (max - min)) * 100;
 
-  const handleInteraction = useCallback(
+  // Build all step positions
+  const steps = useMemo(() => {
+    const result: number[] = [];
+    const count = Math.round((max - min) / step);
+    for (let i = 0; i <= count; i++) {
+      result.push(min + i * step);
+    }
+    return result;
+  }, [min, max, step]);
+
+  const snapToStep = useCallback(
     (clientX: number) => {
       if (disabled || !trackRef.current) return;
       const rect = trackRef.current.getBoundingClientRect();
@@ -47,9 +58,10 @@ export function Slider({
     (e: React.PointerEvent) => {
       if (disabled) return;
       e.preventDefault();
-      handleInteraction(e.clientX);
+      setHasInteracted(true);
+      snapToStep(e.clientX);
     },
-    [disabled, handleInteraction]
+    [disabled, snapToStep]
   );
 
   const handleKeyDown = useCallback(
@@ -68,6 +80,7 @@ export function Slider({
         return;
       }
       e.preventDefault();
+      setHasInteracted(true);
       onChange(newValue);
     },
     [disabled, value, min, max, step, onChange]
@@ -88,33 +101,36 @@ export function Slider({
         </div>
       )}
 
-      {/* Custom slider */}
-      <div className="flex items-center gap-4">
-        <div
-          ref={trackRef}
-          role="slider"
-          tabIndex={disabled ? -1 : 0}
-          aria-valuemin={min}
-          aria-valuemax={max}
-          aria-valuenow={value}
-          aria-label={label}
-          aria-disabled={disabled}
-          className={`relative h-14 flex-1 cursor-pointer select-none touch-none ${
-            disabled ? "cursor-not-allowed opacity-50" : ""
-          }`}
-          onPointerDown={handlePointerDown}
-          onKeyDown={handleKeyDown}
-        >
-          {/* Track background */}
-          <div className="absolute top-1/2 right-0 left-0 h-3 -translate-y-1/2 rounded-full bg-stone-200 dark:bg-stone-700">
-            {/* Filled portion */}
+      <div className="px-6">
+      {/* Track bar with thumb */}
+      <div
+        ref={trackRef}
+        role="slider"
+        tabIndex={disabled ? -1 : 0}
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        aria-label={label}
+        aria-disabled={disabled}
+        className={`relative h-14 cursor-pointer select-none touch-none ${
+          disabled ? "cursor-not-allowed opacity-50" : ""
+        }`}
+        onPointerDown={handlePointerDown}
+        onKeyDown={handleKeyDown}
+      >
+        {/* Track background */}
+        <div className="absolute top-1/2 right-0 left-0 h-3 -translate-y-1/2 rounded-full bg-stone-200 dark:bg-stone-700">
+          {/* Filled portion */}
+          {hasInteracted && (
             <div
-              className="absolute inset-y-0 left-0 rounded-full bg-amber-500"
+              className="absolute inset-y-0 left-0 rounded-full bg-amber-500 transition-[width] duration-75"
               style={{ width: `${percentage}%` }}
             />
-          </div>
+          )}
+        </div>
 
-          {/* Thumb — logo with background */}
+        {/* Thumb — logo icon (hidden until first interaction) */}
+        {hasInteracted && (
           <div
             className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-75"
             style={{ left: `${percentage}%` }}
@@ -127,46 +143,61 @@ export function Slider({
               />
             </div>
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Tick marks - only show whole numbers */}
-      <div className="mt-2 flex justify-between px-[18px]">
-        {Array.from({ length: Math.round((max - min) / step) + 1 }, (_, i) => {
-          const tickValue = min + i * step;
-          // Only show whole numbers, hide half intervals
-          if (tickValue % 1 !== 0) return null;
+      {/* Tick points with numbers and labels */}
+      <div className="mt-1 flex justify-between">
+        {steps.map((stepValue) => {
+          const isWhole = stepValue % 1 === 0;
+          const labelText = isWhole ? labels?.[stepValue] : undefined;
+
           return (
-            <span
-              key={tickValue}
-              className="text-xs text-stone-400 dark:text-stone-500"
+            <button
+              key={stepValue}
+              type="button"
+              tabIndex={-1}
+              onClick={() => {
+                if (disabled) return;
+                setHasInteracted(true);
+                onChange(stepValue);
+              }}
+              className={`flex w-0 flex-col items-center ${!disabled ? "cursor-pointer" : ""}`}
             >
-              {tickValue}
-            </span>
+              {/* Tick dot */}
+              <div
+                className={`rounded-full ${
+                  isWhole ? "h-2 w-2" : "h-1 w-1"
+                } ${
+                  hasInteracted && stepValue <= value + 0.01
+                    ? "bg-amber-500"
+                    : "bg-stone-300 dark:bg-stone-600"
+                }`}
+              />
+
+              {/* Number + label for whole numbers */}
+              {isWhole && (
+                <>
+                  <span className="mt-1 text-xs text-stone-400 dark:text-stone-500">
+                    {stepValue}
+                  </span>
+                  {labelText && (
+                    <span
+                      className="mt-0.5 text-center text-[10px] leading-tight text-stone-400 dark:text-stone-500"
+                      style={{ wordSpacing: "100vw" }}
+                      title={labelText}
+                    >
+                      {labelText}
+                    </span>
+                  )}
+                </>
+              )}
+            </button>
           );
         })}
       </div>
-      {/* Labels below tick marks */}
-      {labels && (
-        <div className="mt-1 flex justify-between px-[18px]">
-          {Array.from({ length: Math.round((max - min) / step) + 1 }, (_, i) => {
-            const tickValue = min + i * step;
-            // Only show whole numbers, hide half intervals
-            if (tickValue % 1 !== 0) return null;
-            const labelText = labels[tickValue];
-            if (!labelText) return <span key={tickValue} className="text-xs" />;
-            return (
-              <span
-                key={tickValue}
-                className="text-xs text-stone-500 dark:text-stone-400 max-w-[25%] text-center truncate"
-                title={labelText}
-              >
-                {labelText}
-              </span>
-            );
-          })}
-        </div>
-      )}
+      </div>
+
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );

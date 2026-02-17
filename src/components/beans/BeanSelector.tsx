@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useBeans, useCreateBean, useUpdateBean } from "./hooks";
 import { ROAST_LEVELS, PROCESSING_METHODS } from "@/shared/beans/constants";
 import { ApiRoutes, resolvePath } from "@/app/routes";
 import type { Bean } from "@/shared/beans/schema";
 import { SearchableSelect } from "@/components/common/SearchableSelect";
+import { Modal } from "@/components/common/Modal";
+import { ComboboxInput } from "@/components/common/ComboboxInput";
 
 interface BeanSelectorProps {
   value: string;
@@ -22,12 +24,22 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
   const [newProcessing, setNewProcessing] = useState("");
   const [newRoast, setNewRoast] = useState<string>(ROAST_LEVELS[2]);
   const [newRoastDate, setNewRoastDate] = useState("");
+  const [newOpenBagDate, setNewOpenBagDate] = useState("");
+  const [newOriginDetails, setNewOriginDetails] = useState("");
   const [newIsRoastDateBestGuess, setNewIsRoastDateBestGuess] = useState(false);
   const [selectedBean, setSelectedBean] = useState<Bean | null>(null);
 
   const { data: beans, isLoading } = useBeans();
   const createBean = useCreateBean();
   const updateBean = useUpdateBean();
+
+  // Derive unique suggestions from existing beans
+  const originSuggestions = Array.from(
+    new Set((beans ?? []).map((b) => b.origin).filter(Boolean) as string[])
+  ).sort();
+  const roasterSuggestions = Array.from(
+    new Set((beans ?? []).map((b) => b.roaster).filter(Boolean) as string[])
+  ).sort();
 
   // Fetch selected bean details
   useEffect(() => {
@@ -47,6 +59,17 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
     }
   }, [value, beans]);
 
+  const resetFormFields = useCallback(() => {
+    setNewName("");
+    setNewOrigin("");
+    setNewRoaster("");
+    setNewProcessing("");
+    setNewRoastDate("");
+    setNewOpenBagDate("");
+    setNewOriginDetails("");
+    setNewIsRoastDateBestGuess(false);
+  }, []);
+
   const handleCreate = async () => {
     if (!newName.trim()) return;
     try {
@@ -54,36 +77,44 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
         name: newName.trim(),
         origin: newOrigin.trim() || undefined,
         roaster: newRoaster.trim() || undefined,
+        originDetails: newOriginDetails.trim() || undefined,
         processingMethod: newProcessing
           ? (newProcessing as (typeof PROCESSING_METHODS)[number])
           : undefined,
         roastLevel: newRoast as (typeof ROAST_LEVELS)[number],
         roastDate: newRoastDate ? new Date(newRoastDate) : undefined,
+        openBagDate: newOpenBagDate ? new Date(newOpenBagDate) : undefined,
         isRoastDateBestGuess: newIsRoastDateBestGuess,
       });
       onChange(bean.id);
       setShowCreate(false);
-      setNewName("");
-      setNewOrigin("");
-      setNewRoaster("");
-      setNewProcessing("");
-      setNewRoastDate("");
-      setNewIsRoastDateBestGuess(false);
+      resetFormFields();
     } catch {
       // Error handled by mutation
     }
   };
+
+  const handleCancelCreate = useCallback(() => {
+    setShowCreate(false);
+    resetFormFields();
+  }, [resetFormFields]);
 
   const handleEdit = () => {
     if (!selectedBean) return;
     setNewName(selectedBean.name);
     setNewOrigin(selectedBean.origin || "");
     setNewRoaster(selectedBean.roaster || "");
+    setNewOriginDetails(selectedBean.originDetails || "");
     setNewProcessing(selectedBean.processingMethod || "");
     setNewRoast(selectedBean.roastLevel);
     setNewRoastDate(
       selectedBean.roastDate
         ? new Date(selectedBean.roastDate).toISOString().split("T")[0]
+        : ""
+    );
+    setNewOpenBagDate(
+      selectedBean.openBagDate
+        ? new Date(selectedBean.openBagDate).toISOString().split("T")[0]
         : ""
     );
     setNewIsRoastDateBestGuess(selectedBean.isRoastDateBestGuess || false);
@@ -99,21 +130,18 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
           name: newName.trim(),
           origin: newOrigin.trim() || undefined,
           roaster: newRoaster.trim() || undefined,
+          originDetails: newOriginDetails.trim() || undefined,
           processingMethod: newProcessing
             ? (newProcessing as (typeof PROCESSING_METHODS)[number])
             : undefined,
           roastLevel: newRoast as (typeof ROAST_LEVELS)[number],
           roastDate: newRoastDate ? new Date(newRoastDate) : undefined,
+          openBagDate: newOpenBagDate ? new Date(newOpenBagDate) : undefined,
           isRoastDateBestGuess: newIsRoastDateBestGuess,
         },
       });
       setShowEdit(false);
-      setNewName("");
-      setNewOrigin("");
-      setNewRoaster("");
-      setNewProcessing("");
-      setNewRoastDate("");
-      setNewIsRoastDateBestGuess(false);
+      resetFormFields();
     } catch {
       // Error handled by mutation
     }
@@ -121,211 +149,65 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
 
   const handleCancelEdit = () => {
     setShowEdit(false);
-    setNewName("");
-    setNewOrigin("");
-    setNewRoaster("");
-    setNewProcessing("");
-    setNewRoastDate("");
-    setNewIsRoastDateBestGuess(false);
+    resetFormFields();
+  };
+
+  const formatDate = (date: string | Date | null | undefined): string => {
+    if (!date) return "";
+    const d = new Date(date);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  const daysSince = (date: string | Date | null | undefined): number | null => {
+    if (!date) return null;
+    const d = new Date(date);
+    const now = new Date();
+    return Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
   };
 
   const beanDetailsSection = selectedBean && (
-    <div className="mt-2 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800/50">
-      <h3 className="text-base font-semibold text-stone-700 dark:text-stone-300 mb-4">
-        Details
-      </h3>
-
-      {showEdit ? (
-        // Edit mode - editable fields
-        <div className="space-y-3">
-          <input
-            type="text"
-            placeholder="Bean name *"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            autoFocus
-          />
-          <input
-            type="text"
-            placeholder="Origin"
-            value={newOrigin}
-            onChange={(e) => setNewOrigin(e.target.value)}
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-          />
-          <input
-            type="text"
-            placeholder="Roaster"
-            value={newRoaster}
-            onChange={(e) => setNewRoaster(e.target.value)}
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-          />
-          <select
-            value={newProcessing}
-            onChange={(e) => setNewProcessing(e.target.value)}
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-          >
-            <option value="">Processing...</option>
-            {PROCESSING_METHODS.map((method) => (
-              <option key={method} value={method}>
-                {method}
-              </option>
-            ))}
-          </select>
-          <select
-            value={newRoast}
-            onChange={(e) => setNewRoast(e.target.value)}
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-          >
-            {ROAST_LEVELS.map((level) => (
-              <option key={level} value={level}>
-                {level}
-              </option>
-            ))}
-          </select>
-          <input
-            type="date"
-            value={newRoastDate}
-            onChange={(e) => setNewRoastDate(e.target.value)}
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            placeholder="Roast date"
-          />
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="isRoastDateBestGuess"
-              className="text-base font-medium text-stone-700 dark:text-stone-300 cursor-pointer"
-              tabIndex={-1}
-            >
-              Best Guess Roast Date
-            </label>
-            <button
-              type="button"
-              id="isRoastDateBestGuess"
-              role="switch"
-              aria-checked={newIsRoastDateBestGuess}
-              onClick={() => setNewIsRoastDateBestGuess(!newIsRoastDateBestGuess)}
-              tabIndex={-1}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
-                newIsRoastDateBestGuess
-                  ? "bg-amber-600"
-                  : "bg-stone-300 dark:bg-stone-600"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  newIsRoastDateBestGuess ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-          </div>
-          <div className="flex w-full justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleCancelEdit}
-              tabIndex={-1}
-              className="h-12 rounded-xl border-2 border-stone-300 px-6 text-base font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleUpdate}
-              disabled={updateBean.isPending || !newName.trim()}
-              tabIndex={-1}
-              className="h-12 rounded-xl border-2 border-amber-700 bg-amber-700 px-6 text-base font-medium text-white transition-colors hover:bg-amber-800 disabled:opacity-50"
-            >
-              {updateBean.isPending ? "Updating..." : "Update"}
-            </button>
-          </div>
+    <div className="mt-2 flex items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 dark:border-stone-700 dark:bg-stone-800/50">
+      <div className="min-w-0 flex-1 space-y-0.5 text-sm text-stone-600 dark:text-stone-400">
+        {/* Line 1: origin · origin details · roaster · processing · roast level */}
+        <div className="flex flex-wrap gap-x-1.5">
+          {selectedBean.origin && <span>{selectedBean.origin}</span>}
+          {selectedBean.originDetails && <span>· {selectedBean.originDetails}</span>}
+          {selectedBean.roaster && <span>· {selectedBean.roaster}</span>}
+          {selectedBean.processingMethod && <span>· {selectedBean.processingMethod}</span>}
+          <span>· {selectedBean.roastLevel}</span>
         </div>
-      ) : (
-        // View mode - read-only fields stacked single column
-        <div className="space-y-3">
-          <input
-            type="text"
-            value={selectedBean.name}
-            readOnly
-            disabled
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-800 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-200 cursor-not-allowed"
-          />
-          <input
-            type="text"
-            value={selectedBean.origin || "-"}
-            readOnly
-            disabled
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
-          />
-          <input
-            type="text"
-            value={selectedBean.roaster || "-"}
-            readOnly
-            disabled
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
-          />
-          <select
-            value={selectedBean.processingMethod || ""}
-            disabled
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
-          >
-            <option value="">{selectedBean.processingMethod || "Processing..."}</option>
-          </select>
-          <select
-            value={selectedBean.roastLevel}
-            disabled
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
-          >
-            <option value={selectedBean.roastLevel}>{selectedBean.roastLevel}</option>
-          </select>
-          <input
-            type="date"
-            value={
-              selectedBean.roastDate
-                ? new Date(selectedBean.roastDate).toISOString().split("T")[0]
-                : ""
-            }
-            readOnly
-            disabled
-            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base bg-stone-100 text-stone-600 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-400 cursor-not-allowed"
-          />
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="isRoastDateBestGuessView"
-              className="text-base font-medium text-stone-700 dark:text-stone-300"
-            >
-              Best Guess Roast Date
-            </label>
-            <button
-              type="button"
-              id="isRoastDateBestGuessView"
-              role="switch"
-              aria-checked={selectedBean.isRoastDateBestGuess}
-              disabled
-              tabIndex={-1}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-not-allowed ${
-                selectedBean.isRoastDateBestGuess
-                  ? "bg-amber-600 opacity-50"
-                  : "bg-stone-300 dark:bg-stone-600 opacity-50"
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  selectedBean.isRoastDateBestGuess ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
+        {/* Line 2: Roasted date (N days since) */}
+        {selectedBean.roastDate && (
+          <div>
+            Roasted {formatDate(selectedBean.roastDate)}
+            {selectedBean.isRoastDateBestGuess ? " ~" : ""}
+            {daysSince(selectedBean.roastDate) !== null && (
+              <span className="text-stone-400 dark:text-stone-500">
+                {" "}({daysSince(selectedBean.roastDate)} days ago)
+              </span>
+            )}
           </div>
-          <div className="flex w-full justify-end gap-3 pt-2">
+        )}
+        {/* Line 3: Opened date (N days since) */}
+        {selectedBean.openBagDate && (
+          <div>
+            Opened {formatDate(selectedBean.openBagDate)}
+            {daysSince(selectedBean.openBagDate) !== null && (
+              <span className="text-stone-400 dark:text-stone-500">
+                {" "}({daysSince(selectedBean.openBagDate)} days ago)
+              </span>
+            )}
+          </div>
+        )}
+          </div>
             <button
               type="button"
               onClick={handleEdit}
               tabIndex={-1}
-              className="h-12 rounded-xl border-2 border-amber-700 bg-amber-700 px-6 text-base font-medium text-white transition-colors hover:bg-amber-800"
+        className="shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium text-amber-700 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
             >
               Edit
             </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -346,8 +228,6 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
       <label className="mb-2.5 block text-base font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
         Bean
       </label>
-      {!showCreate ? (
-        <>
           <SearchableSelect
             value={value}
             onChange={onChange}
@@ -366,49 +246,221 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
                 ? "No beans yet — create one below"
                 : "No beans found"
             }
-            disabled={showEdit}
           />
           {beanDetailsSection}
-        </>
-      ) : (
-        <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+
+      {/* Create Bean Modal */}
+      <BeanFormModal
+        open={showCreate}
+        onClose={handleCancelCreate}
+        title="New Bean"
+        submitLabel={createBean.isPending ? "Creating..." : "Create"}
+        onSubmit={handleCreate}
+        isSubmitting={createBean.isPending}
+        name={newName}
+        onNameChange={setNewName}
+        origin={newOrigin}
+        onOriginChange={setNewOrigin}
+        originSuggestions={originSuggestions}
+        originDetails={newOriginDetails}
+        onOriginDetailsChange={setNewOriginDetails}
+        roaster={newRoaster}
+        onRoasterChange={setNewRoaster}
+        roasterSuggestions={roasterSuggestions}
+        processing={newProcessing}
+        onProcessingChange={setNewProcessing}
+        roast={newRoast}
+        onRoastChange={setNewRoast}
+        roastDate={newRoastDate}
+        onRoastDateChange={setNewRoastDate}
+        openBagDate={newOpenBagDate}
+        onOpenBagDateChange={setNewOpenBagDate}
+        isRoastDateBestGuess={newIsRoastDateBestGuess}
+        onIsRoastDateBestGuessChange={setNewIsRoastDateBestGuess}
+      />
+
+      {/* Edit Bean Modal */}
+      <BeanFormModal
+        open={showEdit}
+        onClose={handleCancelEdit}
+        title="Edit Bean"
+        submitLabel={updateBean.isPending ? "Updating..." : "Update"}
+        onSubmit={handleUpdate}
+        isSubmitting={updateBean.isPending}
+        name={newName}
+        onNameChange={setNewName}
+        origin={newOrigin}
+        onOriginChange={setNewOrigin}
+        originSuggestions={originSuggestions}
+        originDetails={newOriginDetails}
+        onOriginDetailsChange={setNewOriginDetails}
+        roaster={newRoaster}
+        onRoasterChange={setNewRoaster}
+        roasterSuggestions={roasterSuggestions}
+        processing={newProcessing}
+        onProcessingChange={setNewProcessing}
+        roast={newRoast}
+        onRoastChange={setNewRoast}
+        roastDate={newRoastDate}
+        onRoastDateChange={setNewRoastDate}
+        openBagDate={newOpenBagDate}
+        onOpenBagDateChange={setNewOpenBagDate}
+        isRoastDateBestGuess={newIsRoastDateBestGuess}
+        onIsRoastDateBestGuessChange={setNewIsRoastDateBestGuess}
+      />
+    </div>
+  );
+}
+
+/* ── Shared Bean Form Modal ─────────────────────────────────────────── */
+
+interface BeanFormModalProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  submitLabel: string;
+  onSubmit: () => void;
+  isSubmitting: boolean;
+  name: string;
+  onNameChange: (v: string) => void;
+  origin: string;
+  onOriginChange: (v: string) => void;
+  originSuggestions: string[];
+  originDetails: string;
+  onOriginDetailsChange: (v: string) => void;
+  roaster: string;
+  onRoasterChange: (v: string) => void;
+  roasterSuggestions: string[];
+  processing: string;
+  onProcessingChange: (v: string) => void;
+  roast: string;
+  onRoastChange: (v: string) => void;
+  roastDate: string;
+  onRoastDateChange: (v: string) => void;
+  openBagDate: string;
+  onOpenBagDateChange: (v: string) => void;
+  isRoastDateBestGuess: boolean;
+  onIsRoastDateBestGuessChange: (v: boolean) => void;
+}
+
+function BeanFormModal({
+  open,
+  onClose,
+  title,
+  submitLabel,
+  onSubmit,
+  isSubmitting,
+  name,
+  onNameChange,
+  origin,
+  onOriginChange,
+  originSuggestions,
+  originDetails,
+  onOriginDetailsChange,
+  roaster,
+  onRoasterChange,
+  roasterSuggestions,
+  processing,
+  onProcessingChange,
+  roast,
+  onRoastChange,
+  roastDate,
+  onRoastDateChange,
+  openBagDate,
+  onOpenBagDateChange,
+  isRoastDateBestGuess,
+  onIsRoastDateBestGuessChange,
+}: BeanFormModalProps) {
+  const switchId = `beanModal_${title.replace(/\s/g, "")}`;
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title}
+      footer={
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="h-12 rounded-xl border-2 border-stone-300 px-6 text-base font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onSubmit}
+            disabled={isSubmitting || !name.trim()}
+            className="h-12 rounded-xl border-2 border-amber-700 bg-amber-700 px-6 text-base font-medium text-white transition-colors hover:bg-amber-800 disabled:opacity-50"
+          >
+            {submitLabel}
+          </button>
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        <div>
+          <label className="mb-1 block text-sm font-medium text-stone-600 dark:text-stone-400">Name *</label>
           <input
             type="text"
-            placeholder="Bean name *"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Bean name"
+            value={name}
+            onChange={(e) => onNameChange(e.target.value)}
             className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
             autoFocus
           />
-          <input
-            type="text"
-            placeholder="Origin"
-            value={newOrigin}
-            onChange={(e) => setNewOrigin(e.target.value)}
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-stone-600 dark:text-stone-400">Origin</label>
+          <ComboboxInput
+            value={origin}
+            onChange={onOriginChange}
+            suggestions={originSuggestions}
+            placeholder="e.g. Ethiopia, Colombia"
             className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
           />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-stone-600 dark:text-stone-400">Origin Details</label>
           <input
             type="text"
-            placeholder="Roaster"
-            value={newRoaster}
-            onChange={(e) => setNewRoaster(e.target.value)}
+            placeholder="e.g. region, farm, altitude"
+            value={originDetails}
+            onChange={(e) => onOriginDetailsChange(e.target.value)}
             className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
           />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-stone-600 dark:text-stone-400">Roaster</label>
+          <ComboboxInput
+            value={roaster}
+            onChange={onRoasterChange}
+            suggestions={roasterSuggestions}
+            placeholder="e.g. Onyx, George Howell"
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-stone-600 dark:text-stone-400">Processing</label>
           <select
-            value={newProcessing}
-            onChange={(e) => setNewProcessing(e.target.value)}
+            value={processing}
+            onChange={(e) => onProcessingChange(e.target.value)}
             className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
           >
-            <option value="">Processing...</option>
+            <option value="">Select processing...</option>
             {PROCESSING_METHODS.map((method) => (
               <option key={method} value={method}>
                 {method}
               </option>
             ))}
           </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-stone-600 dark:text-stone-400">Roast Level</label>
           <select
-            value={newRoast}
-            onChange={(e) => setNewRoast(e.target.value)}
+            value={roast}
+            onChange={(e) => onRoastChange(e.target.value)}
             className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
           >
             {ROAST_LEVELS.map((level) => (
@@ -417,63 +469,52 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
               </option>
             ))}
           </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-stone-600 dark:text-stone-400">Roast Date</label>
           <input
             type="date"
-            value={newRoastDate}
-            onChange={(e) => setNewRoastDate(e.target.value)}
+            value={roastDate}
+            onChange={(e) => onRoastDateChange(e.target.value)}
             className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-            placeholder="Roast date"
           />
+        </div>
+        <div>
+          <label className="mb-1 block text-sm font-medium text-stone-600 dark:text-stone-400">Open Bag Date</label>
+          <input
+            type="date"
+            value={openBagDate}
+            onChange={(e) => onOpenBagDateChange(e.target.value)}
+            className="h-12 w-full rounded-xl border-2 border-stone-300 px-4 text-base dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
+          />
+        </div>
           <div className="flex items-center justify-between">
             <label
-              htmlFor="isRoastDateBestGuess"
+            htmlFor={switchId}
               className="text-base font-medium text-stone-700 dark:text-stone-300 cursor-pointer"
-              tabIndex={-1}
             >
               Best Guess Roast Date
             </label>
             <button
               type="button"
-              id="isRoastDateBestGuess"
+            id={switchId}
               role="switch"
-              aria-checked={newIsRoastDateBestGuess}
-              onClick={() => setNewIsRoastDateBestGuess(!newIsRoastDateBestGuess)}
-              tabIndex={-1}
+            aria-checked={isRoastDateBestGuess}
+            onClick={() => onIsRoastDateBestGuessChange(!isRoastDateBestGuess)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${
-                newIsRoastDateBestGuess
+              isRoastDateBestGuess
                   ? "bg-amber-600"
                   : "bg-stone-300 dark:bg-stone-600"
               }`}
             >
               <span
                 className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  newIsRoastDateBestGuess ? "translate-x-6" : "translate-x-1"
+                isRoastDateBestGuess ? "translate-x-6" : "translate-x-1"
                 }`}
               />
             </button>
           </div>
-          <div className="flex w-full justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setShowCreate(false)}
-              tabIndex={-1}
-              className="h-12 rounded-xl border-2 border-stone-300 px-6 text-base font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={handleCreate}
-              disabled={createBean.isPending || !newName.trim()}
-              tabIndex={-1}
-              className="h-12 rounded-xl border-2 border-amber-700 bg-amber-700 px-6 text-base font-medium text-white transition-colors hover:bg-amber-800 disabled:opacity-50"
-            >
-              {createBean.isPending ? "Creating..." : "Create"}
-            </button>
           </div>
-        </div>
-      )}
-      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
-    </div>
+    </Modal>
   );
 }

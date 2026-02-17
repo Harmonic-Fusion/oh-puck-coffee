@@ -120,14 +120,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
-        // Fetch user role from database
+        // Fetch latest user data from database (role, name, image may be
+        // refreshed on each Google sign-in via the signIn event)
         const [dbUser] = await db
-          .select({ role: users.role })
+          .select({
+            role: users.role,
+            name: users.name,
+            image: users.image,
+          })
           .from(users)
           .where(eq(users.id, user.id))
           .limit(1);
         if (dbUser) {
           session.user.role = dbUser.role as "member" | "admin";
+          if (dbUser.name) session.user.name = dbUser.name;
+          if (dbUser.image) session.user.image = dbUser.image;
         }
       }
       return session;
@@ -148,13 +155,50 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
   events: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile: oauthProfile }) {
       if (config.enableDebugging) {
         authLogger.child("event").debug("signIn:", {
           userId: user.id,
           email: user.email,
           accountProvider: account?.provider,
         });
+      }
+
+      // Sync name & image from Google profile on every login
+      if (account?.provider === "google" && user.id && oauthProfile) {
+        const googleName = (oauthProfile as { name?: string }).name ?? null;
+        const googleImage = (oauthProfile as { picture?: string }).picture ?? null;
+
+        // Check if user has a custom name override
+        const [dbUser] = await db
+          .select({ isCustomName: users.isCustomName })
+          .from(users)
+          .where(eq(users.id, user.id))
+          .limit(1);
+
+        const hasCustomName = dbUser?.isCustomName ?? false;
+
+        // Build updates — skip name if user has set a custom one
+        const updates: Record<string, string> = {};
+        if (!hasCustomName && googleName && googleName !== user.name) {
+          updates.name = googleName;
+        }
+        if (googleImage && googleImage !== user.image) {
+          updates.image = googleImage;
+        }
+
+        if (Object.keys(updates).length > 0) {
+          await db
+            .update(users)
+            .set(updates)
+            .where(eq(users.id, user.id));
+
+          authLogger.debug("Synced Google profile →", {
+            userId: user.id,
+            updates,
+            skippedName: hasCustomName,
+          });
+        }
       }
     },
   },

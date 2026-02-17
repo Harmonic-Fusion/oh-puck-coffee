@@ -26,13 +26,8 @@ export const DEFAULT_TOOLS = [
   },
   {
     slug: "distribution-tool",
-    name: "Distribution Tool",
+    name: "Wedge Distribution",
     description: "Leveling tool spun on top of grounds for even distribution",
-  },
-  {
-    slug: "tamper",
-    name: "Tamper",
-    description: "Compresses coffee grounds evenly in the portafilter",
   },
   {
     slug: "paper-filter",

@@ -14,15 +14,21 @@ import { SectionFlavorWheel } from "./SectionFlavorWheel";
 import { ShotSuccessModal } from "./ShotSuccessModal";
 import { AppRoutes } from "@/app/routes";
 import { useLastShot, useDeleteShot, useToggleReference, useToggleHidden, type ShotWithJoins } from "@/components/shots/hooks";
+import { useBeans } from "@/components/beans/hooks";
+import { useGrinders, useMachines } from "@/components/equipment/hooks";
 import { useToast } from "@/components/common/Toast";
 import { ShotDetail } from "@/components/shots/log/ShotDetail";
 import { ValidationBanner } from "@/components/common/ValidationBanner";
+import type { ShotSummary } from "./ShotSuccessModal";
 
 export function ShotForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const createShot = useCreateShot();
   const { data: lastShot } = useLastShot();
+  const { data: beans } = useBeans();
+  const { data: grinders } = useGrinders();
+  const { data: machines } = useMachines();
   const { showToast } = useToast();
   const deleteShot = useDeleteShot();
   const toggleReference = useToggleReference();
@@ -32,16 +38,7 @@ export function ShotForm() {
   const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
 
   // State for success modal
-  const [successSummary, setSuccessSummary] = useState<{
-    shotId: string;
-    doseGrams: number;
-    yieldGrams: number;
-    yieldActualGrams?: number;
-    brewTimeSecs?: number;
-    shotQuality: number;
-    rating?: number;
-    notes?: string;
-  } | null>(null);
+  const [successSummary, setSuccessSummary] = useState<ShotSummary | null>(null);
 
   const methods = useForm<CreateShot>({
     resolver: zodResolver(createShotSchema),
@@ -227,6 +224,15 @@ export function ShotForm() {
   const onSubmit = async (data: CreateShot) => {
     try {
       const shot = await createShot.mutateAsync(data);
+      const bean = beans?.find((b) => b.id === data.beanId);
+      const grinder = grinders?.find((g) => g.id === data.grinderId);
+      const machine = data.machineId ? machines?.find((m) => m.id === data.machineId) : null;
+
+      const formatRoastDate = (d: Date | null | undefined): string | null => {
+        if (!d) return null;
+        return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      };
+
       methods.reset();
       setSuccessSummary({
         shotId: shot.id,
@@ -237,6 +243,20 @@ export function ShotForm() {
         shotQuality: data.shotQuality,
         rating: data.rating,
         notes: data.notes,
+        beanName: bean?.name ?? null,
+        beanRoastLevel: bean?.roastLevel ?? null,
+        beanOrigin: bean?.origin ?? null,
+        beanRoaster: bean?.roaster ?? null,
+        beanRoastDate: formatRoastDate(bean?.roastDate),
+        beanProcessingMethod: bean?.processingMethod ?? null,
+        grindLevel: data.grindLevel,
+        brewTempC: data.brewTempC,
+        brewPressure: data.brewPressure,
+        grinderName: grinder?.name ?? null,
+        machineName: machine?.name ?? null,
+        flavorWheelCategories: data.flavorWheelCategories ?? null,
+        flavorWheelAdjectives: data.flavorWheelAdjectives ?? null,
+        flavorWheelBody: data.flavorWheelBody ?? null,
       });
     } catch (error) {
       showToast("error", error instanceof Error ? error.message : "Failed to log shot");

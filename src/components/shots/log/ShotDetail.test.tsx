@@ -17,6 +17,7 @@ const mockShot: ShotWithJoins = {
   preInfusionDuration: "5",
   brewPressure: "9",
   estimateMaxPressure: null,
+  flowControl: null,
   yieldActualGrams: null,
   brewRatio: null,
   flowRate: null,

@@ -21,6 +21,9 @@ export const authConfig = {
       // Let API routes handle their own auth (they return 401 individually)
       if (isApiRoute) return true;
 
+      // Public share pages are accessible without auth
+      if (nextUrl.pathname.startsWith("/share/")) return true;
+
       // For app pages, redirect to login if not authenticated
       return isLoggedIn;
     },

@@ -19,6 +19,7 @@ const TOOLS_EXPANDED_KEY = "coffee-tools-expanded";
 const RATIO_OPTIONS = [1, 2, 3, 4] as const;
 const DOSE_OPTIONS = [16, 18, 20, 22] as const;
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
+const DEFAULT_BREW_TEMP_F = 200;
 
 type RecipeStepId = "dose" | "yield" | "grindLevel" | "brewTemp" | "brewPressure" | "preInfusion" | "toolsUsed";
 
@@ -122,9 +123,12 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
   const [showQRCode, setShowQRCode] = useState(false);
   
   // ── Recipe order and visibility ──
-  const [recipeOrder, setRecipeOrder] = useState<RecipeStepId[]>(() => getSavedRecipeOrder());
-  const [recipeVisibility, setRecipeVisibility] = useState<Record<RecipeStepId, boolean>>(() => getSavedRecipeVisibility());
-  const [toolsExpanded, setToolsExpanded] = useState<boolean>(() => getSavedToolsExpanded());
+  // Initialize with static defaults to avoid hydration mismatch (localStorage read happens in useEffect below)
+  const [recipeOrder, setRecipeOrder] = useState<RecipeStepId[]>(DEFAULT_STEPS.map((s) => s.id));
+  const [recipeVisibility, setRecipeVisibility] = useState<Record<RecipeStepId, boolean>>(
+    DEFAULT_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<RecipeStepId, boolean>)
+  );
+  const [toolsExpanded, setToolsExpanded] = useState<boolean>(true);
   const [showMenu, setShowMenu] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -153,13 +157,18 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
   const brewTempC = watch("brewTempC");
 
   // Sync tempFValue when brewTempC is set from external sources (pre-population)
+  // If brewTempC is ever unset, fall back to 200°F
   useEffect(() => {
-    if (tempUnit === "F" && brewTempC != null) {
-      setTempFValue(cToF(brewTempC));
-    } else if (brewTempC == null) {
-      setTempFValue(undefined);
+    if (brewTempC != null) {
+      if (tempUnit === "F") {
+        setTempFValue(cToF(brewTempC));
+      }
+    } else {
+      const defaultC = fToC(DEFAULT_BREW_TEMP_F);
+      setValue("brewTempC", defaultC, { shouldValidate: true });
+      setTempFValue(DEFAULT_BREW_TEMP_F);
     }
-  }, [brewTempC, tempUnit]);
+  }, [brewTempC, tempUnit, setValue]);
 
   const dose = watch("doseGrams");
   const yieldG = watch("yieldGrams");
@@ -436,8 +445,8 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
             secondarySuffix={brewTempC != null ? `${brewTempC.toFixed(1)}°C` : undefined}
             value={tempFValue}
             onChange={handleTempFChange}
-            min={120}
-            max={230}
+            min={100}
+            max={240}
             step={1}
             placeholder="—"
             error={errors.brewTempC?.message}

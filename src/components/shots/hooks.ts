@@ -11,6 +11,7 @@ export interface ShotWithJoins {
   beanId: string;
   beanName: string | null;
   beanRoastDate: string | null;
+  beanRoastLevel: string | null;
   grinderId: string;
   grinderName: string | null;
   machineId: string | null;
@@ -25,6 +26,7 @@ export interface ShotWithJoins {
   brewPressure: string | null;
   brewRatio: number | null;
   estimateMaxPressure: string | null;
+  flowControl: string | null;
   flowRate: string | null;
   daysPostRoast: number | null;
   shotQuality: number;
@@ -205,6 +207,30 @@ export function useUpdateShot() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["shots"] });
       queryClient.invalidateQueries({ queryKey: ["shots", variables.id] });
+    },
+  });
+}
+
+interface ShareLink {
+  id: string;
+  shotId: string;
+  userId: string;
+  createdAt: string;
+}
+
+export function useCreateShareLink() {
+  return useMutation<ShareLink, Error, string>({
+    mutationFn: async (shotId: string) => {
+      const res = await fetch(ApiRoutes.shares.path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shotId }),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Failed to create share link");
+      }
+      return res.json();
     },
   });
 }

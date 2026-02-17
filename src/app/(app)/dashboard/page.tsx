@@ -1,9 +1,13 @@
 "use client";
 
 import { StatCard } from "@/components/stats/StatCard";
-import { RatioChart } from "@/components/stats/RatioChart";
 import { FlavorProfileChart } from "@/components/stats/FlavorProfileChart";
 import { BeanComparisonTable } from "@/components/stats/BeanComparisonTable";
+import { ShotQualityChart } from "@/components/stats/ShotQualityChart";
+import { TopFlavorsChart } from "@/components/stats/TopFlavorsChart";
+import { ShotHeatmap } from "@/components/stats/ShotHeatmap";
+import { DialInChart } from "@/components/stats/DialInChart";
+import { BeanAgeChart } from "@/components/stats/BeanAgeChart";
 import { useOverviewStats } from "@/components/stats/hooks";
 import { useShots } from "@/components/shots/hooks";
 
@@ -26,16 +30,16 @@ export default function DashboardPage() {
 
       {/* Stat Cards */}
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className="h-28 animate-pulse rounded-xl border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800"
+              className="h-20 animate-pulse rounded-xl border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800"
             />
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard
             label="Total Shots"
             value={stats?.totalShots ?? 0}
@@ -70,8 +74,17 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Charts */}
-      <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {/* Shot Heatmap (full width) */}
+      <div className="mt-6">
+        {shotsLoading ? (
+          <div className="h-40 animate-pulse rounded-xl border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />
+        ) : (
+          <ShotHeatmap shots={shots ?? []} />
+        )}
+      </div>
+
+      {/* Primary Charts Row */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {shotsLoading ? (
           <>
             <div className="h-80 animate-pulse rounded-xl border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />
@@ -79,9 +92,33 @@ export default function DashboardPage() {
           </>
         ) : (
           <>
-            <RatioChart shots={shots ?? []} />
-            <FlavorProfileChart shots={shots ?? []} />
+            <ShotQualityChart shots={shots ?? []} />
+            <TopFlavorsChart shots={shots ?? []} />
           </>
+        )}
+      </div>
+
+      {/* Secondary Charts Row */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {shotsLoading ? (
+          <>
+            <div className="h-80 animate-pulse rounded-xl border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />
+            <div className="h-80 animate-pulse rounded-xl border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />
+          </>
+        ) : (
+          <>
+            <DialInChart shots={shots ?? []} />
+            <BeanAgeChart shots={shots ?? []} />
+          </>
+        )}
+      </div>
+
+      {/* Flavor Profile */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {shotsLoading ? (
+          <div className="h-80 animate-pulse rounded-xl border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />
+        ) : (
+          <FlavorProfileChart shots={shots ?? []} />
         )}
       </div>
 

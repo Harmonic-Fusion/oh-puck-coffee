@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { eq } from "drizzle-orm";
 import { grinders, machines, tools } from "./schema";
 import { DEFAULT_TOOLS } from "@/shared/equipment/constants";
 
@@ -87,6 +88,17 @@ async function seed() {
       .onConflictDoNothing({ target: tools.slug });
   }
   console.log(`  ✓ ${DEFAULT_TOOLS.length} tools`);
+
+  // Clean up: delete "Tamper" tool if it exists
+  await db.delete(tools).where(eq(tools.slug, "tamper"));
+  console.log("  ✓ Removed tamper tool (if existed)");
+
+  // Clean up: rename "Distribution Tool" → "Wedge Distribution"
+  await db
+    .update(tools)
+    .set({ name: "Wedge Distribution" })
+    .where(eq(tools.slug, "distribution-tool"));
+  console.log('  ✓ Renamed "Distribution Tool" → "Wedge Distribution"');
 
   console.log("Seed complete!");
   await client.end();

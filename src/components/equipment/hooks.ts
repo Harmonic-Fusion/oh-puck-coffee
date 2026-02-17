@@ -8,7 +8,6 @@ import type {
   Tool,
   CreateGrinder,
   CreateMachine,
-  CreateTool,
 } from "@/shared/equipment/schema";
 
 export function useGrinders() {
@@ -82,27 +81,6 @@ export function useTools() {
       const res = await fetch(ApiRoutes.equipment.tools.path);
       if (!res.ok) throw new Error("Failed to fetch tools");
       return res.json();
-    },
-  });
-}
-
-export function useCreateTool() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (data: CreateTool) => {
-      const res = await fetch(ApiRoutes.equipment.tools.path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to create tool");
-      }
-      return res.json() as Promise<Tool>;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tools"] });
     },
   });
 }

@@ -5,9 +5,13 @@ export const createBeanSchema = z.object({
   name: z.string().min(1, "Bean name is required"),
   origin: z.string().optional(),
   roaster: z.string().optional(),
+  originId: z.number().int().positive().optional(),
+  roasterId: z.number().int().positive().optional(),
+  originDetails: z.string().optional(),
   processingMethod: z.enum(PROCESSING_METHODS).optional(),
   roastLevel: z.enum(ROAST_LEVELS),
   roastDate: z.coerce.date().optional(),
+  openBagDate: z.coerce.date().optional(),
   isRoastDateBestGuess: z.boolean().optional(),
 });
 
@@ -16,11 +20,15 @@ export const beanSchema = z.object({
   name: z.string(),
   origin: z.string().nullable(),
   roaster: z.string().nullable(),
+  originId: z.number().nullable(),
+  roasterId: z.number().nullable(),
+  originDetails: z.string().nullable(),
   processingMethod: z.string().nullable(),
   roastLevel: z.string(),
   roastDate: z.coerce.date().nullable(),
+  openBagDate: z.coerce.date().nullable(),
   isRoastDateBestGuess: z.boolean(),
-  createdBy: z.string().uuid(),
+  userId: z.string().uuid(),
   createdAt: z.coerce.date(),
 });
 

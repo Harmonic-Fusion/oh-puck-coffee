@@ -15,6 +15,7 @@ export const createShotSchema = z.object({
   brewTimeSecs: z.coerce.number().positive().max(120).optional(),
   yieldActualGrams: z.coerce.number().positive().max(200).optional(),
   estimateMaxPressure: z.coerce.number().positive().max(20).optional(),
+  flowControl: z.coerce.number().positive().max(20).optional(),
   shotQuality: z.coerce.number({ invalid_type_error: "Required" }).min(1, "Required").max(5).refine((val) => {
     // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
     const step = 0.5;
@@ -51,6 +52,7 @@ export const shotSchema = z.object({
   brewTimeSecs: z.coerce.number().nullable(),
   yieldActualGrams: z.coerce.number().nullable(),
   estimateMaxPressure: z.coerce.number().nullable(),
+  flowControl: z.coerce.number().nullable(),
   flowRate: z.coerce.number().nullable(),
   shotQuality: z.number(),
   rating: z.number().nullable(),

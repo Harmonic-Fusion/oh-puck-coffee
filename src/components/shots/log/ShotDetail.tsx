@@ -1,15 +1,16 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/common/Modal";
 import { Button } from "@/components/common/Button";
 import { QRCode } from "@/components/common/QRCode";
 import { useTools } from "@/components/equipment/hooks";
 import type { ShotWithJoins } from "@/components/shots/hooks";
-import { AppRoutes } from "@/app/routes";
+import { AppRoutes, resolvePath } from "@/app/routes";
 import { ShotEditForm } from "@/components/shots/form/ShotEditForm";
-import { useShot } from "@/components/shots/hooks";
+import { useShot, useCreateShareLink } from "@/components/shots/hooks";
+import { buildShotShareText } from "@/lib/share-text";
 
 interface ShotDetailProps {
   shot: ShotWithJoins | null;
@@ -58,6 +59,8 @@ export function ShotDetail({
 
   const [duplicateUrl, setDuplicateUrl] = useState<string>("");
   const [isEditMode, setIsEditMode] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const createShareLink = useCreateShareLink();
   
   // Fetch fresh shot data when in edit mode
   const { data: freshShot, refetch } = useShot(isEditMode && shot ? shot.id : null);
@@ -137,6 +140,68 @@ export function ShotDetail({
       onToggleHidden(shot.id);
     }
   };
+
+  const handleShare = useCallback(async () => {
+    try {
+      const result = createShareLink.data ?? await createShareLink.mutateAsync(shot.id);
+      const shareUrl = `${window.location.origin}${resolvePath(AppRoutes.share.uid, { uid: result.id })}`;
+
+      const shareData = {
+        title: "Journey before Destination!",
+        text: buildShotShareText({
+          beanName: shot.beanName,
+          beanRoastLevel: shot.beanRoastLevel,
+          beanRoastDate: shot.beanRoastDate
+            ? new Date(shot.beanRoastDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            : null,
+          shotQuality: shot.shotQuality,
+          rating: shot.rating,
+          doseGrams: parseFloat(shot.doseGrams),
+          yieldGrams: parseFloat(shot.yieldGrams),
+          yieldActualGrams: shot.yieldActualGrams ? parseFloat(shot.yieldActualGrams) : null,
+          brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : null,
+          grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : null,
+          brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : null,
+          brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : null,
+          grinderName: shot.grinderName,
+          machineName: shot.machineName,
+          flavorWheelCategories: shot.flavorWheelCategories,
+          flavorWheelAdjectives: shot.flavorWheelAdjectives,
+          flavorWheelBody: shot.flavorWheelBody,
+          notes: shot.notes,
+        }),
+        url: shareUrl,
+      };
+
+      // Check if Web Share API is available
+      if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
+        try {
+          if (navigator.canShare(shareData)) {
+            await navigator.share(shareData);
+            return;
+          }
+        } catch (err) {
+          // User cancelled — ignore AbortError, fall through for others
+          if (err instanceof Error && err.name !== "AbortError") {
+            console.error("Error sharing:", err);
+          }
+          // Fall through to clipboard fallback
+        }
+      }
+
+      // Fallback: Copy full text + URL to clipboard
+      try {
+        const fullText = `${shareData.text}\n\n${shareData.url}`;
+        await navigator.clipboard.writeText(fullText);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      } catch (clipboardErr) {
+        console.error("Error copying to clipboard:", clipboardErr);
+      }
+    } catch {
+      // Share link creation failed
+    }
+  }, [shot.id, createShareLink]);
 
   const dose = parseFloat(shot.doseGrams);
   const yieldG = parseFloat(shot.yieldGrams);
@@ -250,6 +315,48 @@ export function ShotDetail({
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
         </svg>
+      </Button>
+      <Button
+        variant="secondary"
+        size="md"
+        onClick={handleShare}
+        className="flex-1"
+        title={shareCopied ? "Link copied!" : "Share shot"}
+        disabled={createShareLink.isPending}
+      >
+        {shareCopied ? (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+        ) : (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+          </svg>
+        )}
       </Button>
     </div>
   );

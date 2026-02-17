@@ -13,6 +13,12 @@ export const AppRoutes = routesBuilder({
     integrations: "/integrations",
   },
   login: "/login",
+  share: {
+    path: "/share",
+    uid: {
+      path: "/:uid",
+    },
+  },
 });
 
 export const ApiRoutes = routesBuilder({
@@ -25,7 +31,10 @@ export const ApiRoutes = routesBuilder({
     debug: "/debug",
   },
   // Users
-  users: "/api/users",
+  users: {
+    path: "/api/users",
+    me: "/me",
+  },
   // Beans
   beans: {
     path: "/api/beans",
@@ -64,6 +73,13 @@ export const ApiRoutes = routesBuilder({
       userId: {
         path: "/:userId",
       },
+    },
+  },
+  // Shares
+  shares: {
+    path: "/api/shares",
+    shareId: {
+      path: "/:uid",
     },
   },
   // Integrations

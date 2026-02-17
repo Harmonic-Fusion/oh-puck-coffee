@@ -1,6 +1,78 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+
+// ── Press-and-hold repeat constants ──────────────────────────────────────────
+const REPEAT_DELAY = 400; // ms before auto-repeat starts
+const REPEAT_INTERVAL = 150; // ms between ticks at normal speed
+const FAST_INTERVAL = 75; // ms between ticks at 2× speed (doubles after hold)
+const ACCELERATE_AFTER = 2000; // ms from press-start to switch to fast speed
+
+/**
+ * Fires `callback` once on pointer-down, then auto-repeats while held.
+ * After {@link ACCELERATE_AFTER} ms the repeat speed doubles.
+ */
+function usePressRepeat(callback: () => void, disabled: boolean) {
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const accelRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cbRef = useRef(callback);
+  cbRef.current = callback;
+
+  const stop = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+    if (accelRef.current) {
+      clearTimeout(accelRef.current);
+      accelRef.current = null;
+    }
+  }, []);
+
+  // Stop repeating if the button becomes disabled mid-press (e.g. hit min/max)
+  useEffect(() => {
+    if (disabled) stop();
+  }, [disabled, stop]);
+
+  // Clean up on unmount
+  useEffect(() => stop, [stop]);
+
+  return useMemo(
+    () => ({
+      onPointerDown: () => {
+        if (disabled) return;
+        // Fire once immediately
+        cbRef.current();
+        // After a delay, start repeating at normal speed
+        timeoutRef.current = setTimeout(() => {
+          intervalRef.current = setInterval(
+            () => cbRef.current(),
+            REPEAT_INTERVAL
+          );
+          // After 2 s total, switch to 2× speed
+          accelRef.current = setTimeout(() => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            intervalRef.current = setInterval(
+              () => cbRef.current(),
+              FAST_INTERVAL
+            );
+          }, ACCELERATE_AFTER - REPEAT_DELAY);
+        }, REPEAT_DELAY);
+      },
+      onPointerUp: stop,
+      onPointerLeave: stop,
+      onPointerCancel: stop,
+      // Prevent context-menu on mobile long-press
+      onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+    }),
+    [disabled, stop]
+  );
+}
 
 interface NumberStepperProps {
   value: number | undefined;
@@ -23,6 +95,8 @@ interface NumberStepperProps {
   noRound?: boolean;
   /** Extra button(s) rendered between the value display and the −/+ buttons */
   extraButtons?: React.ReactNode;
+  /** When value is empty, show a clickable button instead of the placeholder */
+  placeholderAction?: { label: string; onClick: () => void };
 }
 
 export function NumberStepper({
@@ -42,6 +116,7 @@ export function NumberStepper({
   labelExtra,
   noRound = false,
   extraButtons,
+  placeholderAction,
 }: NumberStepperProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
@@ -86,6 +161,14 @@ export function NumberStepper({
     const next = noRound ? clamp(raw) : clamp(parseFloat(raw.toFixed(decimals)));
     onChange(next);
   }, [disabled, value, min, step, decimals, clamp, onChange, noRound]);
+
+  // Determine whether the buttons can fire
+  const canDecrement = value != null && value > min;
+  const canIncrement = value == null || value < max;
+
+  // Press-and-hold auto-repeat for the −/+ buttons
+  const decrementPress = usePressRepeat(handleDecrement, disabled || !canDecrement);
+  const incrementPress = usePressRepeat(handleIncrement, disabled || !canIncrement);
 
   // Enter editing mode when value is tapped
   const startEditing = useCallback(() => {
@@ -160,9 +243,6 @@ export function NumberStepper({
     [startEditing]
   );
 
-  const canDecrement = value != null && value > min;
-  const canIncrement = value == null || value < max;
-
   return (
     <div ref={containerRef} className="w-full">
       {/* Label row */}
@@ -211,6 +291,17 @@ export function NumberStepper({
               className="h-full w-full bg-transparent text-center text-lg font-semibold text-stone-900 outline-none dark:text-stone-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               style={{ MozAppearance: "textfield" }}
             />
+          ) : value == null && placeholderAction ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                placeholderAction.onClick();
+              }}
+              className="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+            >
+              {placeholderAction.label}
+            </button>
           ) : (
             <span
               className={`text-lg font-semibold ${
@@ -241,21 +332,21 @@ export function NumberStepper({
         <div className="flex gap-1">
           <button
             type="button"
-            onClick={handleDecrement}
+            {...decrementPress}
             disabled={disabled || !canDecrement}
             aria-label={`Decrease ${label ?? "value"}`}
             tabIndex={-1}
-            className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
+            className="flex h-14 w-14 flex-shrink-0 select-none items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
           >
             −
           </button>
           <button
             type="button"
-            onClick={handleIncrement}
+            {...incrementPress}
             disabled={disabled || !canIncrement}
             aria-label={`Increase ${label ?? "value"}`}
             tabIndex={-1}
-            className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
+            className="flex h-14 w-14 flex-shrink-0 select-none items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
           >
             +
           </button>

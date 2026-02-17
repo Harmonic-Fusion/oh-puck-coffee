@@ -30,7 +30,7 @@ export async function GET(
   // Check if member can access this bean
   const accessError = validateMemberAccess(
     session.user.id,
-    bean.createdBy,
+    bean.userId,
     session.user.role
   );
   if (accessError) return accessError;

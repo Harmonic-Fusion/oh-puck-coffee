@@ -100,8 +100,11 @@ export function SectionResults() {
   const flowRate = yieldActual && brewTime ? (yieldActual / brewTime).toFixed(2) : null;
 
   // ── Results order and visibility ──
-  const [resultsOrder, setResultsOrder] = useState<ResultsStepId[]>(() => getSavedResultsOrder());
-  const [resultsVisibility, setResultsVisibility] = useState<Record<ResultsStepId, boolean>>(() => getSavedResultsVisibility());
+  // Initialize with static defaults to avoid hydration mismatch (localStorage read happens in useEffect below)
+  const [resultsOrder, setResultsOrder] = useState<ResultsStepId[]>(DEFAULT_RESULTS_STEPS.map((s) => s.id));
+  const [resultsVisibility, setResultsVisibility] = useState<Record<ResultsStepId, boolean>>(
+    DEFAULT_RESULTS_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<ResultsStepId, boolean>)
+  );
   const [showMenu, setShowMenu] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -165,17 +168,13 @@ export function SectionResults() {
                 step={0.1}
                 placeholder="—"
                 error={errors.yieldActualGrams?.message}
-                labelExtra={
-                  yieldTarget ? (
-                    <button
-                      type="button"
-                      onClick={() => setValue("yieldActualGrams", yieldTarget, { shouldValidate: true })}
-                      tabIndex={-1}
-                      className="rounded-lg px-2.5 py-1 text-xs font-medium transition-colors bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                    >
-                      Target
-                    </button>
-                  ) : undefined
+                placeholderAction={
+                  yieldTarget
+                    ? {
+                        label: `Use Target Yield ${yieldTarget}g`,
+                        onClick: () => setValue("yieldActualGrams", yieldTarget, { shouldValidate: true }),
+                      }
+                    : undefined
                 }
               />
             )}
@@ -253,7 +252,7 @@ export function SectionResults() {
                 }}
                 min={0}
                 max={20}
-                step={0.5}
+                step={0.2}
                 placeholder="—"
                 error={errors.estimateMaxPressure?.message}
                 labelExtra={
