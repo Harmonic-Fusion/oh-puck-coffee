@@ -7,7 +7,7 @@ echo "🔄 Checking for database migrations..."
 # Run migrations if DATABASE_URL is set
 if [ -n "$DATABASE_URL" ]; then
   echo "🔄 Running database migrations..."
-  if node -r tsx/register scripts/migrate.ts; then
+  if tsx scripts/migrate.ts; then
     echo "✅ Migrations completed successfully"
   else
     echo "⚠️  Migration failed, but continuing with server start..."
