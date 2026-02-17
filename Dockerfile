@@ -42,11 +42,15 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Install tsx globally for running TypeScript migration scripts (before switching user)
+RUN npm install -g tsx
+
 # Copy migration scripts and drizzle migrations for runtime migrations
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
-# Install tsx globally for running TypeScript migration scripts
-RUN npm install -g tsx
+
+# Make start script executable
+RUN chmod +x scripts/start.sh
 
 USER nextjs
 
@@ -56,4 +60,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Run migrations before starting the server
-CMD ["sh", "-c", "tsx scripts/start-with-migrations.ts"]
+CMD ["./scripts/start.sh"]

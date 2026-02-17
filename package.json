@@ -5,7 +5,6 @@
   "scripts": {
     "dev": "PORT=8787 next dev --turbopack",
     "build": "next build",
-    "postbuild": "tsx scripts/migrate.ts",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest",
