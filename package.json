@@ -12,6 +12,8 @@
     "test:run": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:safe": "tsx scripts/migrate-with-fallback.ts",
+    "db:migrate:docker": "tsx scripts/migrate-via-docker.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
