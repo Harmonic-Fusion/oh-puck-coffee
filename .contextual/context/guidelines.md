@@ -277,6 +277,7 @@ Keep helper functions private to their component module unless they're used by a
 - ❌ Never disable ESLint rules without explanation
 - ❌ Never skip authentication checks in API routes
 - ❌ Never skip input validation
+- ❌ Never commit a migration without idempotent guards — all `CREATE TABLE` must use `IF NOT EXISTS`, all `ADD COLUMN` must use `IF NOT EXISTS`, all constraint additions must be wrapped in `DO $$ BEGIN ... END $$` existence checks
 
 ## Type Safety
 
@@ -308,6 +309,16 @@ Keep helper functions private to their component module unless they're used by a
 - API routes: `route.ts` (Next.js convention)
 - Schemas: `schema.ts` (Zod schemas)
 
+## Database Migrations
+
+**All migrations MUST be idempotent.** After running `pnpm db:generate`, edit the generated SQL before committing:
+
+- `CREATE TABLE` → `CREATE TABLE IF NOT EXISTS`
+- `ADD COLUMN` → `ADD COLUMN IF NOT EXISTS`
+- `DROP CONSTRAINT` → `DROP CONSTRAINT IF EXISTS`
+- Rename columns → wrap in `DO $$ BEGIN IF EXISTS (...) THEN ... END IF; END $$`
+- Add constraints/FKs → wrap in `DO $$ BEGIN IF NOT EXISTS (...) THEN ... END IF; END $$`
+
 ## Common Mistakes
 
 1. **Hardcoding routes** - Always use `AppRoutes`/`ApiRoutes`
@@ -316,3 +327,4 @@ Keep helper functions private to their component module unless they're used by a
 4. **Skipping validation** - All inputs need Zod validation
 5. **Arrow function components** - Use function declarations
 6. **`useEffect` for derived state** - Compute during render
+7. **Non-idempotent migrations** - Always add `IF NOT EXISTS`/`IF EXISTS` guards to generated SQL

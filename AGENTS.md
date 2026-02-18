@@ -98,6 +98,7 @@ See @`.contextual/context/guidelines.md` for the complete list of critical rules
 - Never hardcode routes (use `@/app/routes`)
 - Never use `any` type (use `unknown` and narrow)
 - Never skip authentication or validation
+- Never commit a migration without idempotent guards (`IF NOT EXISTS`, `IF EXISTS`, `DO $$ BEGIN ... END $$`)
 
 ### Code Style
 
@@ -151,6 +152,42 @@ Apply migrations:
 ```bash
 pnpm db:migrate
 ```
+
+### ⚠️ Migrations MUST Be Idempotent
+
+**Every migration file MUST be safe to run against a database where the changes already exist.** After `pnpm db:generate`, always edit the generated SQL to add idempotent guards before committing.
+
+**Required patterns:**
+
+```sql
+-- Tables: always use IF NOT EXISTS
+CREATE TABLE IF NOT EXISTS "my_table" ( ... );
+
+-- Columns: always use IF NOT EXISTS
+ALTER TABLE "my_table" ADD COLUMN IF NOT EXISTS "my_column" text;
+
+-- Renaming columns: wrap in a DO block that checks first
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'my_table' AND column_name = 'old_name'
+  ) THEN
+    ALTER TABLE "my_table" RENAME COLUMN "old_name" TO "new_name";
+  END IF;
+END $$;
+
+-- Foreign keys: wrap in a DO block that checks first
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'my_fk_name') THEN
+    ALTER TABLE "my_table" ADD CONSTRAINT "my_fk_name" FOREIGN KEY ("col") REFERENCES "other"("id");
+  END IF;
+END $$;
+
+-- Dropping constraints: use IF EXISTS
+ALTER TABLE "my_table" DROP CONSTRAINT IF EXISTS "old_constraint";
+```
+
+**Why:** We run migrations both via `drizzle-kit migrate` and a programmatic `scripts/migrate.ts` startup script. These use separate tracker tables (`drizzle.__drizzle_migrations` vs `public.__drizzle_migrations`). Idempotent SQL ensures migrations never fail regardless of which tracker recorded them.
 
 ## Authentication
 
@@ -212,8 +249,9 @@ All endpoints require authentication (except `/api/auth/*`):
 
 1. Update `src/db/schema.ts`
 2. `pnpm db:generate`
-3. Review migration in `drizzle/migrations/`
-4. `pnpm db:migrate`
+3. **Edit the generated migration SQL to add idempotent guards** (see "Migrations MUST Be Idempotent" above)
+4. Review migration in `drizzle/migrations/`
+5. `pnpm db:migrate`
 
 ## Important Files
 
