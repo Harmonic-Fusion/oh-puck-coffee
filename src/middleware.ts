@@ -1,14 +1,19 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { AppRoutes } from "./app/routes";
-import { auth } from "./auth";
-import { config as appConfig } from "./shared/config";
-import { createLogger } from "./lib/logger";
 
-// Initialize logger early
-import "./lib/logger-init";
+// ─────────────────────────────────────────────────────────────────────
+// IMPORTANT: This middleware runs in the Edge Runtime.
+// Do NOT import `auth` from "./auth" here — that pulls in DrizzleAdapter
+// + the postgres client, which require Node.js TCP sockets unavailable
+// in Edge.  Instead we check for the Auth.js session cookie directly.
+// Actual session validation happens in API routes / server components
+// via `getSession()` from "@/auth".
+// ─────────────────────────────────────────────────────────────────────
 
-const middlewareLogger = createLogger("auth", "debug", "middleware");
+// Auth.js v5 session cookie names
+const SESSION_COOKIE = "authjs.session-token";
+const SECURE_SESSION_COOKIE = "__Secure-authjs.session-token";
 
 // ── Protected route prefixes ─────────────────────────────────────────
 // These correspond to the (app) route group — the ONLY routes that
@@ -25,54 +30,44 @@ function isProtectedRoute(pathname: string): boolean {
   );
 }
 
-export default async function middleware(request: NextRequest) {
-  try {
-    const pathname = request.nextUrl.pathname;
+function hasSessionCookie(request: NextRequest): boolean {
+  return (
+    request.cookies.has(SESSION_COOKIE) ||
+    request.cookies.has(SECURE_SESSION_COOKIE)
+  );
+}
 
-    // Skip middleware for static assets (images, logos, etc.)
-    if (
-      pathname.startsWith("/logos/") ||
-      pathname.startsWith("/images/") ||
-      pathname.startsWith("/icons/") ||
-      pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|webp)$/i)
-    ) {
-      return NextResponse.next();
-    }
+export default function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
 
-    // Non-protected routes pass through without any auth check.
-    // This includes landing pages, auth pages, API routes, share pages.
-    if (!isProtectedRoute(pathname)) {
-      return NextResponse.next();
-    }
-
-    // ── Protected route: check session ───────────────────────────────
-    const session = await auth();
-
-    if (!session?.user) {
-      // Not authenticated → redirect to login with callbackUrl
-      const url = new URL(AppRoutes.login.path, request.url);
-      url.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(url);
-    }
-
-    // Authenticated → allow through
+  // Skip middleware for static assets (images, logos, etc.)
+  if (
+    pathname.startsWith("/logos/") ||
+    pathname.startsWith("/images/") ||
+    pathname.startsWith("/icons/") ||
+    pathname.match(/\.(png|jpg|jpeg|gif|svg|ico|webp)$/i)
+  ) {
     return NextResponse.next();
-  } catch (error) {
-    if (appConfig.enableDebugging) {
-      middlewareLogger.error("Error in auth middleware:", {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        name: error instanceof Error ? error.name : undefined,
-        cause:
-          error instanceof Error && error.cause
-            ? String(error.cause)
-            : undefined,
-        url: request.url,
-        method: request.method,
-      });
-    }
-    throw error;
   }
+
+  // Non-protected routes pass through without any auth check.
+  // This includes landing pages, auth pages, API routes, share pages.
+  if (!isProtectedRoute(pathname)) {
+    return NextResponse.next();
+  }
+
+  // ── Protected route: check for session cookie ────────────────────
+  // This only checks cookie presence — NOT validity. Expired or
+  // tampered sessions will fail when getSession() runs in the actual
+  // route handler, which will then redirect to login.
+  if (!hasSessionCookie(request)) {
+    const url = new URL(AppRoutes.login.path, request.url);
+    url.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  // Session cookie present → allow through
+  return NextResponse.next();
 }
 
 export const config = {

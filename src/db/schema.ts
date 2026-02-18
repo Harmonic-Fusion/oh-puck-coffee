@@ -46,6 +46,10 @@ export const accounts = pgTable(
   ]
 );
 
+// NOTE: The sessions table is no longer used at runtime (JWT sessions
+// replaced database sessions). It's kept in the schema so Drizzle
+// doesn't generate a DROP TABLE migration. Safe to remove once you
+// explicitly want to drop the table from the database.
 export const sessions = pgTable("sessions", {
   sessionToken: text("session_token").primaryKey(),
   userId: uuid("user_id")

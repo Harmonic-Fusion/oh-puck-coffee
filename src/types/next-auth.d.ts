@@ -1,4 +1,5 @@
 import "next-auth";
+import "next-auth/jwt";
 
 declare module "next-auth" {
   interface User {
@@ -14,5 +15,12 @@ declare module "next-auth" {
       image?: string | null;
       role?: "member" | "admin";
     };
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    role: "member" | "admin";
   }
 }
