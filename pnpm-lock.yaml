@@ -26,9 +26,6 @@ importers:
       autoprefixer:
         specifier: ^10.4.24
         version: 10.4.24(postcss@8.5.6)
-      drizzle-kit:
-        specifier: 0.30.0
-        version: 0.30.0
       drizzle-orm:
         specifier: ^0.44
         version: 0.44.7(postgres@3.4.8)
@@ -90,6 +87,9 @@ importers:
       '@vitest/ui':
         specifier: ^4.0.18
         version: 4.0.18(vitest@4.0.18)
+      drizzle-kit:
+        specifier: 0.30.0
+        version: 0.30.0
       eslint:
         specifier: ^9
         version: 9.39.2(jiti@2.6.1)

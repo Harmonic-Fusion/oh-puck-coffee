@@ -4,12 +4,33 @@
  * Used in Railway deployment at container startup.
  */
 
-import { execSync } from "child_process";
-import { existsSync } from "fs";
-import { readdir } from "fs/promises";
+import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { sql } from "drizzle-orm";
+import { existsSync, readFileSync } from "fs";
+import { readdir } from "fs/promises";
+
+// ---------------------------------------------------------------------------
+// Load .env files (standalone script — mirrors drizzle.config.ts pattern)
+// ---------------------------------------------------------------------------
+for (const file of [".env.local", ".env"]) {
+  try {
+    for (const line of readFileSync(file, "utf8").split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) continue;
+      const eq = trimmed.indexOf("=");
+      if (eq === -1) continue;
+      const key = trimmed.slice(0, eq).trim();
+      const val = trimmed
+        .slice(eq + 1)
+        .trim()
+        .replace(/^["']|["']$/g, "");
+      if (!process.env[key]) process.env[key] = val;
+    }
+  } catch {
+    // file not found, skip
+  }
+}
 
 function maskDatabaseUrl(url: string): string {
   return url.replace(/:[^:@]*@/, ":***@").replace(/\/\/[^:]*:/, "//***:");
@@ -42,38 +63,6 @@ async function checkMigrationsFolder(): Promise<void> {
   }
 }
 
-async function verifyCriticalColumns(db: ReturnType<typeof drizzle>): Promise<void> {
-  console.log("🔍 Verifying critical database columns...");
-  
-  // Check if users table has is_custom_name column (matches pattern from check-migrations.ts)
-  try {
-    const isCustomNameExists = await db.execute(sql`
-      SELECT EXISTS (
-        SELECT FROM information_schema.columns 
-        WHERE table_schema = 'public' 
-        AND table_name = 'users' 
-        AND column_name = 'is_custom_name'
-      );
-    `) as { rows: Array<{ exists: boolean }> };
-
-    const isCustomNameColumnExists = isCustomNameExists.rows[0]?.exists;
-    if (!isCustomNameColumnExists) {
-      console.error("❌ Missing critical column: users.is_custom_name");
-      console.error("   Expected from migration: 0003_add_is_custom_name");
-      throw new Error("Critical column users.is_custom_name is missing. Migration 0003_add_is_custom_name may not have been applied.");
-    } else {
-      console.log("✅ Verified: users.is_custom_name exists");
-    }
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("Critical column")) {
-      throw error;
-    }
-    console.error("⚠️  Error checking users.is_custom_name:", error);
-    throw error; // Re-throw to fail the migration
-  }
-  
-  console.log("✅ Critical column verification complete");
-}
 
 async function runMigrations() {
   console.log("🔄 Starting migration process...");
@@ -99,33 +88,25 @@ async function runMigrations() {
     process.exit(1);
   }
 
-  console.log("🔄 Running migrations with drizzle-kit...");
+  console.log("🔄 Connecting to database...");
+  let client: postgres.Sql | null = null;
 
   try {
+    client = postgres(databaseUrl, { max: 1 });
+    const db = drizzle(client);
+
+    console.log("✅ Database connection established");
+    console.log("🔄 Running migrations...");
+
     const startTime = Date.now();
-    execSync("drizzle-kit migrate", {
-      stdio: "inherit",
-      env: process.env,
-    });
+    await migrate(db, { migrationsFolder: "./drizzle/migrations" });
     const duration = Date.now() - startTime;
 
     console.log(`✅ Migrations completed successfully in ${duration}ms`);
-    
-    // Verify critical columns exist after migrations
-    console.log("🔍 Verifying critical database columns...");
-    const client = postgres(databaseUrl, { max: 1 });
-    const db = drizzle(client);
-    
-    try {
-      await verifyCriticalColumns(db);
-      await client.end();
-      console.log("✅ Database connection closed");
-      process.exit(0);
-    } catch (error) {
-      console.error("❌ Critical column verification failed:", error);
-      await client.end();
-      process.exit(1);
-    }
+
+    await client.end();
+    console.log("✅ Database connection closed");
+    process.exit(0);
   } catch (error) {
     console.error("❌ Migration failed:");
     
@@ -137,6 +118,15 @@ async function runMigrations() {
       }
     } else {
       console.error("   Unknown error:", error);
+    }
+
+    if (client) {
+      try {
+        await client.end();
+        console.log("✅ Database connection closed after error");
+      } catch (closeError) {
+        console.error("⚠️  Error closing database connection:", closeError);
+      }
     }
 
     process.exit(1);
