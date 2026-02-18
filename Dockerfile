@@ -49,10 +49,10 @@ RUN npm install -g tsx
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle
 
-# Install migration script dependencies that aren't in the Next.js standalone trace.
-# The standalone output only includes node_modules that Next.js traces from app code,
-# but migrate.ts runs outside of Next.js and needs these packages directly.
-RUN npm install --no-save drizzle-orm postgres
+# Copy migration script dependencies from the builder's pnpm store.
+# The Next.js standalone trace doesn't include these since migrate.ts runs outside Next.js.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/postgres ./node_modules/postgres
 
 # Make start script executable
 RUN chmod +x scripts/start.sh
