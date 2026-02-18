@@ -18,11 +18,24 @@ CREATE TABLE "beans" (
 	"name" text NOT NULL,
 	"origin" text,
 	"roaster" text,
+	"origin_id" integer,
+	"roaster_id" integer,
+	"origin_details" text,
 	"processing_method" text,
 	"roast_level" text NOT NULL,
 	"roast_date" timestamp,
+	"open_bag_date" timestamp,
 	"is_roast_date_best_guess" boolean DEFAULT false NOT NULL,
-	"created_by" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "feedback" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" uuid NOT NULL,
+	"type" text NOT NULL,
+	"subject" text NOT NULL,
+	"message" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -52,10 +65,29 @@ CREATE TABLE "machines" (
 	CONSTRAINT "machines_name_unique" UNIQUE("name")
 );
 --> statement-breakpoint
+CREATE TABLE "origins" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	CONSTRAINT "origins_name_unique" UNIQUE("name")
+);
+--> statement-breakpoint
+CREATE TABLE "roasters" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	CONSTRAINT "roasters_name_unique" UNIQUE("name")
+);
+--> statement-breakpoint
 CREATE TABLE "sessions" (
 	"session_token" text PRIMARY KEY NOT NULL,
 	"user_id" uuid NOT NULL,
 	"expires" timestamp NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "shot_shares" (
+	"id" text PRIMARY KEY NOT NULL,
+	"shot_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "shots" (
@@ -72,6 +104,8 @@ CREATE TABLE "shots" (
 	"brew_pressure" numeric(4, 1) DEFAULT '9',
 	"brew_time_secs" numeric(5, 1),
 	"yield_actual_grams" numeric(5, 1),
+	"estimate_max_pressure" numeric(4, 1),
+	"flow_control" numeric(4, 1),
 	"flow_rate" numeric(4, 2),
 	"shot_quality" numeric(3, 1) NOT NULL,
 	"rating" numeric(3, 1),
@@ -102,6 +136,7 @@ CREATE TABLE "users" (
 	"email_verified" timestamp,
 	"image" text,
 	"role" text DEFAULT 'member' NOT NULL,
+	"is_custom_name" boolean DEFAULT false NOT NULL,
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
@@ -113,9 +148,14 @@ CREATE TABLE "verification_tokens" (
 );
 --> statement-breakpoint
 ALTER TABLE "accounts" ADD CONSTRAINT "accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "beans" ADD CONSTRAINT "beans_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "beans" ADD CONSTRAINT "beans_origin_id_origins_id_fk" FOREIGN KEY ("origin_id") REFERENCES "public"."origins"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "beans" ADD CONSTRAINT "beans_roaster_id_roasters_id_fk" FOREIGN KEY ("roaster_id") REFERENCES "public"."roasters"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "beans" ADD CONSTRAINT "beans_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "feedback" ADD CONSTRAINT "feedback_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "integrations" ADD CONSTRAINT "integrations_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions" ADD CONSTRAINT "sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "shot_shares" ADD CONSTRAINT "shot_shares_shot_id_shots_id_fk" FOREIGN KEY ("shot_id") REFERENCES "public"."shots"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "shot_shares" ADD CONSTRAINT "shot_shares_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shots" ADD CONSTRAINT "shots_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shots" ADD CONSTRAINT "shots_bean_id_beans_id_fk" FOREIGN KEY ("bean_id") REFERENCES "public"."beans"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shots" ADD CONSTRAINT "shots_grinder_id_grinders_id_fk" FOREIGN KEY ("grinder_id") REFERENCES "public"."grinders"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

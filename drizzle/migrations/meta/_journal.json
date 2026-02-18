@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1770881433795,
-      "tag": "0000_kind_spacker_dave",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1739750400000,
-      "tag": "0001_phase3_schema_changes",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1739836800000,
-      "tag": "0002_add_shot_shares",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1739923200000,
-      "tag": "0003_add_is_custom_name",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1771350446094,
-      "tag": "0004_unique_reavers",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1771354211021,
-      "tag": "0005_sparkling_dragon_man",
+      "when": 1771390085208,
+      "tag": "0000_striped_triathlon",
       "breakpoints": true
     }
   ]

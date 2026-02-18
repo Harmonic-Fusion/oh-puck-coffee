@@ -1,5 +1,5 @@
 {
-  "id": "9c646964-7e37-495e-968c-1c901fe3b809",
+  "id": "8686d912-ec85-43d2-a593-778717ab2209",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -134,6 +134,24 @@
           "primaryKey": false,
           "notNull": false
         },
+        "origin_id": {
+          "name": "origin_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "roaster_id": {
+          "name": "roaster_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origin_details": {
+          "name": "origin_details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "processing_method": {
           "name": "processing_method",
           "type": "text",
@@ -152,6 +170,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "open_bag_date": {
+          "name": "open_bag_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "is_roast_date_best_guess": {
           "name": "is_roast_date_best_guess",
           "type": "boolean",
@@ -159,8 +183,8 @@
           "notNull": true,
           "default": false
         },
-        "created_by": {
-          "name": "created_by",
+        "user_id": {
+          "name": "user_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -175,12 +199,103 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "beans_created_by_users_id_fk": {
-          "name": "beans_created_by_users_id_fk",
+        "beans_origin_id_origins_id_fk": {
+          "name": "beans_origin_id_origins_id_fk",
+          "tableFrom": "beans",
+          "tableTo": "origins",
+          "columnsFrom": [
+            "origin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "beans_roaster_id_roasters_id_fk": {
+          "name": "beans_roaster_id_roasters_id_fk",
+          "tableFrom": "beans",
+          "tableTo": "roasters",
+          "columnsFrom": [
+            "roaster_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "beans_user_id_users_id_fk": {
+          "name": "beans_user_id_users_id_fk",
           "tableFrom": "beans",
           "tableTo": "users",
           "columnsFrom": [
-            "created_by"
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.feedback": {
+      "name": "feedback",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "feedback_user_id_users_id_fk": {
+          "name": "feedback_user_id_users_id_fk",
+          "tableFrom": "feedback",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
           ],
           "columnsTo": [
             "id"
@@ -364,6 +479,72 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.origins": {
+      "name": "origins",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "origins_name_unique": {
+          "name": "origins_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.roasters": {
+      "name": "roasters",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "roasters_name_unique": {
+          "name": "roasters_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.sessions": {
       "name": "sessions",
       "schema": "",
@@ -392,6 +573,71 @@
         "sessions_user_id_users_id_fk": {
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.shot_shares": {
+      "name": "shot_shares",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "shot_id": {
+          "name": "shot_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "shot_shares_shot_id_shots_id_fk": {
+          "name": "shot_shares_shot_id_shots_id_fk",
+          "tableFrom": "shot_shares",
+          "tableTo": "shots",
+          "columnsFrom": [
+            "shot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shot_shares_user_id_users_id_fk": {
+          "name": "shot_shares_user_id_users_id_fk",
+          "tableFrom": "shot_shares",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
@@ -490,6 +736,18 @@
         "yield_actual_grams": {
           "name": "yield_actual_grams",
           "type": "numeric(5, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimate_max_pressure": {
+          "name": "estimate_max_pressure",
+          "type": "numeric(4, 1)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flow_control": {
+          "name": "flow_control",
+          "type": "numeric(4, 1)",
           "primaryKey": false,
           "notNull": false
         },
@@ -725,6 +983,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'member'"
+        },
+        "is_custom_name": {
+          "name": "is_custom_name",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         }
       },
       "indexes": {},
