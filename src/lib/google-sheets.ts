@@ -151,7 +151,7 @@ export async function appendShotRow(
     yieldGrams: string;
     yieldActualGrams?: string | null;
     brewRatio: number | null;
-    grindLevel: string;
+    grindLevel: string | null;
     brewTimeSecs?: string | null;
     brewTempC?: string | null;
     preInfusionDuration?: string | null;
@@ -187,7 +187,7 @@ export async function appendShotRow(
     shot.yieldGrams,
     shot.yieldActualGrams ?? "",
     shot.brewRatio ?? "",
-    shot.grindLevel,
+    shot.grindLevel ?? "",
     shot.brewTimeSecs ?? "",
     shot.brewTempC ?? "",
     shot.preInfusionDuration ?? "",
