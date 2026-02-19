@@ -15,7 +15,6 @@ import type { ShotWithJoins } from "@/components/shots/hooks";
 const TEMP_UNIT_KEY = "coffee-temp-unit";
 const RECIPE_ORDER_KEY = "coffee-recipe-order";
 const RECIPE_VISIBILITY_KEY = "coffee-recipe-visibility";
-const TOOLS_EXPANDED_KEY = "coffee-tools-expanded";
 const RATIO_OPTIONS = [1, 2, 3, 4] as const;
 const DOSE_OPTIONS = [16, 18, 20, 22] as const;
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
@@ -89,18 +88,6 @@ function saveRecipeVisibility(visibility: Record<RecipeStepId, boolean>): void {
   localStorage.setItem(RECIPE_VISIBILITY_KEY, JSON.stringify(visibility));
 }
 
-function getSavedToolsExpanded(): boolean {
-  if (typeof window === "undefined") return true;
-  const saved = localStorage.getItem(TOOLS_EXPANDED_KEY);
-  if (saved === null) return true; // Default to expanded
-  return saved === "true";
-}
-
-function saveToolsExpanded(expanded: boolean): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(TOOLS_EXPANDED_KEY, expanded ? "true" : "false");
-}
-
 interface SectionRecipeProps {
   previousShotId?: string | null;
   onViewShot?: (shot: ShotWithJoins) => void;
@@ -128,7 +115,6 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
   const [recipeVisibility, setRecipeVisibility] = useState<Record<RecipeStepId, boolean>>(
     DEFAULT_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<RecipeStepId, boolean>)
   );
-  const [toolsExpanded, setToolsExpanded] = useState<boolean>(true);
   const [showMenu, setShowMenu] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -138,7 +124,6 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
     setTempUnit(getSavedTempUnit());
     setRecipeOrder(getSavedRecipeOrder());
     setRecipeVisibility(getSavedRecipeVisibility());
-    setToolsExpanded(getSavedToolsExpanded());
   }, []);
 
   // Handle click outside to close menu
@@ -326,7 +311,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                         type="button"
                         onClick={() => applyDose(d)}
                         tabIndex={-1}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeDose === d
+                        className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeDose === d
                             ? "bg-amber-600 text-white"
                             : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
                           }`}
@@ -352,7 +337,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                 <NumberStepper
                   label="Target Yield"
                   suffix="g"
-                  secondarySuffix={targetRatio ? `1:${targetRatio}` : undefined}
+                  secondarySuffix={targetRatio ? ` 1:${targetRatio}` : undefined}
                   value={field.value}
                   onChange={handleYieldChange}
                   min={0}
@@ -362,16 +347,13 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                   error={errors.yieldGrams?.message}
                   labelExtra={
                     <div className="flex items-center gap-1">
-                      <span className="mr-1 text-xs text-stone-400 dark:text-stone-500">
-                        Ratio
-                      </span>
                       {RATIO_OPTIONS.map((r) => (
                         <button
                           key={r}
                           type="button"
                           onClick={() => applyRatio(r)}
                           tabIndex={-1}
-                          className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeRatio === r
+                          className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeRatio === r
                               ? "bg-amber-600 text-white"
                               : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
                             }`}
@@ -498,7 +480,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                           setValue("brewPressure", p, { shouldValidate: true });
                         }}
                         tabIndex={-1}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activePressure === p
+                        className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activePressure === p
                             ? "bg-amber-600 text-white"
                             : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
                           }`}
@@ -540,49 +522,12 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
             key="toolsUsed"
             name="toolsUsed"
             control={control}
-            render={({ field }) => {
-              const toolsCount = (field.value || []).length;
-              const handleToggle = () => {
-                const newExpanded = !toolsExpanded;
-                setToolsExpanded(newExpanded);
-                saveToolsExpanded(newExpanded);
-              };
-              return (
-                <div className="w-full">
-                  <button
-                    type="button"
-                    onClick={handleToggle}
-                    className="flex w-full items-center justify-between rounded-lg border border-stone-200 bg-white px-4 py-3 text-left transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
-                  >
-                    <span className="text-base font-semibold text-stone-800 dark:text-stone-200">
-                      Tools Used {toolsCount > 0 && `(${toolsCount})`}
-                    </span>
-                    <svg
-                      className={`h-5 w-5 text-stone-400 transition-transform ${toolsExpanded ? "rotate-180" : ""}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
-                  </button>
-                  {toolsExpanded && (
-                    <div className="mt-2">
-                      <ToolSelector
-                        value={field.value || []}
-                        onChange={field.onChange}
-                        hideLabel={true}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            }}
+            render={({ field }) => (
+              <ToolSelector
+                value={field.value || []}
+                onChange={field.onChange}
+              />
+            )}
           />
         );
       default:
@@ -591,7 +536,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
   };
 
   return (
-    <section className="space-y-6">
+    <section id="recipe" className="space-y-6">
       <div className="flex items-center justify-center gap-2">
         <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
           Recipe
@@ -629,6 +574,16 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
               >
                 Edit Order
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowQRCode(true);
+                  setShowMenu(false);
+                }}
+                className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+              >
+                Recipe QR Code
+              </button>
             </div>
           )}
         </div>
@@ -642,38 +597,6 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
         {orderedSteps.map((step) => renderStep(step.id))}
       </div>
 
-      {/* Computed preview */}
-      <div className="flex items-center justify-center gap-6 rounded-xl bg-stone-100 px-4 py-3 text-sm dark:bg-stone-800">        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => setShowQRCode(true)}
-          title="Generate QR code for this recipe"
-          tabIndex={-1}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <rect x="3" y="3" width="5" height="5" />
-            <rect x="16" y="3" width="5" height="5" />
-            <rect x="3" y="16" width="5" height="5" />
-            <path d="M21 16h-3a2 2 0 0 0-2 2v3" />
-            <path d="M21 21v.01" />
-            <path d="M12 7v3a2 2 0 0 1-2 2H7" />
-            <path d="M12 12h.01" />
-          </svg>
-          <span className="ml-1.5">QR Code</span>
-        </Button>
-      </div>
-
       {/* QR Code Modal */}
       <Modal
         open={showQRCode}
@@ -685,14 +608,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
             Scan this QR code to load this recipe on another device
           </p>
           {recipeQRUrl && (
-            <div className="flex flex-col items-center gap-3">
-              <QRCode value={recipeQRUrl} size={250} title="Recipe QR Code" />
-              <div className="text-center">
-                <p className="text-xs font-mono text-stone-400 dark:text-stone-500 break-all max-w-md">
-                  {recipeQRUrl}
-                </p>
-              </div>
-            </div>
+            <QRCode value={recipeQRUrl} size={250} title="Recipe QR Code" />
           )}
         </div>
       </Modal>

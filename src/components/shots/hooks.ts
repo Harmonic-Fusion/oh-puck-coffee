@@ -88,8 +88,15 @@ export function useCreateShot() {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Failed to create shot");
+        let errorMessage = "Failed to create shot";
+        try {
+          const error = await res.json();
+          errorMessage = error.error || errorMessage;
+        } catch {
+          // If response is not valid JSON, use status text or default message
+          errorMessage = res.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
       }
       return res.json();
     },

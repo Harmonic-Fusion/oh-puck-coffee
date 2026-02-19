@@ -240,7 +240,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
             placeholder="Select a bean..."
             isLoading={isLoading}
             error={error}
-            onAddNew={() => setShowCreate(true)}
+            onAddNew={(text) => { setNewName(text); setShowCreate(true); }}
             emptyMessage={
               !isLoading && beans && beans.length === 0
                 ? "No beans yet — create one below"

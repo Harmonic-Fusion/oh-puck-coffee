@@ -1,6 +1,6 @@
 ---
 config:
-  SPECS_DIR: ./contextual/plans
+  PLANS_DIR: .contextual/plans
   AGENTS_MD: AGENTS.md
 ---
 
@@ -15,7 +15,7 @@ Route to CREATE, CLARIFY, or PLAN mode based on specification state. Creates/upd
 # Routing
 
 1. Use Bash tool to get current branch → `${CURRENT_BRANCH}` (stop if `main`)
-2. Set `${FEATURE_DIR}` = `${SPECS_DIR}/${CURRENT_BRANCH}`, `${FEATURE_CONTEXT}` = `${FEATURE_DIR}/context.md`
+2. Set `${FEATURE_DIR}` = `${PLANS_DIR}/${CURRENT_BRANCH}`, `${FEATURE_CONTEXT}` = `${FEATURE_DIR}/context.md`
 3. Use Read tool to check if context exists
 4. Route based on context state:
    - No `context.md` exists → **CREATE** mode
@@ -58,7 +58,7 @@ Route to CREATE, CLARIFY, or PLAN mode based on specification state. Creates/upd
    - Generate specification content
    - Focus on **WHAT** needs to be specified, not **HOW**
 5. Add `[NEEDS CLARIFICATION: question?]` markers for ambiguous areas
-6. Validate: only `${SPECS_DIR}/${CURRENT_BRANCH}/` files modified
+6. Validate: only `${PLANS_DIR}/${CURRENT_BRANCH}/` files modified
 
 # Mode: CLARIFY
 
@@ -76,7 +76,7 @@ Route to CREATE, CLARIFY, or PLAN mode based on specification state. Creates/upd
      - Format as table (A/B/Custom)
    - Wait for answer, update spec, continue (max 7 per session)
    - Track questions asked to avoid duplicates
-5. Validate: only `${SPECS_DIR}/${CURRENT_BRANCH}/` files modified
+5. Validate: only `${PLANS_DIR}/${CURRENT_BRANCH}/` files modified
 
 # Mode: PLAN
 
@@ -94,7 +94,7 @@ Route to CREATE, CLARIFY, or PLAN mode based on specification state. Creates/upd
    - Prioritize by dependencies
 4. Use Edit tool to update `${FEATURE_CONTEXT}` with plan
 5. Use TodoWrite tool to track planning progress
-6. Validate: only `${SPECS_DIR}/${CURRENT_BRANCH}/` files modified
+6. Validate: only `${PLANS_DIR}/${CURRENT_BRANCH}/` files modified
 
 # Claude Code Specific Features
 
@@ -117,7 +117,7 @@ Route to CREATE, CLARIFY, or PLAN mode based on specification state. Creates/upd
 
 **Before finishing:**
 
-- [ ] Verify modifications ONLY in `${SPECS_DIR}/${CURRENT_BRANCH}/`
+- [ ] Verify modifications ONLY in `${PLANS_DIR}/${CURRENT_BRANCH}/`
 - [ ] Confirm created documentation, NOT implementation
 - [ ] Check all clarification markers are properly formatted
 - [ ] Ensure plan tasks use checkbox syntax `- [ ]`

@@ -36,7 +36,7 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
       machineId: shot.machineId || undefined,
       doseGrams: parseFloat(shot.doseGrams),
       yieldGrams: parseFloat(shot.yieldGrams),
-      grindLevel: parseFloat(shot.grindLevel),
+      grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
       brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
       preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
       brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : undefined,

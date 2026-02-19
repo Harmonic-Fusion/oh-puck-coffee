@@ -8,6 +8,20 @@
       "when": 1771390085208,
       "tag": "0000_striped_triathlon",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771390086000,
+      "tag": "0001_make_grind_level_nullable",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1771390087000,
+      "tag": "0002_increase_flow_rate_precision",
+      "breakpoints": true
     }
   ]
 }

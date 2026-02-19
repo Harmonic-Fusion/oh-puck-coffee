@@ -56,7 +56,7 @@ export function GrinderSelector({
               placeholder="Select a grinder..."
               isLoading={isLoading}
               error={error}
-              onAddNew={() => setShowCreate(true)}
+              onAddNew={(text) => { setNewName(text); setShowCreate(true); }}
               emptyMessage="No grinders found"
             />
           </div>

@@ -1,22 +1,8 @@
-import { readFileSync } from "fs";
 import { defineConfig } from "drizzle-kit";
+import { loadDotEnv } from "./src/lib/dot-env";
 
 // Load .env.local / .env — drizzle-kit doesn't auto-load like Next.js
-for (const file of [".env.local", ".env"]) {
-  try {
-    for (const line of readFileSync(file, "utf8").split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const eq = trimmed.indexOf("=");
-      if (eq === -1) continue;
-      const key = trimmed.slice(0, eq).trim();
-      const val = trimmed.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
-      if (!process.env[key]) process.env[key] = val;
-    }
-  } catch {
-    // file not found, skip
-  }
-}
+loadDotEnv();
 
 function isRunningOnRailway(): boolean {
   return !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_PUBLIC_DOMAIN;

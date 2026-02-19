@@ -61,6 +61,7 @@ export async function GET(request: NextRequest) {
       userName: users.name,
       beanId: shots.beanId,
       beanName: beans.name,
+      beanRoastLevel: beans.roastLevel,
       beanRoastDate: beans.roastDate,
       grinderId: shots.grinderId,
       grinderName: grinders.name,
@@ -149,36 +150,37 @@ export async function POST(request: NextRequest) {
       ? parseFloat((yieldForFlow / data.brewTimeSecs).toFixed(2))
       : null;
 
-  const [shot] = await db
-    .insert(shots)
-    .values({
-      userId: session.user.id,
-      beanId: data.beanId,
-      grinderId: data.grinderId,
-      machineId: data.machineId || null,
-      doseGrams: String(data.doseGrams),
-      yieldGrams: String(data.yieldGrams),
-      grindLevel: String(data.grindLevel),
-      brewTempC: data.brewTempC ? String(data.brewTempC) : null,
-      brewTimeSecs: data.brewTimeSecs ? String(data.brewTimeSecs) : null,
-      yieldActualGrams: data.yieldActualGrams ? String(data.yieldActualGrams) : null,
-      estimateMaxPressure: data.estimateMaxPressure ? String(data.estimateMaxPressure) : null,
-      flowControl: data.flowControl ? String(data.flowControl) : null,
-      preInfusionDuration: data.preInfusionDuration ? String(data.preInfusionDuration) : null,
-      brewPressure: data.brewPressure ? String(data.brewPressure) : null,
-      flowRate: flowRate ? String(flowRate) : null,
-      shotQuality: String(data.shotQuality),
-      rating: data.rating ? String(data.rating) : null,
-      toolsUsed: data.toolsUsed || null,
-      notes: data.notes || null,
-      flavorWheelCategories: data.flavorWheelCategories || null,
-      flavorWheelBody: data.flavorWheelBody || null,
-      flavorWheelAdjectives: data.flavorWheelAdjectives || null,
-    })
-    .returning();
+  try {
+    const [shot] = await db
+      .insert(shots)
+      .values({
+        userId: session.user.id,
+        beanId: data.beanId,
+        grinderId: data.grinderId,
+        machineId: data.machineId || null,
+        doseGrams: String(data.doseGrams),
+        yieldGrams: String(data.yieldGrams),
+        grindLevel: data.grindLevel ? String(data.grindLevel) : null,
+        brewTempC: data.brewTempC ? String(data.brewTempC) : null,
+        brewTimeSecs: data.brewTimeSecs ? String(data.brewTimeSecs) : null,
+        yieldActualGrams: data.yieldActualGrams ? String(data.yieldActualGrams) : null,
+        estimateMaxPressure: data.estimateMaxPressure ? String(data.estimateMaxPressure) : null,
+        flowControl: data.flowControl ? String(data.flowControl) : null,
+        preInfusionDuration: data.preInfusionDuration ? String(data.preInfusionDuration) : null,
+        brewPressure: data.brewPressure ? String(data.brewPressure) : null,
+        flowRate: flowRate ? String(flowRate) : null,
+        shotQuality: String(data.shotQuality),
+        rating: data.rating ? String(data.rating) : null,
+        toolsUsed: data.toolsUsed || null,
+        notes: data.notes || null,
+        flavorWheelCategories: data.flavorWheelCategories || null,
+        flavorWheelBody: data.flavorWheelBody || null,
+        flavorWheelAdjectives: data.flavorWheelAdjectives || null,
+      })
+      .returning();
 
-  // Fire-and-forget: append to Google Sheet if integration active
-  (async () => {
+    // Fire-and-forget: append to Google Sheet if integration active
+    (async () => {
     try {
       const [integration] = await db
         .select()
@@ -255,7 +257,28 @@ export async function POST(request: NextRequest) {
     } catch (err) {
       console.error("Failed to append shot to Google Sheet:", err);
     }
-  })();
+    })();
 
-  return NextResponse.json(shot, { status: 201 });
+    return NextResponse.json(shot, { status: 201 });
+  } catch (error) {
+    console.error("Failed to create shot:", error);
+    
+    // Handle database errors with user-friendly messages
+    let errorMessage = "Failed to create shot";
+    if (error instanceof Error) {
+      // Check for specific database errors
+      if (error.message.includes("numeric field overflow")) {
+        errorMessage = "Invalid data: one or more values are too large for the database field";
+      } else if (error.message.includes("foreign key")) {
+        errorMessage = "Invalid reference: one or more selected items no longer exist";
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 500 }
+    );
+  }
 }

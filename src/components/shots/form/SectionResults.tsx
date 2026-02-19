@@ -32,7 +32,7 @@ const DEFAULT_RESULTS_STEPS: ResultsStepConfig[] = [
   { id: "notes", label: "Notes", visible: true },
 ];
 
-const TIME_OPTIONS = [10, 15, 20, 25, 30] as const;
+const TIME_OPTIONS = [10, 20, 30] as const;
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
 
 // ── LocalStorage helpers ──
@@ -188,44 +188,45 @@ export function SectionResults() {
             name="brewTimeSecs"
             control={control}
             render={({ field }) => (
-              <NumberStepper
-                label="Brew Time"
-                suffix="sec"
-                secondarySuffix={flowRate ? `${flowRate} g/s` : undefined}
-                value={field.value}
-                onChange={(val) => field.onChange(val)}
-                min={0}
-                max={120}
-                step={0.1}
-                placeholder="—"
-                error={errors.brewTimeSecs?.message}
-                noRound={true}
-                extraButtons={
-                  <BrewTimer
-                    value={field.value}
-                    onChange={(val) => field.onChange(val)}
-                  />
-                }
-                labelExtra={
-                  <div className="flex items-center gap-1">
-                    {TIME_OPTIONS.map((time) => (
-                      <button
-                        key={time}
-                        type="button"
-                        onClick={() => setValue("brewTimeSecs", time, { shouldValidate: true })}
-                        tabIndex={-1}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                          field.value === time
-                            ? "bg-amber-600 text-white"
-                            : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                        }`}
-                      >
-                        {time}s
-                      </button>
-                    ))}
-                  </div>
-                }
-              />
+              <div>
+                <NumberStepper
+                  label="Brew Time"
+                  suffix="sec"
+                  secondarySuffix={flowRate ? `${flowRate} g/s` : undefined}
+                  value={field.value}
+                  onChange={(val) => field.onChange(val)}
+                  min={0}
+                  max={120}
+                  step={0.1}
+                  placeholder="—"
+                  error={errors.brewTimeSecs?.message}
+                  noRound={true}
+                  labelExtra={
+                    <div className="flex items-center gap-1">
+                      {TIME_OPTIONS.map((time) => (
+                        <button
+                          key={time}
+                          type="button"
+                          onClick={() => setValue("brewTimeSecs", time, { shouldValidate: true })}
+                          tabIndex={-1}
+                          className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                            field.value === time
+                              ? "bg-amber-600 text-white"
+                              : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                          }`}
+                        >
+                          {time}s
+                        </button>
+                      ))}
+                    </div>
+                  }
+                />
+                <BrewTimer
+                  value={field.value}
+                  onChange={(val) => field.onChange(val)}
+                  className="mt-2 flex h-16 w-full"
+                />
+              </div>
             )}
           />
         );
@@ -266,7 +267,7 @@ export function SectionResults() {
                           setValue("estimateMaxPressure", p, { shouldValidate: true });
                         }}
                         tabIndex={-1}
-                        className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                        className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                           activePressure === p
                             ? "bg-amber-600 text-white"
                             : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
@@ -299,7 +300,7 @@ export function SectionResults() {
                 error={errors.shotQuality?.message}
                 labels={{
                   1: "Failed to Extract",
-                  2: "Severe channeling/spraying",
+                  2: "Severe channeling or spraying",
                   3: "Channeling detected",
                   4: "Good - Minor unevenness",
                   5: "Excellent - Even extraction",

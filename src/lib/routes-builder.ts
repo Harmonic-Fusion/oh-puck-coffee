@@ -1,7 +1,12 @@
 import { ReadonlyURLSearchParams } from "next/navigation";
 
 // Type definitions for route building
-type RouteSpec = string | { path: string; [key: string]: RouteSpec };
+type RouteSpec =
+  | string
+  | { path: string; _is_public?: true; [key: string]: RouteSpec | true | undefined };
+
+// Metadata keys — these are NOT child routes
+type RouteMetaKeys = "path" | "_is_public";
 
 // Extract path parameters from a path string
 type ExtractParams<T extends string> =
@@ -19,11 +24,12 @@ type ResolveParams<T extends string> = {
 // Type that represents the final route structure after building
 type BuiltRouteObject<T extends RouteSpec> = T extends string
   ? { path: string }
-  : T extends { path: string; [key: string]: RouteSpec }
+  : T extends { path: string; [key: string]: RouteSpec | true | undefined }
     ? {
         path: string;
+        _is_public?: true;
       } & {
-        [K in keyof Omit<T, "path">]: BuiltRouteObject<T[K]>;
+        [K in keyof Omit<T, RouteMetaKeys>]: BuiltRouteObject<T[K] & RouteSpec>;
       }
     : never;
 
@@ -70,12 +76,16 @@ function buildRoutesRecursive<T extends RouteSpec>(
     }
     visited.add(spec);
 
-    const { path, ...rest } = spec;
+    const { path, _is_public, ...rest } = spec;
     const fullPath = parentPath + path;
 
-    const result: Record<string, BuiltRouteObject<RouteSpec> | string> = {
+    const result: Record<string, BuiltRouteObject<RouteSpec> | string | true> = {
       path: fullPath,
     };
+
+    if (_is_public) {
+      result._is_public = true;
+    }
 
     for (const [key, value] of Object.entries(rest)) {
       if (typeof value === "string") {
@@ -83,7 +93,11 @@ function buildRoutesRecursive<T extends RouteSpec>(
       } else if (typeof value === "object" && value !== null && "path" in value) {
         result[key] = buildRoutesRecursive(value, fullPath, visited);
       } else {
-        result[key] = buildRoutesRecursive(value, fullPath, visited);
+        result[key] = buildRoutesRecursive(
+          value as RouteSpec,
+          fullPath,
+          visited
+        );
       }
     }
 
@@ -152,6 +166,84 @@ export function resolvePath<T extends string>(
   }
 
   return resolvedPath;
+}
+
+// ── Route map utilities ──────────────────────────────────────────────
+
+/** A flattened route entry stored in a route map. */
+export interface RouteEntry {
+  path: string;
+  _is_public?: true;
+}
+
+/**
+ * Flattens a built routes object into a `Map<path, RouteEntry>` for O(1) lookups.
+ * Walks all nested route objects recursively.
+ */
+export function buildRouteMap(
+  routes: Record<string, unknown>
+): Map<string, RouteEntry> {
+  const map = new Map<string, RouteEntry>();
+
+  function walk(obj: unknown): void {
+    if (typeof obj !== "object" || obj === null) return;
+    const record = obj as Record<string, unknown>;
+    if (typeof record.path !== "string") return;
+
+    const entry: RouteEntry = { path: record.path };
+    if (record._is_public === true) entry._is_public = true;
+    map.set(record.path, entry);
+
+    for (const [key, value] of Object.entries(record)) {
+      if (key === "path" || key === "_is_public") continue;
+      if (typeof value === "object" && value !== null) walk(value);
+    }
+  }
+
+  for (const value of Object.values(routes)) {
+    walk(value);
+  }
+
+  return map;
+}
+
+/**
+ * Finds the most specific route matching `pathname` via O(1) map lookups.
+ * Tries an exact match first, then walks up path segments.
+ *
+ * @example
+ * getRoute("/settings/integrations", map) // → { path: "/settings/integrations" }
+ * getRoute("/settings/unknown",      map) // → { path: "/settings" }
+ * getRoute("/totally-unknown",        map) // → { path: "/" }  (if "/" is in the map)
+ */
+export function getRoute(
+  pathname: string,
+  routeMap: Map<string, RouteEntry>
+): RouteEntry | undefined {
+  const exact = routeMap.get(pathname);
+  if (exact) return exact;
+
+  // Walk up path segments to find the closest parent route
+  let end = pathname.length;
+  while ((end = pathname.lastIndexOf("/", end - 1)) > 0) {
+    const parent = routeMap.get(pathname.slice(0, end));
+    if (parent) return parent;
+  }
+
+  // Check root
+  return routeMap.get("/");
+}
+
+/**
+ * Returns `true` if `pathname` resolves to a route marked `_is_public`,
+ * or if it doesn't match any known route at all (i.e. not protected).
+ */
+export function isPublicRoute(
+  pathname: string,
+  routeMap: Map<string, RouteEntry>
+): boolean {
+  const route = getRoute(pathname, routeMap);
+  return route == null || route._is_public === true;
 }
 
 export type {

@@ -10,42 +10,11 @@
  */
 
 import { execSync } from "child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "fs";
+import { mkdirSync, writeFileSync } from "fs";
 import { resolve } from "path";
+import { readEnvDatabaseUrl } from "../src/lib/dot-env";
 
-// ---------------------------------------------------------------------------
-// Load .env files (standalone script — mirrors drizzle.config.ts pattern)
-// ---------------------------------------------------------------------------
-for (const file of [".env.local", ".env"]) {
-  try {
-    for (const line of readFileSync(file, "utf8").split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const eq = trimmed.indexOf("=");
-      if (eq === -1) continue;
-      const key = trimmed.slice(0, eq).trim();
-      const val = trimmed
-        .slice(eq + 1)
-        .trim()
-        .replace(/^["']|["']$/g, "");
-      if (!process.env[key]) process.env[key] = val;
-    }
-  } catch {
-    // file not found, skip
-  }
-}
-
-const CONFIG = {
-  DATABASE_URL: process.env.DATABASE_URL,
-};
-
-// ---------------------------------------------------------------------------
-// Validate
-// ---------------------------------------------------------------------------
-if (!CONFIG.DATABASE_URL) {
-  console.error("❌ DATABASE_URL is not set. Cannot export database.");
-  process.exit(1);
-}
+const DATABASE_URL = readEnvDatabaseUrl();
 
 // ---------------------------------------------------------------------------
 // Build output path: ./data/{YYYY-MM-DD}/backup-{HH-MM-SS}.sql
@@ -87,7 +56,7 @@ console.log(`📦 Exporting database to ${outPath} …`);
 try {
   if (hasDocker()) {
     // Run pg_dump inside a matching-version Docker container, pipe stdout to file.
-    const dbUrl = dockerFriendlyUrl(CONFIG.DATABASE_URL);
+    const dbUrl = dockerFriendlyUrl(DATABASE_URL);
     const sql = execSync(
       `docker run --rm postgres:17-alpine pg_dump "${dbUrl}" --no-owner --no-acl`,
       { maxBuffer: 256 * 1024 * 1024 }, // 256 MB
@@ -97,7 +66,7 @@ try {
     // Fallback: local pg_dump (must be version-compatible with the server).
     console.log("⚠️  Docker not available — falling back to local pg_dump");
     execSync(
-      `pg_dump "${CONFIG.DATABASE_URL}" --no-owner --no-acl -f "${outPath}"`,
+      `pg_dump "${DATABASE_URL}" --no-owner --no-acl -f "${outPath}"`,
       { stdio: "inherit" },
     );
   }

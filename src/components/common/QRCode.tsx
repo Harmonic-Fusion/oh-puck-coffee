@@ -1,7 +1,13 @@
 "use client";
 
 import { useMemo, useRef, useEffect, useState, forwardRef } from "react";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCode as QRCodeLogo } from "react-qrcode-logo";
+
+type EyeRadius = [number, number, number, number];
+type EyeRadiusWithInner = {
+  outer: EyeRadius;
+  inner: EyeRadius;
+};
 
 type QRCodeProps = {
   value: string;
@@ -16,7 +22,7 @@ type QRCodeProps = {
 
 /**
  * Fluid QR Code component with responsive sizing and theme-aware colors
- * Generates a QR code with styled round corner eyes that adapts to container size
+ * Generates a QR code with dot-style modules and styled round corner eyes
  */
 export const QRCode = forwardRef<HTMLDivElement, QRCodeProps>(function QRCode(
   {
@@ -186,6 +192,21 @@ export const QRCode = forwardRef<HTMLDivElement, QRCodeProps>(function QRCode(
     }
   }, [forceLight, customFgColor, customBgColor]);
 
+  // Eye radius configuration — rounded corners on the three position detection patterns
+  // See: https://github.com/gcoro/react-qrcode-logo/blob/HEAD/res/eyeRadius_doc.md
+  const eyeRadius0: EyeRadiusWithInner = {
+    outer: [45, 45, 45, 45],
+    inner: [5, 5, 5, 5],
+  };
+  const eyeRadius1: EyeRadiusWithInner = {
+    outer: [45, 45, 45, 45],
+    inner: [5, 5, 5, 5],
+  };
+  const eyeRadius2: EyeRadiusWithInner = {
+    outer: [45, 45, 45, 45],
+    inner: [5, 5, 5, 5],
+  };
+
   // Don't render QR code if value is empty or invalid
   if (!mounted) {
     return (
@@ -225,23 +246,25 @@ export const QRCode = forwardRef<HTMLDivElement, QRCodeProps>(function QRCode(
         borderRadius: 55,
       }}
     >
-      <QRCodeSVG
+      <QRCodeLogo
         value={value}
         size={finalSize}
+        qrStyle="dots"
+        eyeRadius={[eyeRadius0, eyeRadius1, eyeRadius2]}
         fgColor={fgColor}
         bgColor={bgColor}
-        level="M"
-        includeMargin={false}
-        imageSettings={
-          logoImage
-            ? {
-                src: logoImage,
-                height: 159,
-                width: 159,
-                excavate: true,
-              }
-            : undefined
-        }
+        ecLevel="M"
+        quietZone={0}
+        eyeColor={{
+          outer: fgColor,
+          inner: fgColor,
+        }}
+        logoImage={logoImage}
+        logoWidth={logoImage ? 159 : 0}
+        logoHeight={logoImage ? 159 : 0}
+        logoOpacity={logoImage ? 0.5 : 1}
+        logoPadding={0}
+        removeQrCodeBehindLogo={!!logoImage}
       />
     </div>
   );

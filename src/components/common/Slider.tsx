@@ -94,7 +94,7 @@ export function Slider({
             {label}
           </span>
           {showValue && value > 0 && (
-            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-sm font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-lg font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
               {value} / {max}
             </span>
           )}
@@ -135,11 +135,11 @@ export function Slider({
             className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-75"
             style={{ left: `${percentage}%` }}
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-lg dark:bg-stone-800">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg dark:bg-stone-800">
               <img
                 src="/logos/logo_complex.png"
                 alt=""
-                className="h-12 w-12"
+                className="h-16 w-16"
               />
             </div>
           </div>
@@ -178,7 +178,7 @@ export function Slider({
               {/* Number + label for whole numbers */}
               {isWhole && (
                 <>
-                  <span className="mt-1 text-xs text-stone-400 dark:text-stone-500">
+                  <span className="mt-1 text-md font-medium text-stone-500 dark:text-stone-400">
                     {stepValue}
                   </span>
                   {labelText && (

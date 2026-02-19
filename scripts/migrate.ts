@@ -7,30 +7,9 @@
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 import { readdir } from "fs/promises";
-
-// ---------------------------------------------------------------------------
-// Load .env files (standalone script — mirrors drizzle.config.ts pattern)
-// ---------------------------------------------------------------------------
-for (const file of [".env.local", ".env"]) {
-  try {
-    for (const line of readFileSync(file, "utf8").split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-      const eq = trimmed.indexOf("=");
-      if (eq === -1) continue;
-      const key = trimmed.slice(0, eq).trim();
-      const val = trimmed
-        .slice(eq + 1)
-        .trim()
-        .replace(/^["']|["']$/g, "");
-      if (!process.env[key]) process.env[key] = val;
-    }
-  } catch {
-    // file not found, skip
-  }
-}
+import { readEnvDatabaseUrl } from "../src/lib/dot-env";
 
 function maskDatabaseUrl(url: string): string {
   return url.replace(/:[^:@]*@/, ":***@").replace(/\/\/[^:]*:/, "//***:");
@@ -69,11 +48,7 @@ async function runMigrations() {
   console.log(`📦 Working directory: ${process.cwd()}`);
   console.log(`🔧 Node version: ${process.version}`);
 
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    console.log("⚠️  DATABASE_URL environment variable is not set, skipping migrations");
-    process.exit(0);
-  }
+  const databaseUrl = readEnvDatabaseUrl();
 
   // Log masked database URL
   const maskedUrl = maskDatabaseUrl(databaseUrl);

@@ -139,7 +139,7 @@ export const shots = pgTable("shots", {
   // Recipe
   doseGrams: numeric("dose_grams", { precision: 5, scale: 1 }).notNull(),
   yieldGrams: numeric("yield_grams", { precision: 5, scale: 1 }).notNull(),
-  grindLevel: numeric("grind_level", { precision: 6, scale: 2 }).notNull(),
+  grindLevel: numeric("grind_level", { precision: 6, scale: 2 }),
   brewTempC: numeric("brew_temp_c", { precision: 4, scale: 1 }),
   preInfusionDuration: numeric("pre_infusion_duration", { precision: 5, scale: 1 }),
   brewPressure: numeric("brew_pressure", { precision: 4, scale: 1 }).default("9"),
@@ -149,7 +149,7 @@ export const shots = pgTable("shots", {
   estimateMaxPressure: numeric("estimate_max_pressure", { precision: 4, scale: 1 }),
   flowControl: numeric("flow_control", { precision: 4, scale: 1 }),
   // Computed (stored on write)
-  flowRate: numeric("flow_rate", { precision: 4, scale: 2 }),
+  flowRate: numeric("flow_rate", { precision: 5, scale: 2 }),
   // Subjective
   shotQuality: numeric("shot_quality", { precision: 3, scale: 1 }).notNull(), // 1-5 with 0.5 steps
   rating: numeric("rating", { precision: 3, scale: 1 }), // 1-5 with 0.5 steps (optional)

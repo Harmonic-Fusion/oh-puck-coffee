@@ -87,61 +87,8 @@ export function ShotDetail({
     }
   }, [shot]);
 
-  if (!shot) return null;
-
-  const handleEditSuccess = () => {
-    setIsEditMode(false);
-    refetch();
-    if (onToggleReference) {
-      // Refetch to get updated shot data
-      setTimeout(() => {
-        refetch();
-      }, 100);
-    }
-  };
-
-  const handleEditCancel = () => {
-    setIsEditMode(false);
-  };
-
-  const handleDuplicate = () => {
-    if (duplicateUrl) {
-      onClose();
-      router.push(duplicateUrl);
-    } else {
-      // Fallback to sessionStorage for backward compatibility
-      const duplicateData = {
-        shotId: shot.id, // Store shot ID for previous shot display
-        beanId: shot.beanId,
-        grinderId: shot.grinderId,
-        machineId: shot.machineId || undefined,
-        doseGrams: shot.doseGrams ? parseFloat(shot.doseGrams) : undefined,
-        yieldGrams: shot.yieldGrams ? parseFloat(shot.yieldGrams) : undefined,
-        grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
-        brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
-        preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
-        brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : undefined,
-        toolsUsed: shot.toolsUsed || [],
-      };
-      sessionStorage.setItem("duplicateShot", JSON.stringify(duplicateData));
-      onClose();
-      router.push(AppRoutes.log.path);
-    }
-  };
-
-  const handleToggleReference = () => {
-    if (onToggleReference) {
-      onToggleReference(shot.id);
-    }
-  };
-
-  const handleToggleHidden = () => {
-    if (onToggleHidden) {
-      onToggleHidden(shot.id);
-    }
-  };
-
   const handleShare = useCallback(async () => {
+    if (!shot) return;
     try {
       const result = createShareLink.data ?? await createShareLink.mutateAsync(shot.id);
       const shareUrl = `${window.location.origin}${resolvePath(AppRoutes.share.uid, { uid: result.id })}`;
@@ -201,7 +148,61 @@ export function ShotDetail({
     } catch {
       // Share link creation failed
     }
-  }, [shot.id, createShareLink]);
+  }, [shot, createShareLink]);
+
+  if (!shot) return null;
+
+  const handleEditSuccess = () => {
+    setIsEditMode(false);
+    refetch();
+    if (onToggleReference) {
+      // Refetch to get updated shot data
+      setTimeout(() => {
+        refetch();
+      }, 100);
+    }
+  };
+
+  const handleEditCancel = () => {
+    setIsEditMode(false);
+  };
+
+  const handleDuplicate = () => {
+    if (duplicateUrl) {
+      onClose();
+      router.push(duplicateUrl);
+    } else {
+      // Fallback to sessionStorage for backward compatibility
+      const duplicateData = {
+        shotId: shot.id, // Store shot ID for previous shot display
+        beanId: shot.beanId,
+        grinderId: shot.grinderId,
+        machineId: shot.machineId || undefined,
+        doseGrams: shot.doseGrams ? parseFloat(shot.doseGrams) : undefined,
+        yieldGrams: shot.yieldGrams ? parseFloat(shot.yieldGrams) : undefined,
+        grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
+        brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
+        preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
+        brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : undefined,
+        toolsUsed: shot.toolsUsed || [],
+      };
+      sessionStorage.setItem("duplicateShot", JSON.stringify(duplicateData));
+      onClose();
+      router.push(AppRoutes.log.path);
+    }
+  };
+
+  const handleToggleReference = () => {
+    if (onToggleReference) {
+      onToggleReference(shot.id);
+    }
+  };
+
+  const handleToggleHidden = () => {
+    if (onToggleHidden) {
+      onToggleHidden(shot.id);
+    }
+  };
 
   const dose = parseFloat(shot.doseGrams);
   const yieldG = parseFloat(shot.yieldGrams);

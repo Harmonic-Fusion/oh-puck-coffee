@@ -14,7 +14,7 @@ interface SearchableSelectProps {
   placeholder?: string;
   isLoading?: boolean;
   error?: string;
-  onAddNew?: () => void;
+  onAddNew?: (searchText: string) => void;
   emptyMessage?: string;
   className?: string;
   disabled?: boolean;
@@ -87,7 +87,7 @@ export function SearchableSelect({
         type="button"
         onClick={handleToggle}
         disabled={disabled}
-        className={`h-14 w-full rounded-xl border-2 px-4 text-left text-base transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
+        className={`h-16 w-full rounded-xl border-2 px-4 text-left text-base transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
           error
             ? "border-red-400"
             : "border-stone-300 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
@@ -114,6 +114,7 @@ export function SearchableSelect({
             <input
               ref={inputRef}
               type="text"
+              tabIndex={-1}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={placeholder}
@@ -155,9 +156,10 @@ export function SearchableSelect({
               <button
                 type="button"
                 onClick={() => {
-                  onAddNew();
+                  const text = searchQuery;
                   setIsOpen(false);
                   setSearchQuery("");
+                  onAddNew(text);
                 }}
                 className="w-full rounded-md border-2 border-stone-300 bg-stone-50 px-3 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
               >

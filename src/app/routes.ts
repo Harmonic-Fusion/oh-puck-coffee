@@ -1,10 +1,14 @@
 // DO NOT DEPEND ON OTHER MODULES IN THIS FILE. ONLY IMPORT FROM `@/lib/routes-builder`.
-import { routesBuilder, resolvePath } from "@/lib/routes-builder";
+import { routesBuilder, resolvePath, buildRouteMap } from "@/lib/routes-builder";
 
 export { resolvePath };
 
+// ── App routes ───────────────────────────────────────────────────────
+// Routes without `_is_public` require authentication (the (app) route group).
+// Mark any landing, auth, or share page as `_is_public: true` so the
+// middleware knows to let unauthenticated users through.
 export const AppRoutes = routesBuilder({
-  home: "/",
+  home: { path: "/", _is_public: true },
   log: "/log",
   history: "/history",
   dashboard: "/dashboard",
@@ -12,18 +16,22 @@ export const AppRoutes = routesBuilder({
     path: "/settings",
     integrations: "/integrations",
   },
-  login: "/login",
-  company: "/company",
-  careers: "/careers",
-  contact: "/contact",
-  socialMedia: "/social-media",
+  login: { path: "/login", _is_public: true },
+  company: { path: "/company", _is_public: true },
+  careers: { path: "/careers", _is_public: true },
+  contact: { path: "/contact", _is_public: true },
+  socialMedia: { path: "/social-media", _is_public: true },
   share: {
     path: "/share",
+    _is_public: true,
     uid: {
       path: "/:uid",
     },
   },
 });
+
+/** Flat path → route map for O(1) lookups (used by middleware). */
+export const AppRouteMap = buildRouteMap(AppRoutes);
 
 export const ApiRoutes = routesBuilder({
   // Health

@@ -239,7 +239,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
             className="flex-1"
             onClick={() => {
               onClose();
-              router.push(AppRoutes.log.path);
+              router.push(AppRoutes.log.path + "#recipe");
             }}
           >
             Log Another

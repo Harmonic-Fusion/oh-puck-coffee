@@ -177,11 +177,56 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
 });
 
+// ── Dev user bypass ──────────────────────────────────────────────────
+import { DEV_USER_ID, DEV_USER_NAME, DEV_USER_EMAIL } from "./shared/dev-user";
+
+/**
+ * Ensure the dev user exists in the database (upsert).
+ * Called once per process and cached so subsequent `getSession()` calls
+ * don't hit the DB every time.
+ */
+let devUserEnsured = false;
+async function ensureDevUser(): Promise<void> {
+  if (devUserEnsured) return;
+
+  const [existing] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.id, DEV_USER_ID))
+    .limit(1);
+
+  if (!existing) {
+    await db.insert(users).values({
+      id: DEV_USER_ID,
+      name: DEV_USER_NAME,
+      email: DEV_USER_EMAIL,
+      role: "admin",
+    });
+    authLogger.info("Dev user created", {
+      id: DEV_USER_ID,
+      name: DEV_USER_NAME,
+      email: DEV_USER_EMAIL,
+    });
+  }
+
+  devUserEnsured = true;
+}
+
 /**
  * Returns the current session.
  * Use this instead of `auth()` in API routes.
+ *
+ * When `ENABLE_DEV_USER=true`, the middleware mints a real JWT cookie
+ * for the dev user, so `auth()` decodes it through the normal
+ * jwt → session callback pipeline. We just ensure the DB row exists
+ * first so foreign-key references work.
  */
 export async function getSession(): Promise<Session | null> {
+  // ── Dev user: ensure DB row, then use the normal JWT flow ──────
+  if (config.enableDevUser) {
+    await ensureDevUser();
+  }
+
   // Runtime validation
   if (
     !isBuildPhase &&

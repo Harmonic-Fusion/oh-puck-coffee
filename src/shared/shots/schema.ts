@@ -7,7 +7,7 @@ export const createShotSchema = z.object({
   machineId: z.string().uuid().optional(),
   doseGrams: z.coerce.number().positive().max(50),
   yieldGrams: z.coerce.number().positive().max(100),
-  grindLevel: z.coerce.number().nonnegative("Grind level is required"),
+  grindLevel: z.coerce.number().nonnegative().optional(),
   brewTempC: z.coerce.number().positive().max(200).optional(),
   preInfusionDuration: z.coerce.number().nonnegative().max(60).optional(),
   brewPressure: z.coerce.number().positive().max(20).optional(),

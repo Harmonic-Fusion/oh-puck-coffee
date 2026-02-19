@@ -271,7 +271,7 @@ export function NumberStepper({
           tabIndex={disabled ? -1 : 0}
           role="textbox"
           aria-label={label ?? "Value"}
-          className={`flex h-14 min-w-0 flex-1 cursor-text items-center justify-center rounded-xl border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
+          className={`flex h-16 min-w-0 flex-1 cursor-text items-center justify-center rounded-xl border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
             isEditing
               ? "border-amber-500 bg-white ring-2 ring-amber-500/20 dark:bg-stone-900"
               : error
@@ -284,6 +284,7 @@ export function NumberStepper({
               ref={inputRef}
               type="number"
               inputMode="decimal"
+              tabIndex={-1}
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               onBlur={commitEdit}
@@ -336,7 +337,7 @@ export function NumberStepper({
             disabled={disabled || !canDecrement}
             aria-label={`Decrease ${label ?? "value"}`}
             tabIndex={-1}
-            className="flex h-14 w-14 flex-shrink-0 select-none items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
+            className="flex h-16 w-16 flex-shrink-0 select-none items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
           >
             −
           </button>
@@ -346,7 +347,7 @@ export function NumberStepper({
             disabled={disabled || !canIncrement}
             aria-label={`Increase ${label ?? "value"}`}
             tabIndex={-1}
-            className="flex h-14 w-14 flex-shrink-0 select-none items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
+            className="flex h-16 w-16 flex-shrink-0 select-none items-center justify-center rounded-xl border-2 border-stone-300 bg-stone-50 text-2xl font-bold text-stone-600 transition-all active:scale-95 active:bg-stone-200 disabled:opacity-30 disabled:active:scale-100 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:active:bg-stone-700"
           >
             +
           </button>

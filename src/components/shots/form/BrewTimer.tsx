@@ -5,9 +5,10 @@ import { useState, useRef, useCallback, useEffect } from "react";
 interface BrewTimerProps {
   value: number | undefined;
   onChange: (value: number) => void;
+  className?: string;
 }
 
-export function BrewTimer({ value, onChange }: BrewTimerProps) {
+export function BrewTimer({ value, onChange, className }: BrewTimerProps) {
   const [isRunning, setIsRunning] = useState(false);
   const startTimeRef = useRef<number | null>(null);
   const offsetRef = useRef<number>(0);
@@ -50,23 +51,29 @@ export function BrewTimer({ value, onChange }: BrewTimerProps) {
     <button
       type="button"
       onClick={isRunning ? handlePause : handlePlay}
-      className={`flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl border-2 transition-all active:scale-95 ${
+      className={`${className ?? "flex h-16 w-16 flex-shrink-0"} items-center justify-center rounded-xl border-2 transition-all active:scale-95 ${
         isRunning
           ? "border-red-400 bg-red-50 text-red-600 hover:bg-red-100 dark:border-red-500 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30"
-          : "border-stone-300 bg-stone-50 text-stone-600 hover:bg-stone-200 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+          : "border-stone-300 bg-transparent text-stone-600 hover:bg-stone-50 dark:border-stone-600 dark:bg-transparent dark:text-stone-300 dark:hover:bg-stone-800/50"
       }`}
       tabIndex={-1}
       aria-label={isRunning ? "Pause timer" : "Start timer"}
     >
       {isRunning ? (
-        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-          <rect x="6" y="4" width="4" height="16" rx="1" />
-          <rect x="14" y="4" width="4" height="16" rx="1" />
-        </svg>
+        <>
+          <svg className="h-10 w-10" fill="currentColor" viewBox="0 0 24 24">
+            <rect x="6" y="4" width="4" height="16" rx="1" />
+            <rect x="14" y="4" width="4" height="16" rx="1" />
+          </svg>
+          {className && <span className="ml-2 text-sm font-semibold">Pause</span>}
+        </>
       ) : (
-        <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M8 5v14l11-7z" />
-        </svg>
+        <>
+          <svg className="h-10 w-10" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+          {className && <span className="ml-2 text-sm font-semibold">Start Timer</span>}
+        </>
       )}
     </button>
   );

@@ -56,7 +56,7 @@ export function MachineSelector({
               placeholder="Select a machine..."
               isLoading={isLoading}
               error={error}
-              onAddNew={() => setShowCreate(true)}
+              onAddNew={(text) => { setNewName(text); setShowCreate(true); }}
               emptyMessage="No machines found"
             />
           </div>

@@ -1,6 +1,6 @@
 ---
 config:
-  SPECS_DIR: ./contextual/plans
+  PLANS_DIR: .contextual/plans
 ---
 
 # Goal
@@ -20,7 +20,7 @@ ${ARGUMENTS}
 # Routing
 
 1. Use Bash tool to get current branch → `${CURRENT_BRANCH}` (stop if `main`)
-2. Set `${FEATURE_DIR}` = `${SPECS_DIR}/${CURRENT_BRANCH}`, `${FEATURE_CONTEXT}` = `${FEATURE_DIR}/context.md`
+2. Set `${FEATURE_DIR}` = `${PLANS_DIR}/${CURRENT_BRANCH}`, `${FEATURE_CONTEXT}` = `${FEATURE_DIR}/context.md`
 3. Use Task tool with subagent_type=general-purpose to validate context
 4. If context doesn't exist → error, warn the user to run `/plan` first
 5. Use Read tool to examine ${FEATURE_CONTEXT} for existing tasks

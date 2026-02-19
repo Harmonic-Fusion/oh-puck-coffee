@@ -173,6 +173,12 @@ export function PreviousShotRow({ shotId, onViewShot }: PreviousShotRowProps) {
         )}
       </div>
 
+      {[shot.beanName, shot.grinderName, shot.machineName].filter(Boolean).length > 0 && (
+        <p className="mb-2 text-sm text-stone-600 dark:text-stone-400">
+          {[shot.beanName, shot.grinderName, shot.machineName].filter(Boolean).join(" · ")}
+        </p>
+      )}
+
       <ShotBadges
         shotQuality={shot.shotQuality}
         rating={shot.rating}
