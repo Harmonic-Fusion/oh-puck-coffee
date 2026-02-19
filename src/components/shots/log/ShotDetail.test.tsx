@@ -1,7 +1,17 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ShotDetail } from "./ShotDetail";
 import type { ShotWithJoins } from "@/components/shots/hooks";
+import { TestWrapper } from "@/test/setup";
+
+// Mock QRCode component to avoid canvas issues in tests
+vi.mock("@/components/common/QRCode", () => ({
+  QRCode: ({ value, title }: { value: string; title?: string }) => (
+    <div data-testid="qrcode" data-value={value} data-title={title}>
+      QR Code: {value}
+    </div>
+  ),
+}));
 
 const mockShot: ShotWithJoins = {
   id: "1",
@@ -43,11 +53,13 @@ const mockShot: ShotWithJoins = {
 describe("ShotDetail", () => {
   it("renders shot notes when present", () => {
     render(
-      <ShotDetail
-        shot={mockShot}
-        open={true}
-        onClose={() => {}}
-      />
+      <TestWrapper>
+        <ShotDetail
+          shot={mockShot}
+          open={true}
+          onClose={() => {}}
+        />
+      </TestWrapper>
     );
 
     expect(screen.getByText("Notes")).toBeInTheDocument();
@@ -57,11 +69,13 @@ describe("ShotDetail", () => {
   it("does not render notes section when notes are empty", () => {
     const shotWithoutNotes = { ...mockShot, notes: null };
     render(
-      <ShotDetail
-        shot={shotWithoutNotes}
-        open={true}
-        onClose={() => {}}
-      />
+      <TestWrapper>
+        <ShotDetail
+          shot={shotWithoutNotes}
+          open={true}
+          onClose={() => {}}
+        />
+      </TestWrapper>
     );
 
     expect(screen.queryByText("Notes")).not.toBeInTheDocument();
@@ -72,15 +86,20 @@ describe("ShotDetail", () => {
     const shotWithMultiLineNotes = { ...mockShot, notes: multiLineNotes };
 
     render(
-      <ShotDetail
-        shot={shotWithMultiLineNotes}
-        open={true}
-        onClose={() => {}}
-      />
+      <TestWrapper>
+        <ShotDetail
+          shot={shotWithMultiLineNotes}
+          open={true}
+          onClose={() => {}}
+        />
+      </TestWrapper>
     );
 
-    const notesElement = screen.getByText(multiLineNotes);
+    // Find the notes element by its class and verify it has the whitespace-pre-wrap class
+    // The actual text content will have newlines preserved in the DOM due to whitespace-pre-wrap
+    const notesElement = screen.getByText("Notes").nextElementSibling;
     expect(notesElement).toBeInTheDocument();
+    expect(notesElement).toHaveTextContent("First line Second line Third line"); // normalized
     expect(notesElement).toHaveClass("whitespace-pre-wrap");
   });
 
@@ -89,25 +108,33 @@ describe("ShotDetail", () => {
     const shotWithMultiLineNotes = { ...mockShot, notes: multiLineNotes };
 
     render(
-      <ShotDetail
-        shot={shotWithMultiLineNotes}
-        open={true}
-        onClose={() => {}}
-      />
+      <TestWrapper>
+        <ShotDetail
+          shot={shotWithMultiLineNotes}
+          open={true}
+          onClose={() => {}}
+        />
+      </TestWrapper>
     );
 
-    const notesElement = screen.getByText(multiLineNotes);
+    // Find the notes element by its class and verify it has the whitespace-pre-wrap class
+    // The actual text content will have newlines preserved in the DOM due to whitespace-pre-wrap
+    const notesElement = screen.getByText("Notes").nextElementSibling;
+    expect(notesElement).toBeInTheDocument();
+    expect(notesElement).toHaveTextContent("Line 1 Line 2"); // normalized
     expect(notesElement).toHaveClass("whitespace-pre-wrap");
   });
 
   it("displays empty string notes as empty", () => {
     const shotWithEmptyNotes = { ...mockShot, notes: "" };
     render(
-      <ShotDetail
-        shot={shotWithEmptyNotes}
-        open={true}
-        onClose={() => {}}
-      />
+      <TestWrapper>
+        <ShotDetail
+          shot={shotWithEmptyNotes}
+          open={true}
+          onClose={() => {}}
+        />
+      </TestWrapper>
     );
 
     expect(screen.queryByText("Notes")).not.toBeInTheDocument();
@@ -118,11 +145,13 @@ describe("ShotDetail", () => {
     const shotWithSpecialNotes = { ...mockShot, notes: specialNotes };
 
     render(
-      <ShotDetail
-        shot={shotWithSpecialNotes}
-        open={true}
-        onClose={() => {}}
-      />
+      <TestWrapper>
+        <ShotDetail
+          shot={shotWithSpecialNotes}
+          open={true}
+          onClose={() => {}}
+        />
+      </TestWrapper>
     );
 
     expect(screen.getByText(specialNotes)).toBeInTheDocument();

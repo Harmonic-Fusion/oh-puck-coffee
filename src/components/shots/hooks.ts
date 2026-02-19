@@ -125,8 +125,9 @@ export function useToggleReference() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      const shotIdRoute = ApiRoutes.shots.shotId as { path: string; reference: { path: string }; hidden: { path: string } };
       const res = await fetch(
-        resolvePath(ApiRoutes.shots.shotId.reference, { id }),
+        resolvePath(shotIdRoute.reference, { id }),
         { method: "PATCH" }
       );
       if (!res.ok) {
@@ -145,8 +146,9 @@ export function useToggleHidden() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
+      const shotIdRoute = ApiRoutes.shots.shotId as { path: string; reference: { path: string }; hidden: { path: string } };
       const res = await fetch(
-        resolvePath(ApiRoutes.shots.shotId.hidden, { id }),
+        resolvePath(shotIdRoute.hidden, { id }),
         { method: "PATCH" }
       );
       if (!res.ok) {

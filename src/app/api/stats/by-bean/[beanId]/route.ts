@@ -115,7 +115,7 @@ export async function GET(
   // Average grind level
   const avgGrindLevel = shotCount > 0
     ? parseFloat(
-        (beanShots.reduce((acc, s) => acc + parseFloat(s.grindLevel), 0) / shotCount).toFixed(2)
+        (beanShots.reduce((acc, s) => acc + parseFloat(s.grindLevel ?? "0"), 0) / shotCount).toFixed(2)
       )
     : null;
 

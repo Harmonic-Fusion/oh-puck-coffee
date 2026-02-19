@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { FormProvider, useForm } from "react-hook-form";
 import { SectionResults } from "./SectionResults";
 import type { CreateShot } from "@/shared/shots/schema";
+import React from "react";
 
 function TestWrapper({ children }: { children: React.ReactNode }) {
   const methods = useForm<CreateShot>({
@@ -64,8 +65,11 @@ describe("SectionResults", () => {
         },
       });
 
-      // Set an error manually for testing
-      methods.setError("notes", { message: "Notes are required" });
+      // Set an error manually for testing using useEffect to avoid infinite re-renders
+      React.useEffect(() => {
+        methods.setError("notes", { message: "Notes are required" });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
 
       return <FormProvider {...methods}>{children}</FormProvider>;
     }

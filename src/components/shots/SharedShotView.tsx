@@ -15,7 +15,7 @@ interface SharedShot {
   machineName: string | null;
   doseGrams: string;
   yieldGrams: string;
-  grindLevel: string;
+  grindLevel: string | null;
   brewTimeSecs: string | null;
   brewTempC: string | null;
   preInfusionDuration: string | null;

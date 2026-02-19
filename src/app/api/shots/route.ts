@@ -238,7 +238,7 @@ export async function POST(request: NextRequest) {
           yieldGrams: shot.yieldGrams,
           yieldActualGrams: shot.yieldActualGrams,
           brewRatio,
-          grindLevel: shot.grindLevel,
+          grindLevel: shot.grindLevel ?? "",
           brewTimeSecs: shot.brewTimeSecs,
           brewTempC: shot.brewTempC,
           preInfusionDuration: shot.preInfusionDuration,
