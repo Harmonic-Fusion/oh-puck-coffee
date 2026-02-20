@@ -11,6 +11,8 @@ import { AppRoutes } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
 import { PreviousShotRow } from "./PreviousShotRow";
 import type { ShotWithJoins } from "@/components/shots/hooks";
+import { useGrinders } from "@/components/equipment/hooks";
+import { isSpecialGrinder } from "@/shared/equipment/constants";
 
 const TEMP_UNIT_KEY = "coffee-temp-unit";
 const RECIPE_ORDER_KEY = "coffee-recipe-order";
@@ -165,6 +167,18 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
   const machineId = watch("machineId");
   const toolsUsed = watch("toolsUsed");
 
+  // Check if selected grinder is a special grinder (e.g., "Pre-ground")
+  const { data: grinders } = useGrinders();
+  const selectedGrinder = grinders?.find((g) => g.id === grinderId);
+  const isPreGround = selectedGrinder ? isSpecialGrinder(selectedGrinder.name) : false;
+
+  // Clear grind level when switching to Pre-ground
+  useEffect(() => {
+    if (isPreGround && grindLevel != null) {
+      setValue("grindLevel", undefined, { shouldValidate: false });
+    }
+  }, [isPreGround, grindLevel, setValue]);
+
   const computedRatio = dose && yieldG ? (yieldG / dose).toFixed(2) : "—";
 
   // Generate QR code URL for current recipe
@@ -284,6 +298,9 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
   // Render a step component based on its ID
   const renderStep = (stepId: RecipeStepId) => {
     if (!recipeVisibility[stepId]) return null;
+
+    // Hide grind level if Pre-ground is selected
+    if (stepId === "grindLevel" && isPreGround) return null;
 
     switch (stepId) {
       case "dose":

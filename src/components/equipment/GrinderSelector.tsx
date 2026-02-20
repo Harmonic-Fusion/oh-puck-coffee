@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useGrinders, useCreateGrinder } from "./hooks";
 import { SearchableSelect } from "@/components/common/SearchableSelect";
+import { SPECIAL_GRINDERS, isSpecialGrinder } from "@/shared/equipment/constants";
 
 interface GrinderSelectorProps {
   value: string;
@@ -35,11 +36,37 @@ export function GrinderSelector({
     }
   };
 
-  const options =
-    grinders?.map((g) => ({
+  const options = useMemo(() => {
+    if (!grinders) return [];
+    
+    // Separate special grinders and regular grinders
+    const special: typeof grinders = [];
+    const regular: typeof grinders = [];
+    
+    for (const grinder of grinders) {
+      if (isSpecialGrinder(grinder.name)) {
+        special.push(grinder);
+      } else {
+        regular.push(grinder);
+      }
+    }
+    
+    // Sort special grinders by their order in SPECIAL_GRINDERS
+    special.sort((a, b) => {
+      const aIndex = SPECIAL_GRINDERS.indexOf(a.name as typeof SPECIAL_GRINDERS[number]);
+      const bIndex = SPECIAL_GRINDERS.indexOf(b.name as typeof SPECIAL_GRINDERS[number]);
+      return aIndex - bIndex;
+    });
+    
+    // Sort regular grinders alphabetically
+    regular.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Combine: special first, then regular
+    return [...special, ...regular].map((g) => ({
       value: g.id,
       label: g.name,
-    })) || [];
+    }));
+  }, [grinders]);
 
   return (
     <div className="w-full">

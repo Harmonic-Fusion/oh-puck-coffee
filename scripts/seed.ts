@@ -7,6 +7,7 @@ const client = postgres(readEnvDatabaseUrl());
 const db = drizzle(client);
 
 const DEFAULT_GRINDERS = [
+  "Pre-ground",
   "Niche Zero",
   "Eureka Mignon Specialita",
   "Baratza Sette 270",
