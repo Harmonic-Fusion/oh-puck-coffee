@@ -6,6 +6,11 @@ import { Button } from "@/components/common/Button";
 import { AppRoutes, resolvePath } from "@/app/routes";
 import { useCreateShareLink } from "@/components/shots/hooks";
 import { buildShotShareText, type ShotShareData } from "@/lib/share-text";
+import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
+import { getFlavorColor, getBodyColor } from "@/shared/flavor-wheel/colors";
+import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel/flavor-wheel-data";
+import { BODY_SELECTOR_DATA } from "@/shared/flavor-wheel/body-data";
+import type { FlavorNode } from "@/shared/flavor-wheel/types";
 
 export interface ShotSummary extends ShotShareData {
   shotId: string;
@@ -75,7 +80,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
   const ratio = summary.doseGrams > 0
     ? (actualYield / summary.doseGrams).toFixed(1)
     : null;
-  const flavors = collectDisplayFlavors(summary.flavorWheelCategories, summary.flavorWheelAdjectives);
+  const flavors = summary.flavors || [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -169,20 +174,65 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
 
             {/* Tasting Notes (3-6) */}
             {flavors.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {flavors.map((f) => (
-                  <span
-                    key={f}
-                    className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
-                  >
-                    {f}
-                  </span>
-                ))}
-                {summary.flavorWheelBody && (
-                  <span className="rounded-full border border-stone-200 bg-stone-100 px-2 py-0.5 text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-400">
-                    {summary.flavorWheelBody} body
-                  </span>
-                )}
+              <div className="mt-2">
+                <SelectedBadges
+                  title=""
+                  items={[
+                    ...flavors.map((flavorName) => {
+                      // Find the path for this flavor name in the tree
+                      const findFlavorPath = (node: FlavorNode, path: string[] = []): string[] | null => {
+                        const currentPath = [...path, node.name];
+                        if (node.name === flavorName) {
+                          return currentPath;
+                        }
+                        if (node.children) {
+                          for (const child of node.children) {
+                            const result = findFlavorPath(child, currentPath);
+                            if (result) return result;
+                          }
+                        }
+                        return null;
+                      };
+
+                      let flavorPath: string[] = [];
+                      for (const category of FLAVOR_WHEEL_DATA.children) {
+                        const path = findFlavorPath(category);
+                        if (path) {
+                          flavorPath = path;
+                          break;
+                        }
+                      }
+
+                      return {
+                        label: flavorName,
+                        color: getFlavorColor(flavorPath),
+                        key: flavorName,
+                      };
+                    }),
+                    ...(summary.bodyTexture && summary.bodyTexture.length > 0
+                      ? [
+                          {
+                            label: `${summary.bodyTexture[summary.bodyTexture.length - 1]} body`,
+                            color: (() => {
+                              const bodyValue = summary.bodyTexture[summary.bodyTexture.length - 1];
+                              // Find which category this body descriptor belongs to
+                              for (const [category, descriptors] of Object.entries(BODY_SELECTOR_DATA)) {
+                                if (descriptors.some((d) => d.toLowerCase() === bodyValue.toLowerCase())) {
+                                  return getBodyColor(category as "light" | "medium" | "heavy");
+                                }
+                              }
+                              // If it's just the category name
+                              if (["light", "medium", "heavy"].includes(bodyValue.toLowerCase())) {
+                                return getBodyColor(bodyValue.toLowerCase() as "light" | "medium" | "heavy");
+                              }
+                              return getBodyColor("light"); // Default
+                            })(),
+                            key: `body-${summary.bodyTexture[summary.bodyTexture.length - 1]}`,
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
               </div>
             )}
 

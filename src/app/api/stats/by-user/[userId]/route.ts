@@ -42,7 +42,9 @@ export async function GET(
       yieldGrams: shots.yieldGrams,
       shotQuality: shots.shotQuality,
       rating: shots.rating,
-      flavorWheelCategories: shots.flavorWheelCategories,
+      flavors: shots.flavors,
+      bodyTexture: shots.bodyTexture,
+      adjectives: shots.adjectives,
       brewTimeSecs: shots.brewTimeSecs,
       grindLevel: shots.grindLevel,
       createdAt: shots.createdAt,
@@ -96,12 +98,10 @@ export async function GET(
   // Common flavors (from flavor wheel categories)
   const flavorCounts: Record<string, number> = {};
   for (const s of userShots) {
-    if (s.flavorWheelCategories && typeof s.flavorWheelCategories === "object") {
-      const categories = s.flavorWheelCategories as Record<string, string[]>;
-      for (const [, flavors] of Object.entries(categories)) {
-        for (const f of flavors) {
-          flavorCounts[f] = (flavorCounts[f] || 0) + 1;
-        }
+    if (s.flavors && Array.isArray(s.flavors)) {
+      for (const f of s.flavors) {
+        // Extract leaf name from path
+        flavorCounts[f] = (flavorCounts[f] || 0) + 1;
       }
     }
   }

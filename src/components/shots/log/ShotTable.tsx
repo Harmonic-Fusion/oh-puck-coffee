@@ -12,6 +12,9 @@ import {
 import { useState } from "react";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { ShotRow } from "./ShotRow";
+import { getFlavorColor } from "@/shared/flavor-wheel/colors";
+import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel/flavor-wheel-data";
+import type { FlavorNode } from "@/shared/flavor-wheel/types";
 
 const columnHelper = createColumnHelper<ShotWithJoins>();
 
@@ -200,20 +203,49 @@ function ShotCard({
         </div>
       </div>
 
-      {/* Flavors from Flavor Wheel */}
-      {shot.flavorWheelCategories && Object.keys(shot.flavorWheelCategories).length > 0 && (
+      {/* Flavors */}
+      {shot.flavors && shot.flavors.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
-          {Object.keys(shot.flavorWheelCategories).slice(0, 4).map((cat) => (
-            <span
-              key={cat}
-              className="inline-block rounded-full bg-stone-100 px-2 py-0.5 text-[10px] text-stone-600 dark:bg-stone-800 dark:text-stone-400"
-            >
-              {cat}
-            </span>
-          ))}
-          {Object.keys(shot.flavorWheelCategories).length > 4 && (
+          {shot.flavors.slice(0, 4).map((f) => {
+            // Find the path for this flavor name in the tree
+            const findFlavorPath = (node: FlavorNode, path: string[] = []): string[] | null => {
+              const currentPath = [...path, node.name];
+              if (node.name === f) {
+                return currentPath;
+              }
+              if (node.children) {
+                for (const child of node.children) {
+                  const result = findFlavorPath(child, currentPath);
+                  if (result) return result;
+                }
+              }
+              return null;
+            };
+
+            let flavorPath: string[] = [];
+            for (const category of FLAVOR_WHEEL_DATA.children) {
+              const path = findFlavorPath(category);
+              if (path) {
+                flavorPath = path;
+                break;
+              }
+            }
+
+            const color = getFlavorColor(flavorPath);
+
+            return (
+              <span
+                key={f}
+                className="inline-block rounded-full px-2 py-0.5 text-[10px] text-stone-900 dark:text-stone-100"
+                style={{ backgroundColor: color }}
+              >
+                {f}
+              </span>
+            );
+          })}
+          {shot.flavors.length > 4 && (
             <span className="text-[10px] text-stone-400">
-              +{Object.keys(shot.flavorWheelCategories).length - 4}
+              +{shot.flavors.length - 4}
             </span>
           )}
         </div>

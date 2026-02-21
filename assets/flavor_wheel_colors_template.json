@@ -1,0 +1,47 @@
+{
+  "flavor_wheel": {
+    "fruity": {
+      "berry": "#HEX_VALUE",
+      "citrus": "#HEX_VALUE",
+      "stone_fruit": "#HEX_VALUE",
+      "tropical": "#HEX_VALUE",
+      "dried_fruit": "#HEX_VALUE"
+    },
+    "floral": "#HEX_VALUE",
+    "sweet": {
+      "chocolate": "#HEX_VALUE",
+      "caramel": "#HEX_VALUE",
+      "honey": "#HEX_VALUE",
+      "vanilla": "#HEX_VALUE"
+    },
+    "spicy": {
+      "warm_spice": "#HEX_VALUE",
+      "pungent": "#HEX_VALUE",
+      "nut": "#HEX_VALUE",
+      "roasted": "#HEX_VALUE"
+    },
+    "earthy": {
+      "soil": "#HEX_VALUE",
+      "wood": "#HEX_VALUE",
+      "tobacco": "#HEX_VALUE",
+      "vegetal": "#HEX_VALUE"
+    }
+  },
+  "body": {
+    "light": "#HEX_VALUE",
+    "medium": "#HEX_VALUE",
+    "heavy": "#HEX_VALUE"
+  },
+  "adjectives": {
+    "row1_left": "#HEX_VALUE",
+    "row1_right": "#HEX_VALUE",
+    "row2_left": "#HEX_VALUE",
+    "row2_right": "#HEX_VALUE",
+    "row3_left": "#HEX_VALUE",
+    "row3_right": "#HEX_VALUE",
+    "row4_left": "#HEX_VALUE",
+    "row4_right": "#HEX_VALUE",
+    "row5_left": "#HEX_VALUE",
+    "row5_right": "#HEX_VALUE"
+  }
+}

@@ -31,11 +31,11 @@ export interface ShotWithJoins {
   daysPostRoast: number | null;
   shotQuality: number;
   rating: number | null;
-  flavorWheelBody: string | null;
   toolsUsed: string[] | null;
   notes: string | null;
-  flavorWheelCategories: Record<string, string[]> | null;
-  flavorWheelAdjectives: string[] | null;
+  flavors: string[] | null;
+  bodyTexture: string[] | null;
+  adjectives: string[] | null;
   isReferenceShot: boolean;
   isHidden: boolean;
   createdAt: string;

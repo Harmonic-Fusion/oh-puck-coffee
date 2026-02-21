@@ -189,27 +189,111 @@ let devUserEnsured = false;
 async function ensureDevUser(): Promise<void> {
   if (devUserEnsured) return;
 
-  const [existing] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.id, DEV_USER_ID))
-    .limit(1);
+  try {
+    const [existing] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, DEV_USER_ID))
+      .limit(1);
 
-  if (!existing) {
-    await db.insert(users).values({
+    if (!existing) {
+      try {
+        await db.insert(users).values({
+          id: DEV_USER_ID,
+          name: DEV_USER_NAME,
+          email: DEV_USER_EMAIL,
+          role: "admin",
+        });
+        authLogger.info("Dev user created", {
+          id: DEV_USER_ID,
+          name: DEV_USER_NAME,
+          email: DEV_USER_EMAIL,
+        });
+      } catch (insertError) {
+        // Handle race condition: user might have been created between check and insert
+        // Also handle unique constraint violations (e.g., email already exists)
+        if (
+          insertError instanceof Error &&
+          (insertError.message.includes("duplicate key") ||
+            insertError.message.includes("unique constraint") ||
+            insertError.message.includes("violates unique constraint"))
+        ) {
+          authLogger.debug("Dev user already exists (race condition)", {
+            id: DEV_USER_ID,
+          });
+          // Verify the user actually exists now
+          const [verified] = await db
+            .select({ id: users.id })
+            .from(users)
+            .where(eq(users.id, DEV_USER_ID))
+            .limit(1);
+          if (!verified) {
+            // Check if there's a user with the dev email but different ID
+            const [conflictingUser] = await db
+              .select({ id: users.id, email: users.email })
+              .from(users)
+              .where(eq(users.email, DEV_USER_EMAIL))
+              .limit(1);
+            
+            if (conflictingUser) {
+              authLogger.error("Dev user insert failed: email conflict", {
+                devUserId: DEV_USER_ID,
+                conflictingUserId: conflictingUser.id,
+                email: DEV_USER_EMAIL,
+              });
+              throw new Error(
+                `Dev user (${DEV_USER_ID}) could not be created. ` +
+                `A user with email ${DEV_USER_EMAIL} already exists with ID ${conflictingUser.id}. ` +
+                `Please either delete that user or use a different email for the dev user. ` +
+                `You can run: pnpm ensure-dev-user to fix this automatically.`
+              );
+            }
+            
+            authLogger.error("Dev user insert failed with constraint error but user still doesn't exist", {
+              id: DEV_USER_ID,
+              error: insertError.message,
+            });
+            // Throw an error to prevent getSession() from returning a session with a non-existent user
+            throw new Error(
+              `Dev user (${DEV_USER_ID}) could not be created. ` +
+              `Database error: ${insertError instanceof Error ? insertError.message : String(insertError)}. ` +
+              `You can run: pnpm ensure-dev-user to fix this automatically.`
+            );
+          }
+        } else {
+          // Re-throw unexpected errors
+          authLogger.error("Unexpected error creating dev user", {
+            id: DEV_USER_ID,
+            error: insertError instanceof Error ? insertError.message : String(insertError),
+          });
+          throw insertError;
+        }
+      }
+    }
+    
+    // Final verification: ensure the user actually exists before marking as ensured
+    const [finalCheck] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, DEV_USER_ID))
+      .limit(1);
+    
+    if (!finalCheck) {
+      throw new Error(
+        `Dev user (${DEV_USER_ID}) does not exist in database after ensure attempt`
+      );
+    }
+    
+    devUserEnsured = true;
+  } catch (error) {
+    authLogger.error("Failed to ensure dev user", {
+      error: error instanceof Error ? error.message : String(error),
       id: DEV_USER_ID,
-      name: DEV_USER_NAME,
-      email: DEV_USER_EMAIL,
-      role: "admin",
     });
-    authLogger.info("Dev user created", {
-      id: DEV_USER_ID,
-      name: DEV_USER_NAME,
-      email: DEV_USER_EMAIL,
-    });
+    // Don't set devUserEnsured = true on error, so we retry on next call
+    // This allows recovery if the DB was temporarily unavailable
+    throw error;
   }
-
-  devUserEnsured = true;
 }
 
 /**

@@ -18,9 +18,9 @@ const FIELD_LABELS: Record<string, string> = {
   shotQuality: "Shot Quality",
   rating: "Rating",
   notes: "Notes",
-  flavorWheelBody: "Body",
-  flavorWheelCategories: "Flavor Categories",
-  flavorWheelAdjectives: "Flavor Adjectives",
+  flavors: "Flavors",
+  bodyTexture: "Body Texture",
+  adjectives: "Adjectives",
   toolsUsed: "Tools Used",
 };
 

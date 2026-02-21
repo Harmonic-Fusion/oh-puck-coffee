@@ -43,9 +43,9 @@ async function getSharedShot(uid: string) {
       shotQuality: shots.shotQuality,
       rating: shots.rating,
       notes: shots.notes,
-      flavorWheelCategories: shots.flavorWheelCategories,
-      flavorWheelBody: shots.flavorWheelBody,
-      flavorWheelAdjectives: shots.flavorWheelAdjectives,
+      flavors: shots.flavors,
+      bodyTexture: shots.bodyTexture,
+      adjectives: shots.adjectives,
       isReferenceShot: shots.isReferenceShot,
       createdAt: shots.createdAt,
     })

@@ -28,12 +28,12 @@ export const createShotSchema = z.object({
     const normalized = Math.round(val / step) * step;
     return Math.abs(val - normalized) < 0.01;
   }, { message: "Rating must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }).optional(),
-  flavorWheelBody: z.enum(BODY_ADJECTIVES).optional(),
   toolsUsed: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  // Flavor Wheel (optional)
-  flavorWheelCategories: z.record(z.string(), z.array(z.string())).optional(),
-  flavorWheelAdjectives: z.array(z.string()).optional(),
+  // Flavor data (optional) - separate fields
+  flavors: z.array(z.string()).optional(),
+  bodyTexture: z.array(z.string()).optional(),
+  adjectives: z.array(z.string()).optional(),
 });
 
 export const shotSchema = z.object({
@@ -56,11 +56,11 @@ export const shotSchema = z.object({
   flowRate: z.coerce.number().nullable(),
   shotQuality: z.number(),
   rating: z.number().nullable(),
-  flavorWheelBody: z.string().nullable(),
   toolsUsed: z.array(z.string()).nullable(),
   notes: z.string().nullable(),
-  flavorWheelCategories: z.record(z.string(), z.array(z.string())).nullable(),
-  flavorWheelAdjectives: z.array(z.string()).nullable(),
+  flavors: z.array(z.string()).nullable(),
+  bodyTexture: z.array(z.string()).nullable(),
+  adjectives: z.array(z.string()).nullable(),
   isReferenceShot: z.boolean(),
   isHidden: z.boolean(),
   createdAt: z.coerce.date(),

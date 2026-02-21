@@ -3,6 +3,12 @@
 import { useSession } from "next-auth/react";
 import { AppRoutes } from "@/app/routes";
 import Link from "next/link";
+import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
+import { getFlavorColor, getBodyColor, getAdjectiveColor } from "@/shared/flavor-wheel/colors";
+import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel/flavor-wheel-data";
+import { BODY_SELECTOR_DATA } from "@/shared/flavor-wheel/body-data";
+import { ADJECTIVES_INTENSIFIERS_DATA } from "@/shared/flavor-wheel/adjectives-data";
+import type { FlavorNode } from "@/shared/flavor-wheel/types";
 
 interface SharedShot {
   id: string;
@@ -26,9 +32,9 @@ interface SharedShot {
   shotQuality: string;
   rating: string | null;
   notes: string | null;
-  flavorWheelCategories: Record<string, string[]> | null;
-  flavorWheelBody: string | null;
-  flavorWheelAdjectives: string[] | null;
+  flavors: string[] | null;
+  bodyTexture: string[] | null;
+  adjectives: string[] | null;
   isReferenceShot: boolean;
   createdAt: Date | string;
   brewRatio: number | null;
@@ -209,24 +215,43 @@ export function SharedShotView({ shot }: SharedShotViewProps) {
 
         {/* Tasting */}
         {(shot.notes ||
-          shot.flavorWheelBody ||
-          (shot.flavorWheelCategories &&
-            Object.keys(shot.flavorWheelCategories).length > 0) ||
-          (shot.flavorWheelAdjectives &&
-            shot.flavorWheelAdjectives.length > 0)) && (
+          (shot.bodyTexture && shot.bodyTexture.length > 0) ||
+          (shot.flavors && shot.flavors.length > 0) ||
+          (shot.adjectives && shot.adjectives.length > 0)) && (
           <div className="mb-4">
             <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
               Tasting
             </h3>
             <div className="space-y-3">
-              {shot.flavorWheelBody && (
+              {shot.bodyTexture && shot.bodyTexture.length > 0 && (
                 <div>
                   <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
                     Body
                   </p>
-                  <span className="rounded-full border border-stone-200 px-2.5 py-0.5 text-xs text-stone-700 dark:border-stone-700 dark:text-stone-300">
-                    {shot.flavorWheelBody}
-                  </span>
+                  <SelectedBadges
+                    title=""
+                    items={[
+                      {
+                        label: shot.bodyTexture[shot.bodyTexture.length - 1],
+                        color: (() => {
+                          const bodyValue = shot.bodyTexture[shot.bodyTexture.length - 1];
+                          // Find which category this body descriptor belongs to
+                          for (const [category, descriptors] of Object.entries(BODY_SELECTOR_DATA)) {
+                            if (descriptors.some((d) => d.toLowerCase() === bodyValue.toLowerCase())) {
+                              return getBodyColor(category as "light" | "medium" | "heavy");
+                            }
+                          }
+                          // If it's just the category name
+                          if (["light", "medium", "heavy"].includes(bodyValue.toLowerCase())) {
+                            return getBodyColor(bodyValue.toLowerCase() as "light" | "medium" | "heavy");
+                          }
+                          return getBodyColor("light"); // Default
+                        })(),
+                        key: shot.bodyTexture[shot.bodyTexture.length - 1],
+                        className: "capitalize",
+                      },
+                    ]}
+                  />
                 </div>
               )}
 
@@ -244,55 +269,80 @@ export function SharedShotView({ shot }: SharedShotViewProps) {
           </div>
         )}
 
-        {/* Flavor Wheel */}
-        {shot.flavorWheelCategories &&
-          Object.keys(shot.flavorWheelCategories).length > 0 && (
-            <div className="mb-4">
-              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                Flavor Wheel
-              </h3>
-              <div className="space-y-2">
-                {Object.entries(shot.flavorWheelCategories).map(
-                  ([key, flavors]) => (
-                    <div key={key}>
-                      <p className="text-xs font-medium text-stone-500 dark:text-stone-400">
-                        {key}
-                      </p>
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {(flavors as string[]).map((f) => (
-                          <span
-                            key={f}
-                            className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-700 dark:border-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
-                          >
-                            {f}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                )}
-              </div>
-            </div>
-          )}
+        {/* Flavors */}
+        {shot.flavors && shot.flavors.length > 0 && (
+          <div className="mb-4">
+            <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+              Flavors
+            </h3>
+            <SelectedBadges
+              title=""
+              items={shot.flavors.map((flavorName) => {
+                // Find the path for this flavor name in the tree
+                const findFlavorPath = (node: FlavorNode, path: string[] = []): string[] | null => {
+                  const currentPath = [...path, node.name];
+                  if (node.name === flavorName) {
+                    return currentPath;
+                  }
+                  if (node.children) {
+                    for (const child of node.children) {
+                      const result = findFlavorPath(child, currentPath);
+                      if (result) return result;
+                    }
+                  }
+                  return null;
+                };
 
-        {shot.flavorWheelAdjectives &&
-          shot.flavorWheelAdjectives.length > 0 && (
-            <div className="mb-4">
-              <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
-                Adjectives
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {shot.flavorWheelAdjectives.map((a) => (
-                  <span
-                    key={a}
-                    className="rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-400"
-                  >
-                    {a}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+                let flavorPath: string[] = [];
+                for (const category of FLAVOR_WHEEL_DATA.children) {
+                  const path = findFlavorPath(category);
+                  if (path) {
+                    flavorPath = path;
+                    break;
+                  }
+                }
+
+                return {
+                  label: flavorName,
+                  color: getFlavorColor(flavorPath),
+                  key: flavorName,
+                };
+              })}
+            />
+          </div>
+        )}
+
+        {shot.adjectives && shot.adjectives.length > 0 && (
+          <div className="mb-4">
+            <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
+              Adjectives
+            </p>
+            <SelectedBadges
+              title=""
+              items={shot.adjectives.map((adjective) => {
+                // Find which row and side this adjective belongs to
+                let color = "rgba(158, 158, 158, 0.3)"; // Default color
+                for (let rowIndex = 0; rowIndex < ADJECTIVES_INTENSIFIERS_DATA.rows.length; rowIndex++) {
+                  const row = ADJECTIVES_INTENSIFIERS_DATA.rows[rowIndex];
+                  if (row.left.some((adj) => adj.toLowerCase() === adjective.toLowerCase())) {
+                    color = getAdjectiveColor(rowIndex, "left");
+                    break;
+                  }
+                  if (row.right.some((adj) => adj.toLowerCase() === adjective.toLowerCase())) {
+                    color = getAdjectiveColor(rowIndex, "right");
+                    break;
+                  }
+                }
+
+                return {
+                  label: adjective,
+                  color,
+                  key: adjective,
+                };
+              })}
+            />
+          </div>
+        )}
       </div>
 
       {/* CTA */}

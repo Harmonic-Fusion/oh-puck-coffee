@@ -5,9 +5,11 @@ import { useFormContext, Controller } from "react-hook-form";
 import { NumberStepper } from "@/components/common/NumberStepper";
 import { Slider } from "@/components/common/Slider";
 import { Textarea } from "@/components/common/Textarea";
-import { Modal } from "@/components/common/Modal";
-import { Button } from "@/components/common/Button";
+import { EditOrderModal } from "@/components/common/EditOrderModal";
 import { BrewTimer } from "./BrewTimer";
+import { NestedFlavorWheel } from "@/components/flavor-wheel/NestedFlavorWheel";
+import { NestedBodySelector } from "@/components/flavor-wheel/NestedBodySelector";
+import { AdjectivesIntensifiersSelector } from "@/components/flavor-wheel/AdjectivesIntensifiersSelector";
 import type { CreateShot } from "@/shared/shots/schema";
 
 // ── Results step types and configuration ──
@@ -15,7 +17,7 @@ import type { CreateShot } from "@/shared/shots/schema";
 const RESULTS_ORDER_KEY = "coffee-results-order";
 const RESULTS_VISIBILITY_KEY = "coffee-results-visibility";
 
-type ResultsStepId = "yieldActual" | "brewTime" | "estimateMaxPressure" | "shotQuality" | "rating" | "notes";
+type ResultsStepId = "yieldActual" | "brewTime" | "estimateMaxPressure" | "shotQuality" | "rating" | "notes" | "flavors" | "body" | "adjectives";
 
 interface ResultsStepConfig {
   id: ResultsStepId;
@@ -27,9 +29,12 @@ const DEFAULT_RESULTS_STEPS: ResultsStepConfig[] = [
   { id: "yieldActual", label: "Actual Yield", visible: true },
   { id: "brewTime", label: "Brew Time", visible: true },
   { id: "estimateMaxPressure", label: "Est. Max Pressure", visible: false },
-  { id: "shotQuality", label: "Shot Quality", visible: true },
+  { id: "shotQuality", label: "Shot Quality", visible: false },
   { id: "rating", label: "Rating", visible: true },
   { id: "notes", label: "Notes", visible: true },
+  { id: "flavors", label: "Flavors", visible: false },
+  { id: "body", label: "Body / Texture", visible: false },
+  { id: "adjectives", label: "Adjectives & Intensifiers", visible: false },
 ];
 
 const TIME_OPTIONS = [10, 20, 30] as const;
@@ -224,7 +229,7 @@ export function SectionResults() {
                 <BrewTimer
                   value={field.value}
                   onChange={(val) => field.onChange(val)}
-                  className="mt-2 flex h-16 w-full"
+                  className="mt-2 flex h-32 w-full"
                 />
               </div>
             )}
@@ -349,6 +354,60 @@ export function SectionResults() {
           />
         );
 
+      case "flavors":
+        return (
+          <Controller
+            key="flavors"
+            name="flavors"
+            control={control}
+            defaultValue={[]}
+            render={({ field }) => {
+              return (
+                <NestedFlavorWheel
+                  value={field.value || []}
+                  onChange={field.onChange}
+                />
+              );
+            }}
+          />
+        );
+
+      case "body":
+        return (
+          <Controller
+            key="body"
+            name="bodyTexture"
+            control={control}
+            defaultValue={[]}
+            render={({ field }) => {
+              return (
+                <NestedBodySelector
+                  value={field.value || []}
+                  onChange={field.onChange}
+                />
+              );
+            }}
+          />
+        );
+
+      case "adjectives":
+        return (
+          <Controller
+            key="adjectives"
+            name="adjectives"
+            control={control}
+            defaultValue={[]}
+            render={({ field }) => {
+              return (
+                <AdjectivesIntensifiersSelector
+                  value={field.value || []}
+                  onChange={field.onChange}
+                />
+              );
+            }}
+          />
+        );
+
       default:
         return null;
     }
@@ -403,287 +462,28 @@ export function SectionResults() {
       </div>
 
       {/* Results Order Modal */}
-      <ResultsOrderModal
+      <EditOrderModal
         open={showOrderModal}
         onClose={() => setShowOrderModal(false)}
+        title="Change Results Order"
+        items={DEFAULT_RESULTS_STEPS}
         order={resultsOrder}
         visibility={resultsVisibility}
+        defaultOrder={DEFAULT_RESULTS_STEPS.map((s) => s.id)}
+        defaultVisibility={DEFAULT_RESULTS_STEPS.reduce(
+          (acc, step) => ({ ...acc, [step.id]: step.visible }),
+          {} as Record<ResultsStepId, boolean>
+        )}
         onChange={handleOrderChange}
+        onReset={() => {
+          const defaultOrder = DEFAULT_RESULTS_STEPS.map((s) => s.id);
+          const defaultVisibility = DEFAULT_RESULTS_STEPS.reduce(
+            (acc, step) => ({ ...acc, [step.id]: step.visible }),
+            {} as Record<ResultsStepId, boolean>
+          );
+          handleOrderChange(defaultOrder, defaultVisibility);
+        }}
       />
     </section>
-  );
-}
-
-// ── Results Order Modal Component ──
-
-interface ResultsOrderModalProps {
-  open: boolean;
-  onClose: () => void;
-  order: ResultsStepId[];
-  visibility: Record<ResultsStepId, boolean>;
-  onChange: (order: ResultsStepId[], visibility: Record<ResultsStepId, boolean>) => void;
-}
-
-function ResultsOrderModal({ open, onClose, order, visibility, onChange }: ResultsOrderModalProps) {
-  const [localOrder, setLocalOrder] = useState<ResultsStepId[]>(order);
-  const [localVisibility, setLocalVisibility] = useState<Record<ResultsStepId, boolean>>(visibility);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  const [draggedItemY, setDraggedItemY] = useState<number | null>(null);
-
-  // Handle drag end (mouse)
-  const handleDragEnd = useCallback(() => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-    setTouchStartY(null);
-    setDraggedItemY(null);
-    document.body.style.overflow = "";
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      setLocalOrder(order);
-      setLocalVisibility(visibility);
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-      setTouchStartY(null);
-      setDraggedItemY(null);
-    }
-  }, [open, order, visibility]);
-
-  // Global mouse move handler for dragging
-  useEffect(() => {
-    if (draggedIndex === null) return;
-
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      if (draggedIndex === null || touchStartY === null) return;
-
-      const currentY = e.clientY;
-      setDraggedItemY(currentY);
-
-      const items = document.querySelectorAll("[data-results-drag-item]");
-      let newDragOverIndex: number | null = null;
-
-      items.forEach((item, idx) => {
-        if (idx === draggedIndex) return;
-        const itemRect = item.getBoundingClientRect();
-        const itemCenterY = itemRect.top + itemRect.height / 2;
-        if (currentY >= itemRect.top && currentY <= itemRect.bottom) {
-          newDragOverIndex = currentY < itemCenterY ? idx : idx + 1;
-        }
-      });
-
-      if (newDragOverIndex === null) {
-        const firstItem = items[0] as HTMLElement | undefined;
-        const lastItem = items[items.length - 1] as HTMLElement | undefined;
-        if (firstItem && currentY < firstItem.getBoundingClientRect().top) {
-          newDragOverIndex = 0;
-        } else if (lastItem && currentY > lastItem.getBoundingClientRect().bottom) {
-          newDragOverIndex = localOrder.length;
-        }
-      }
-
-      if (newDragOverIndex !== null && newDragOverIndex !== dragOverIndex) {
-        setDragOverIndex(newDragOverIndex);
-        const insertIndex = newDragOverIndex > draggedIndex ? newDragOverIndex - 1 : newDragOverIndex;
-        if (insertIndex !== draggedIndex && insertIndex >= 0 && insertIndex < localOrder.length) {
-          setLocalOrder((prevOrder) => {
-            const newOrder = [...prevOrder];
-            const [removed] = newOrder.splice(draggedIndex, 1);
-            newOrder.splice(insertIndex, 0, removed);
-            return newOrder;
-          });
-          setDraggedIndex(insertIndex);
-        }
-      }
-    };
-
-    document.addEventListener("mousemove", handleGlobalMouseMove);
-    document.addEventListener("mouseup", handleDragEnd);
-
-    return () => {
-      document.removeEventListener("mousemove", handleGlobalMouseMove);
-      document.removeEventListener("mouseup", handleDragEnd);
-    };
-  }, [draggedIndex, dragOverIndex, touchStartY, localOrder, handleDragEnd]);
-
-  const toggleVisibility = (stepId: ResultsStepId) => {
-    setLocalVisibility((prev) => ({ ...prev, [stepId]: !prev[stepId] }));
-  };
-
-  const handleSave = () => {
-    onChange(localOrder, localVisibility);
-    onClose();
-  };
-
-  const handleReset = () => {
-    const defaultOrder = DEFAULT_RESULTS_STEPS.map((s) => s.id);
-    const defaultVisibility = DEFAULT_RESULTS_STEPS.reduce(
-      (acc, step) => ({ ...acc, [step.id]: step.visible }),
-      {} as Record<ResultsStepId, boolean>
-    );
-    setLocalOrder(defaultOrder);
-    setLocalVisibility(defaultVisibility);
-    onChange(defaultOrder, defaultVisibility);
-  };
-
-  const handleDragStart = (e: React.MouseEvent, index: number) => {
-    e.preventDefault();
-    setDraggedIndex(index);
-    setTouchStartY(e.clientY);
-    setDraggedItemY(e.clientY);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent, index: number) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const touch = e.touches[0];
-    setDraggedIndex(index);
-    setTouchStartY(touch.clientY);
-    setDraggedItemY(touch.clientY);
-    document.body.style.overflow = "hidden";
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (draggedIndex === null || touchStartY === null) return;
-    e.preventDefault();
-
-    const touch = e.touches[0];
-    const currentY = touch.clientY;
-    setDraggedItemY(currentY);
-
-    const items = document.querySelectorAll("[data-results-drag-item]");
-    let newDragOverIndex: number | null = null;
-
-    items.forEach((item, idx) => {
-      if (idx === draggedIndex) return;
-      const itemRect = item.getBoundingClientRect();
-      const itemCenterY = itemRect.top + itemRect.height / 2;
-      if (currentY >= itemRect.top && currentY <= itemRect.bottom) {
-        newDragOverIndex = currentY < itemCenterY ? idx : idx + 1;
-      }
-    });
-
-    if (newDragOverIndex === null) {
-      const firstItem = items[0] as HTMLElement | undefined;
-      const lastItem = items[items.length - 1] as HTMLElement | undefined;
-      if (firstItem && currentY < firstItem.getBoundingClientRect().top) {
-        newDragOverIndex = 0;
-      } else if (lastItem && currentY > lastItem.getBoundingClientRect().bottom) {
-        newDragOverIndex = localOrder.length;
-      }
-    }
-
-    if (newDragOverIndex !== null && newDragOverIndex !== dragOverIndex) {
-      setDragOverIndex(newDragOverIndex);
-      const insertIndex = newDragOverIndex > draggedIndex ? newDragOverIndex - 1 : newDragOverIndex;
-      if (insertIndex !== draggedIndex && insertIndex >= 0 && insertIndex < localOrder.length) {
-        const newOrder = [...localOrder];
-        const [removed] = newOrder.splice(draggedIndex, 1);
-        newOrder.splice(insertIndex, 0, removed);
-        setLocalOrder(newOrder);
-        setDraggedIndex(insertIndex);
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-    setTouchStartY(null);
-    setDraggedItemY(null);
-    document.body.style.overflow = "";
-  };
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Change Results Order"
-      footer={
-        <div className="flex justify-between">
-          <Button type="button" variant="ghost" onClick={handleReset}>
-            Reset to Default
-          </Button>
-          <div className="flex gap-2">
-            <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleSave}>
-              Save
-            </Button>
-          </div>
-        </div>
-      }
-    >
-      <div className="space-y-2">
-        <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
-          Drag items to reorder and show or hide items. Changes are saved automatically.
-        </p>
-        {localOrder.map((stepId, index) => {
-          const step = DEFAULT_RESULTS_STEPS.find((s) => s.id === stepId);
-          if (!step) return null;
-          const isDragging = draggedIndex === index;
-          const isDragOver = dragOverIndex === index;
-
-          return (
-            <div
-              key={stepId}
-              data-results-drag-item
-              className={`flex items-center gap-3 rounded-lg border p-3 transition-all ${
-                isDragging
-                  ? "border-amber-500 bg-amber-50 shadow-lg opacity-75 dark:border-amber-400 dark:bg-amber-900/20"
-                  : isDragOver
-                  ? "border-amber-400 bg-amber-50/50 dark:border-amber-500 dark:bg-amber-900/10"
-                  : "border-stone-200 bg-stone-50 dark:border-stone-700 dark:bg-stone-800"
-              }`}
-              style={
-                isDragging && draggedItemY !== null && touchStartY !== null
-                  ? {
-                      transform: `translateY(${draggedItemY - touchStartY}px)`,
-                      zIndex: 1000,
-                      position: "relative",
-                    }
-                  : {}
-              }
-            >
-              <div
-                className="touch-none cursor-grab active:cursor-grabbing select-none flex-shrink-0"
-                onMouseDown={(e) => handleDragStart(e, index)}
-                onTouchStart={(e) => handleTouchStart(e, index)}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                style={{ touchAction: "none", userSelect: "none" }}
-              >
-                <svg
-                  className="h-5 w-5 text-stone-400"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <circle cx="9" cy="5" r="1.5" />
-                  <circle cx="9" cy="12" r="1.5" />
-                  <circle cx="9" cy="19" r="1.5" />
-                  <circle cx="15" cy="5" r="1.5" />
-                  <circle cx="15" cy="12" r="1.5" />
-                  <circle cx="15" cy="19" r="1.5" />
-                </svg>
-              </div>
-              <label className="flex flex-1 items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={localVisibility[stepId]}
-                  onChange={() => toggleVisibility(stepId)}
-                  className="h-4 w-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
-                />
-                <span className="flex-1 text-sm font-medium text-stone-800 dark:text-stone-200">
-                  {step.label}
-                </span>
-              </label>
-            </div>
-          );
-        })}
-      </div>
-    </Modal>
   );
 }

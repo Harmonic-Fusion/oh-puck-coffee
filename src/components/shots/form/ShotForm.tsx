@@ -10,7 +10,6 @@ import { Button } from "@/components/common/Button";
 import { SectionBasics } from "./SectionBasics";
 import { SectionRecipe } from "./SectionRecipe";
 import { SectionResults } from "./SectionResults";
-import { SectionFlavorWheel } from "./SectionFlavorWheel";
 import { ShotSuccessModal } from "./ShotSuccessModal";
 import { AppRoutes } from "@/app/routes";
 import { useLastShot, useDeleteShot, useToggleReference, useToggleHidden, type ShotWithJoins } from "@/components/shots/hooks";
@@ -57,9 +56,9 @@ export function ShotForm() {
       brewPressure: 9,
       shotQuality: undefined,
       rating: undefined,
-      flavorWheelBody: undefined,
-      flavorWheelCategories: undefined,
-      flavorWheelAdjectives: [],
+      flavors: undefined,
+      bodyTexture: undefined,
+      adjectives: undefined,
       toolsUsed: [],
       notes: "",
     },
@@ -254,9 +253,9 @@ export function ShotForm() {
         brewPressure: data.brewPressure,
         grinderName: grinder?.name ?? null,
         machineName: machine?.name ?? null,
-        flavorWheelCategories: data.flavorWheelCategories ?? null,
-        flavorWheelAdjectives: data.flavorWheelAdjectives ?? null,
-        flavorWheelBody: data.flavorWheelBody ?? null,
+        flavors: data.flavors ?? null,
+        bodyTexture: data.bodyTexture ?? null,
+        adjectives: data.adjectives ?? null,
       });
     } catch (error) {
       showToast("error", error instanceof Error ? error.message : "Failed to log shot");
@@ -285,10 +284,6 @@ export function ShotForm() {
         <hr className="border-stone-200 dark:border-stone-700" />
 
         <SectionResults />
-
-        <hr className="border-stone-200 dark:border-stone-700" />
-
-        <SectionFlavorWheel />
 
         <div className="flex flex-col items-center gap-3 pt-6">
           <Button

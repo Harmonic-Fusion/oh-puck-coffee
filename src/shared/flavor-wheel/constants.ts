@@ -1,3 +1,7 @@
+/**
+ * Legacy flavor wheel structure (maintained for backward compatibility)
+ * @deprecated Use FLAVOR_WHEEL_DATA from ./flavor-wheel-data instead
+ */
 export const FLAVOR_WHEEL = {
   Fruity: {
     Berry: ["Blackberry", "Raspberry", "Blueberry", "Strawberry"],
@@ -45,6 +49,13 @@ export const FLAVOR_WHEEL = {
 } as const;
 
 export type FlavorWheelCategory = keyof typeof FLAVOR_WHEEL;
+
+// Re-export new data structures
+export { FLAVOR_WHEEL_DATA } from "./flavor-wheel-data";
+export { BODY_SELECTOR_DATA } from "./body-data";
+export { ADJECTIVES_INTENSIFIERS_DATA } from "./adjectives-data";
+export * from "./types";
+export * from "./colors";
 
 export const BODY_ADJECTIVES = [
   "Juicy",

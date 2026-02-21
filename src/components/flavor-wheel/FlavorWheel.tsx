@@ -58,7 +58,7 @@ export function FlavorWheel({ value, onChange }: FlavorWheelProps) {
   return (
     <div className="space-y-2">
       <span className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
-        SCA Flavor Wheel
+        SCA Flavors
       </span>
       {categories.map((category) => (
         <FlavorCategory

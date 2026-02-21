@@ -48,7 +48,7 @@ export default function CompanyPage() {
               The Philosophy
             </h2>
             <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-              We're not here to replace your palate—we're here to augment it. The best baristas combine sensory experience with quantitative data. That's why Coffee Tracker tracks everything: from the precise grind setting to the subjective flavor notes on the SCA Flavor Wheel.
+              We're not here to replace your palate—we're here to augment it. The best baristas combine sensory experience with quantitative data. That's why Coffee Tracker tracks everything: from the precise grind setting to the subjective flavor notes on the SCA Flavors.
             </p>
             <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
               We believe in <strong className="text-stone-900 dark:text-stone-100">open data</strong>. Your shots are yours. Export to Google Sheets, analyze in your own way, share with your team. We're just the platform that makes it all possible.

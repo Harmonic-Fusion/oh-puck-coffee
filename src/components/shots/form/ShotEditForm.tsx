@@ -9,7 +9,6 @@ import { Button } from "@/components/common/Button";
 import { SectionBasics } from "./SectionBasics";
 import { SectionRecipe } from "./SectionRecipe";
 import { SectionResults } from "./SectionResults";
-import { SectionFlavorWheel } from "./SectionFlavorWheel";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { useToast } from "@/components/common/Toast";
 import { ValidationBanner } from "@/components/common/ValidationBanner";
@@ -45,11 +44,9 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
       estimateMaxPressure: shot.estimateMaxPressure ? parseFloat(shot.estimateMaxPressure) : undefined,
       shotQuality: shot.shotQuality,
       rating: shot.rating || undefined,
-      flavorWheelBody: (shot.flavorWheelBody && BODY_ADJECTIVES.includes(shot.flavorWheelBody as BodyAdjective))
-        ? (shot.flavorWheelBody as BodyAdjective)
-        : undefined,
-      flavorWheelCategories: shot.flavorWheelCategories || undefined,
-      flavorWheelAdjectives: shot.flavorWheelAdjectives || [],
+      flavors: shot.flavors || undefined,
+      bodyTexture: shot.bodyTexture || undefined,
+      adjectives: shot.adjectives || undefined,
       toolsUsed: shot.toolsUsed || [],
       notes: shot.notes || "",
     },
@@ -84,10 +81,6 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
         <hr className="border-stone-200 dark:border-stone-700" />
 
         <SectionResults />
-
-        <hr className="border-stone-200 dark:border-stone-700" />
-
-        <SectionFlavorWheel />
 
         <div className="flex flex-col gap-4 pt-4">
           {(updateShot.isError || methods.formState.errors.root) && (

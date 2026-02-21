@@ -27,19 +27,14 @@ export function TopFlavorsChart({ shots }: TopFlavorsChartProps) {
     {};
 
   for (const shot of shots) {
-    if (
-      shot.flavorWheelCategories &&
-      typeof shot.flavorWheelCategories === "object"
-    ) {
+    if (shot.flavors && Array.isArray(shot.flavors)) {
       const rating = shot.rating ?? shot.shotQuality;
-      for (const flavors of Object.values(shot.flavorWheelCategories)) {
-        for (const flavor of flavors) {
-          if (!flavorRatings[flavor]) {
-            flavorRatings[flavor] = { totalRating: 0, count: 0 };
-          }
-          flavorRatings[flavor].totalRating += rating;
-          flavorRatings[flavor].count += 1;
+      for (const f of shot.flavors) {
+        if (!flavorRatings[f]) {
+          flavorRatings[f] = { totalRating: 0, count: 0 };
         }
+        flavorRatings[f].totalRating += rating;
+        flavorRatings[f].count += 1;
       }
     }
   }

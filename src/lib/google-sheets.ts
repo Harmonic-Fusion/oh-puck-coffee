@@ -159,8 +159,9 @@ export async function appendShotRow(
     flowRate?: string | null;
     shotQuality: number;
     rating?: number | null;
-    flavorWheelCategories?: Record<string, string[]> | null;
-    flavorWheelBody?: string | null;
+    flavors?: string[] | null;
+    bodyTexture?: string[] | null;
+    adjectives?: string[] | null;
     toolsUsed?: string[] | null;
     notes?: string | null;
     daysPostRoast: number | null;
@@ -170,11 +171,9 @@ export async function appendShotRow(
   const auth = await getAuthorizedClient(userId);
   const sheets = google.sheets({ version: "v4", auth });
 
-  // Flatten flavor wheel categories into a readable string
-  const flavorWheelStr = shot.flavorWheelCategories
-    ? Object.entries(shot.flavorWheelCategories)
-        .map(([cat, flavors]) => `${cat}: ${flavors.join(", ")}`)
-        .join("; ")
+  // Flatten flavor data into a readable string
+  const flavorWheelStr = shot.flavors
+    ? shot.flavors.join(", ")
     : "";
 
   const row = [
@@ -196,7 +195,9 @@ export async function appendShotRow(
     shot.shotQuality,
     shot.rating ?? "",
     flavorWheelStr,
-    shot.flavorWheelBody ?? "",
+    shot.bodyTexture && shot.bodyTexture.length > 0
+      ? shot.bodyTexture[shot.bodyTexture.length - 1]
+      : "",
     shot.toolsUsed?.join(", ") ?? "",
     shot.notes ?? "",
     shot.daysPostRoast ?? "",

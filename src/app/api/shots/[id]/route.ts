@@ -45,9 +45,9 @@ export async function GET(
       rating: shots.rating,
       toolsUsed: shots.toolsUsed,
       notes: shots.notes,
-      flavorWheelCategories: shots.flavorWheelCategories,
-      flavorWheelBody: shots.flavorWheelBody,
-      flavorWheelAdjectives: shots.flavorWheelAdjectives,
+      flavors: shots.flavors,
+      bodyTexture: shots.bodyTexture,
+      adjectives: shots.adjectives,
       isReferenceShot: shots.isReferenceShot,
       isHidden: shots.isHidden,
       createdAt: shots.createdAt,
@@ -161,12 +161,12 @@ export async function PATCH(
       flowRate: flowRate ? String(flowRate) : null,
       shotQuality: String(data.shotQuality),
       rating: data.rating ? String(data.rating) : null,
-      toolsUsed: data.toolsUsed || null,
-      notes: data.notes || null,
-      flavorWheelCategories: data.flavorWheelCategories || null,
-      flavorWheelBody: data.flavorWheelBody || null,
-      flavorWheelAdjectives: data.flavorWheelAdjectives || null,
-    })
+        toolsUsed: data.toolsUsed || null,
+        notes: data.notes || null,
+        flavors: data.flavors || null,
+        bodyTexture: data.bodyTexture || null,
+        adjectives: data.adjectives || null,
+      })
     .where(eq(shots.id, id))
     .returning();
 

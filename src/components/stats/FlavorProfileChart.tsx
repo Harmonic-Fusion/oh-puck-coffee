@@ -19,11 +19,9 @@ export function FlavorProfileChart({ shots }: FlavorProfileChartProps) {
   // Count flavor frequency from flavor wheel categories
   const flavorCounts: Record<string, number> = {};
   for (const shot of shots) {
-    if (shot.flavorWheelCategories && typeof shot.flavorWheelCategories === "object") {
-      for (const flavors of Object.values(shot.flavorWheelCategories)) {
-        for (const flavor of flavors) {
-          flavorCounts[flavor] = (flavorCounts[flavor] || 0) + 1;
-        }
+    if (shot.flavors && Array.isArray(shot.flavors)) {
+      for (const f of shot.flavors) {
+        flavorCounts[f] = (flavorCounts[f] || 0) + 1;
       }
     }
   }

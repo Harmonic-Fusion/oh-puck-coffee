@@ -30,11 +30,9 @@ export function exportShotsToCSV(shots: ShotWithJoins[]): string {
   ];
 
   const rows = shots.map((shot) => {
-    // Flatten flavor wheel categories
-    const flavorWheelStr = shot.flavorWheelCategories
-      ? Object.entries(shot.flavorWheelCategories)
-          .map(([cat, flavors]) => `${cat}: ${flavors.join(", ")}`)
-          .join("; ")
+    // Flatten flavor data
+    const flavorWheelStr = shot.flavors
+      ? shot.flavors.join(", ")
       : "";
 
     // Calculate days post roast if bean roast date exists
@@ -68,7 +66,9 @@ export function exportShotsToCSV(shots: ShotWithJoins[]): string {
       shot.shotQuality.toString(),
       shot.rating?.toString() || "",
       flavorWheelStr,
-      shot.flavorWheelBody || "",
+      shot.bodyTexture && shot.bodyTexture.length > 0
+        ? shot.bodyTexture[shot.bodyTexture.length - 1]
+        : "",
       shot.toolsUsed?.join(", ") || "",
       shot.notes || "",
       daysPostRoast,

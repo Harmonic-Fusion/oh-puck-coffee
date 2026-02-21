@@ -23,9 +23,9 @@ export interface ShotShareData {
   brewPressure?: number | null;
   grinderName?: string | null;
   machineName?: string | null;
-  flavorWheelCategories?: Record<string, string[]> | null;
-  flavorWheelAdjectives?: string[] | null;
-  flavorWheelBody?: string | null;
+  flavors?: string[] | null;
+  bodyTexture?: string[] | null;
+  adjectives?: string[] | null;
   notes?: string | null;
 }
 
@@ -105,10 +105,13 @@ function buildVars(shot: ShotShareData): TemplateVars {
   ]) ?? `Quality ${shot.shotQuality}/5`;
 
   // Tasting
-  const flavors = collectFlavors(shot.flavorWheelCategories, shot.flavorWheelAdjectives);
+  const flavors = shot.flavors || [];
+  const bodyDisplay = shot.bodyTexture && shot.bodyTexture.length > 0
+    ? shot.bodyTexture[shot.bodyTexture.length - 1]
+    : null;
   const tasting = joinParts([
     flavors.length > 0 ? flavors.slice(0, 6).join(", ") : null,
-    shot.flavorWheelBody ? `${shot.flavorWheelBody} body` : null,
+    bodyDisplay ? `${bodyDisplay} body` : null,
   ]);
 
   // Notes (truncated at 80 chars)
@@ -136,8 +139,18 @@ function collectFlavors(
   const flavors: string[] = [];
 
   if (categories) {
-    for (const descriptors of Object.values(categories)) {
-      flavors.push(...descriptors);
+    for (const paths of Object.values(categories)) {
+      // Paths are now just node names, but handle old format for backward compatibility
+      const leafFlavors = paths.map((path) => {
+        // If it contains ":", it's old format - extract last part
+        if (path.includes(":")) {
+          const parts = path.split(":");
+          return parts[parts.length - 1] || path;
+        }
+        // New format: just return the node name
+        return path;
+      });
+      flavors.push(...leafFlavors);
     }
   }
 
@@ -149,5 +162,6 @@ function collectFlavors(
     }
   }
 
-  return flavors;
+  // Remove duplicates while preserving order
+  return Array.from(new Set(flavors));
 }

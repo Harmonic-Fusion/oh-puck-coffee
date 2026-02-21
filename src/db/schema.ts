@@ -155,10 +155,10 @@ export const shots = pgTable("shots", {
   rating: numeric("rating", { precision: 3, scale: 1 }), // 1-5 with 0.5 steps (optional)
   toolsUsed: jsonb("tools_used").$type<string[]>(),
   notes: text("notes"),
-  // Flavor Wheel (all optional)
-  flavorWheelCategories: jsonb("flavor_wheel_categories").$type<Record<string, string[]>>(),
-  flavorWheelBody: text("flavor_wheel_body"),
-  flavorWheelAdjectives: jsonb("flavor_wheel_adjectives").$type<string[]>(),
+  // Flavor data (all optional) - separate columns
+  flavors: jsonb("flavors").$type<string[]>(),
+  bodyTexture: jsonb("body_texture").$type<string[]>(),
+  adjectives: jsonb("adjectives").$type<string[]>(),
   // Meta
   isReferenceShot: boolean("is_reference_shot").default(false).notNull(),
   isHidden: boolean("is_hidden").default(false).notNull(),

@@ -10,6 +10,43 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  
+  /* Flavor Wheel Colors */
+  --color-fruity-berry: #E91E63;
+  --color-fruity-citrus: #FFC107;
+  --color-fruity-stone-fruit: #FF6F00;
+  --color-fruity-tropical: #FFB300;
+  --color-fruity-dried-fruit: #6A1B9A;
+  --color-floral: #F8BBD0;
+  --color-sweet-chocolate: #5D4037;
+  --color-sweet-caramel: #FFB74D;
+  --color-sweet-honey: #FFC107;
+  --color-sweet-vanilla: #FFF9C4;
+  --color-spicy-warm-spice: #FF9800;
+  --color-spicy-pungent: #FF6F00;
+  --color-spicy-nut: #D7CCC8;
+  --color-spicy-roasted: #5D4037;
+  --color-earthy-soil: #558B2F;
+  --color-earthy-wood: #689F38;
+  --color-earthy-tobacco: #5D4037;
+  --color-earthy-vegetal: #8BC34A;
+  
+  /* Body Colors */
+  --color-body-light: #E0E0E0;
+  --color-body-medium: #9E9E9E;
+  --color-body-heavy: #424242;
+  
+  /* Adjectives Colors */
+  --color-adj-row1-left: #81D4FA;
+  --color-adj-row1-right: #E0E0E0;
+  --color-adj-row2-left: #CE93D8;
+  --color-adj-row2-right: #A5D6A7;
+  --color-adj-row3-left: #7B1FA2;
+  --color-adj-row3-right: #F8BBD0;
+  --color-adj-row4-left: #FFB74D;
+  --color-adj-row4-right: #D7CCC8;
+  --color-adj-row5-left: #424242;
+  --color-adj-row5-right: #81D4FA;
 }
 
 @media (prefers-color-scheme: dark) {
