@@ -221,14 +221,17 @@ export function EditOrderModal<T extends OrderItem, TId extends string = string>
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-2">
-              {orderedItems.map((item) => (
-                <SortableOrderItem
-                  key={item.id}
-                  item={item}
-                  isVisible={localVisibility[item.id] ?? false}
-                  onToggleVisibility={() => toggleVisibility(item.id)}
-                />
-              ))}
+              {orderedItems.map((item) => {
+                const itemId = item.id as TId;
+                return (
+                  <SortableOrderItem
+                    key={item.id}
+                    item={item}
+                    isVisible={localVisibility[itemId] ?? false}
+                    onToggleVisibility={() => toggleVisibility(itemId)}
+                  />
+                );
+              })}
             </div>
           </SortableContext>
         </DndContext>
