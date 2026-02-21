@@ -145,11 +145,11 @@ export function AdjectivesIntensifiersSelector({
           let color = "rgba(158, 158, 158, 0.3)"; // Default color
           for (let rowIndex = 0; rowIndex < ADJECTIVES_INTENSIFIERS_DATA.rows.length; rowIndex++) {
             const row = ADJECTIVES_INTENSIFIERS_DATA.rows[rowIndex];
-            if (row.left.some((adj) => adj.toLowerCase() === adjective.toLowerCase())) {
+            if (row.left.some((adj: string) => adj.toLowerCase() === adjective.toLowerCase())) {
               color = getAdjectiveColor(rowIndex, "left");
               break;
             }
-            if (row.right.some((adj) => adj.toLowerCase() === adjective.toLowerCase())) {
+            if (row.right.some((adj: string) => adj.toLowerCase() === adjective.toLowerCase())) {
               color = getAdjectiveColor(rowIndex, "right");
               break;
             }

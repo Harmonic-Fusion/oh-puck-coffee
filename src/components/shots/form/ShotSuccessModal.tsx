@@ -217,7 +217,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
                               const bodyValue = summary.bodyTexture[summary.bodyTexture.length - 1];
                               // Find which category this body descriptor belongs to
                               for (const [category, descriptors] of Object.entries(BODY_SELECTOR_DATA)) {
-                                if (descriptors.some((d) => d.toLowerCase() === bodyValue.toLowerCase())) {
+                                if (descriptors.some((d: string) => d.toLowerCase() === bodyValue.toLowerCase())) {
                                   return getBodyColor(category as "light" | "medium" | "heavy");
                                 }
                               }

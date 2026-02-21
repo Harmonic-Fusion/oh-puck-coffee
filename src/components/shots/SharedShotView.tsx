@@ -237,7 +237,7 @@ export function SharedShotView({ shot }: SharedShotViewProps) {
                           const bodyValue = shot.bodyTexture[shot.bodyTexture.length - 1];
                           // Find which category this body descriptor belongs to
                           for (const [category, descriptors] of Object.entries(BODY_SELECTOR_DATA)) {
-                            if (descriptors.some((d) => d.toLowerCase() === bodyValue.toLowerCase())) {
+                            if (descriptors.some((d: string) => d.toLowerCase() === bodyValue.toLowerCase())) {
                               return getBodyColor(category as "light" | "medium" | "heavy");
                             }
                           }
@@ -324,11 +324,11 @@ export function SharedShotView({ shot }: SharedShotViewProps) {
                 let color = "rgba(158, 158, 158, 0.3)"; // Default color
                 for (let rowIndex = 0; rowIndex < ADJECTIVES_INTENSIFIERS_DATA.rows.length; rowIndex++) {
                   const row = ADJECTIVES_INTENSIFIERS_DATA.rows[rowIndex];
-                  if (row.left.some((adj) => adj.toLowerCase() === adjective.toLowerCase())) {
+                  if (row.left.some((adj: string) => adj.toLowerCase() === adjective.toLowerCase())) {
                     color = getAdjectiveColor(rowIndex, "left");
                     break;
                   }
-                  if (row.right.some((adj) => adj.toLowerCase() === adjective.toLowerCase())) {
+                  if (row.right.some((adj: string) => adj.toLowerCase() === adjective.toLowerCase())) {
                     color = getAdjectiveColor(rowIndex, "right");
                     break;
                   }
