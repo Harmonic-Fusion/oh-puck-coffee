@@ -39,7 +39,6 @@ const DEFAULT_RESULTS_STEPS: ResultsStepConfig[] = [
   { id: "adjectives", label: "Adjectives & Intensifiers", visible: false },
 ];
 
-const TIME_OPTIONS = [10, 20, 30] as const;
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
 
 // ── LocalStorage helpers ──
@@ -210,25 +209,6 @@ export function SectionResults() {
                   error={errors.brewTimeSecs?.message}
                   noRound={true}
                   id="brewTimeSecs"
-                  labelExtra={
-                    <div className="flex items-center gap-1">
-                      {TIME_OPTIONS.map((time) => (
-                        <button
-                          key={time}
-                          type="button"
-                          onClick={() => setValue("brewTimeSecs", time, { shouldValidate: true })}
-                          tabIndex={-1}
-                          className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                            field.value === time
-                              ? "bg-amber-600 text-white"
-                              : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                          }`}
-                        >
-                          {time}s
-                        </button>
-                      ))}
-                    </div>
-                  }
                 />
                 <BrewTimer
                   value={field.value}
