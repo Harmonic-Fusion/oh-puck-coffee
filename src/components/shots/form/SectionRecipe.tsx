@@ -7,14 +7,14 @@ import { QRCode } from "@/components/common/QRCode";
 import { Modal } from "@/components/common/Modal";
 import { EditOrderModal } from "@/components/common/EditOrderModal";
 import { ToolSelector } from "@/components/equipment/ToolSelector";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
 import { PreviousShotRow } from "./PreviousShotRow";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { useGrinders } from "@/components/equipment/hooks";
 import { isSpecialGrinder } from "@/shared/equipment/constants";
-
-const TEMP_UNIT_KEY = "coffee-temp-unit";
+import { TEMP_UNIT_KEY, fToC, cToF } from "@/lib/format-numbers";
 const RECIPE_ORDER_KEY = "coffee-recipe-order";
 const RECIPE_VISIBILITY_KEY = "coffee-recipe-visibility";
 const RATIO_OPTIONS = [1, 2, 3, 4] as const;
@@ -49,9 +49,6 @@ const DEFAULT_STEPS: RecipeStepConfig[] = [
   { id: "preInfusion", label: "Pre-infusion", visible: false },
   { id: "toolsUsed", label: "Tools Used", visible: false },
 ];
-
-const fToC = (f: number) => parseFloat(((f - 32) * (5 / 9)).toFixed(1));
-const cToF = (c: number) => parseFloat((c * (9 / 5) + 32).toFixed(1));
 
 function getSavedTempUnit(): "C" | "F" {
   if (typeof window === "undefined") return "F";
@@ -330,6 +327,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                 step={0.1}
                 placeholder="—"
                 error={errors.doseGrams?.message}
+                id="doseGrams"
                 labelExtra={
                   <div className="flex items-center gap-1">
                     {DOSE_OPTIONS.map((d) => (
@@ -364,7 +362,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                 <NumberStepper
                   label="Target Yield"
                   suffix="g"
-                  secondarySuffix={targetRatio ? ` 1:${targetRatio}` : undefined}
+                  subtitle={`Ratio: ${targetRatio ? `1:${targetRatio}` : "-/-"}`}
                   value={field.value}
                   onChange={handleYieldChange}
                   min={0}
@@ -372,6 +370,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                   step={0.5}
                   placeholder="—"
                   error={errors.yieldGrams?.message}
+                  id="yieldGrams"
                   labelExtra={
                     <div className="flex items-center gap-1">
                       {RATIO_OPTIONS.map((r) => (
@@ -411,11 +410,41 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                 step={0.1}
                 placeholder="—"
                 error={errors.grindLevel?.message}
+                id="grindLevel"
               />
             )}
           />
         );
-      case "brewTemp":
+      case "brewTemp": {
+        const tempUnitButtons = (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => { if (tempUnit !== "C") handleTempUnitToggle(); }}
+              tabIndex={-1}
+              className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                tempUnit === "C"
+                  ? "bg-amber-600 text-white"
+                  : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+              }`}
+            >
+              °C
+            </button>
+            <button
+              type="button"
+              onClick={() => { if (tempUnit !== "F") handleTempUnitToggle(); }}
+              tabIndex={-1}
+              className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                tempUnit === "F"
+                  ? "bg-amber-600 text-white"
+                  : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+              }`}
+            >
+              °F
+            </button>
+          </div>
+        );
+
         return tempUnit === "C" ? (
           <Controller
             key="brewTemp"
@@ -433,16 +462,8 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                 step={0.5}
                 placeholder="—"
                 error={errors.brewTempC?.message}
-                labelExtra={
-                  <button
-                    type="button"
-                    onClick={handleTempUnitToggle}
-                    tabIndex={-1}
-                    className="rounded-lg px-2 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30"
-                  >
-                    Switch to °F
-                  </button>
-                }
+                id="brewTempC"
+                labelExtra={tempUnitButtons}
               />
             )}
           />
@@ -459,18 +480,11 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
             step={1}
             placeholder="—"
             error={errors.brewTempC?.message}
-            labelExtra={
-              <button
-                type="button"
-                onClick={handleTempUnitToggle}
-                tabIndex={-1}
-                className="rounded-lg px-2 py-1 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/30"
-              >
-                Switch to °C
-              </button>
-            }
+            id="brewTempC"
+            labelExtra={tempUnitButtons}
           />
         );
+      }
       case "brewPressure":
         return (
           <Controller
@@ -496,6 +510,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                 step={0.5}
                 placeholder="—"
                 error={errors.brewPressure?.message}
+                id="brewPressure"
                 labelExtra={
                   <div className="flex items-center gap-1">
                     {PRESSURE_OPTIONS.map((p) => (
@@ -537,8 +552,8 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                 max={30}
                 step={0.5}
                 placeholder="—"
-                hint="Optional"
                 error={errors.preInfusionDuration?.message}
+                id="preInfusionDuration"
               />
             )}
           />
@@ -568,6 +583,15 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
         <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
           Recipe
         </h2>
+        <a
+          href={`${AppRoutes.blog.shotLog.path}#Recipe`}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Recipe guide"
+          className="text-stone-400 transition-colors hover:text-amber-600 dark:text-stone-500 dark:hover:text-amber-400"
+        >
+          <InformationCircleIcon className="h-5 w-5" />
+        </a>
         <div className="relative" ref={menuRef}>
           <button
             type="button"
@@ -654,6 +678,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
           {} as Record<RecipeStepId, boolean>
         )}
         onChange={handleOrderChange}
+        requiredFields={["dose", "yield"]}
         onReset={() => {
           const defaultOrder = DEFAULT_STEPS.map((s) => s.id);
           const defaultVisibility = DEFAULT_STEPS.reduce(

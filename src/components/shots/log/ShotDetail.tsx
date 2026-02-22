@@ -17,6 +17,9 @@ import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel/flavor-wheel-data";
 import { BODY_SELECTOR_DATA } from "@/shared/flavor-wheel/body-data";
 import { ADJECTIVES_INTENSIFIERS_DATA } from "@/shared/flavor-wheel/adjectives-data";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
+import { formatRating } from "@/lib/format-rating";
+import { formatTemp, roundToOneDecimal } from "@/lib/format-numbers";
+import { useTempUnit } from "@/lib/use-temp-unit";
 
 interface ShotDetailProps {
   shot: ShotWithJoins | null;
@@ -30,9 +33,11 @@ interface ShotDetailProps {
 function DetailRow({
   label,
   value,
+  subtitle,
 }: {
   label: string;
   value: string | number | null | undefined;
+  subtitle?: string;
 }) {
   if (value === null || value === undefined || value === "") return null;
   return (
@@ -40,9 +45,14 @@ function DetailRow({
       <span className="text-sm text-stone-500 dark:text-stone-400">
         {label}
       </span>
-      <span className="text-sm font-medium text-stone-800 dark:text-stone-200">
-        {value}
-      </span>
+      <div className="text-right">
+        <span className="text-sm font-medium text-stone-800 dark:text-stone-200">
+          {value}
+        </span>
+        {subtitle && (
+          <p className="text-xs text-stone-400 dark:text-stone-500">{subtitle}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -56,6 +66,7 @@ export function ShotDetail({
   onToggleHidden,
 }: ShotDetailProps) {
   const router = useRouter();
+  const [tempUnit] = useTempUnit();
   const { data: allTools } = useTools();
   const toolMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -122,7 +133,7 @@ export function ShotDetail({
           bodyTexture: shot.bodyTexture,
           adjectives: shot.adjectives,
           notes: shot.notes,
-        }),
+        }, tempUnit),
         url: shareUrl,
       };
 
@@ -422,11 +433,11 @@ export function ShotDetail({
             <span className="text-sm text-stone-500 dark:text-stone-400">
               Rating
             </span>
-            <span className="ml-auto text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {shot.rating}
-            </span>
-            <span className="text-sm text-stone-400 dark:text-stone-500">
-              / 5
+            <span className="ml-auto flex items-center gap-1.5">
+              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {shot.rating}
+              </span>
+              <span className="text-lg">{formatRating(shot.rating)}</span>
             </span>
           </div>
         )}
@@ -437,24 +448,24 @@ export function ShotDetail({
             Recipe
           </h3>
           <div className="divide-y divide-stone-100 rounded-lg border border-stone-200 px-4 dark:divide-stone-800 dark:border-stone-700">
-            <DetailRow label="Dose" value={`${shot.doseGrams}g`} />
-            <DetailRow label="Target Yield" value={`${shot.yieldGrams}g${ratio ? ` (1:${ratio})` : ""}`} />
+            <DetailRow label="Dose" value={`${roundToOneDecimal(shot.doseGrams)}g`} />
+            <DetailRow label="Target Yield" value={`${roundToOneDecimal(shot.yieldGrams)}g`} subtitle={ratio ? `1:${ratio}` : "-/-"} />
             <DetailRow label="Grind Level" value={shot.grindLevel} />
             <DetailRow
               label="Brew Temp"
-              value={shot.brewTempC ? `${shot.brewTempC}°C` : null}
+              value={formatTemp(shot.brewTempC, tempUnit)}
             />
             <DetailRow
               label="Pre-infusion"
               value={
                 shot.preInfusionDuration
-                  ? `${shot.preInfusionDuration}s`
+                  ? `${roundToOneDecimal(shot.preInfusionDuration)}s`
                   : null
               }
             />
             <DetailRow
               label="Brew Pressure"
-              value={shot.brewPressure ? `${shot.brewPressure} bar` : null}
+              value={shot.brewPressure ? `${roundToOneDecimal(shot.brewPressure)} bar` : null}
             />
             <DetailRow label="Grinder" value={shot.grinderName} />
             <DetailRow label="Machine" value={shot.machineName} />
@@ -475,19 +486,21 @@ export function ShotDetail({
               {shot.yieldActualGrams && (
                 <DetailRow 
                   label="Actual Yield" 
-                  value={`${shot.yieldActualGrams}g${actualRatio ? ` (1:${actualRatio})` : ""}`} 
+                  value={`${roundToOneDecimal(shot.yieldActualGrams)}g`}
+                  subtitle={actualRatio ? `1:${actualRatio}` : "-/-"}
                 />
               )}
               {shot.brewTimeSecs && (
                 <DetailRow 
                   label="Brew Time" 
-                  value={`${shot.brewTimeSecs}s${shot.flowRate ? ` · ${shot.flowRate} g/s` : ""}`} 
+                  value={`${roundToOneDecimal(shot.brewTimeSecs)}s`}
+                  subtitle={shot.flowRate ? `${roundToOneDecimal(shot.flowRate)} g/s` : "-:-"}
                 />
               )}
               {shot.estimateMaxPressure && (
                 <DetailRow 
                   label="Est. Max Pressure" 
-                  value={`${shot.estimateMaxPressure} bar`} 
+                  value={`${roundToOneDecimal(shot.estimateMaxPressure)} bar`} 
                 />
               )}
             </div>

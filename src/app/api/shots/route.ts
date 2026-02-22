@@ -143,6 +143,14 @@ export async function POST(request: NextRequest) {
 
   const data = parsed.data;
 
+  // Validate yieldActualGrams is present (required field)
+  if (data.yieldActualGrams == null || data.yieldActualGrams <= 0) {
+    return NextResponse.json(
+      { error: "Validation failed", details: { yieldActualGrams: "Actual yield is required and must be positive" } },
+      { status: 400 }
+    );
+  }
+
   // Compute flow rate (stored on write) - use actual yield if available, otherwise target yield
   const yieldForFlow = data.yieldActualGrams ?? data.yieldGrams;
   const flowRate =
@@ -163,13 +171,13 @@ export async function POST(request: NextRequest) {
         grindLevel: data.grindLevel ? String(data.grindLevel) : null,
         brewTempC: data.brewTempC ? String(data.brewTempC) : null,
         brewTimeSecs: data.brewTimeSecs ? String(data.brewTimeSecs) : null,
-        yieldActualGrams: data.yieldActualGrams ? String(data.yieldActualGrams) : null,
+        yieldActualGrams: String(data.yieldActualGrams),
         estimateMaxPressure: data.estimateMaxPressure ? String(data.estimateMaxPressure) : null,
         flowControl: data.flowControl ? String(data.flowControl) : null,
         preInfusionDuration: data.preInfusionDuration ? String(data.preInfusionDuration) : null,
         brewPressure: data.brewPressure ? String(data.brewPressure) : null,
         flowRate: flowRate ? String(flowRate) : null,
-        shotQuality: String(data.shotQuality),
+        shotQuality: data.shotQuality ? String(data.shotQuality) : null,
         rating: data.rating ? String(data.rating) : null,
         toolsUsed: data.toolsUsed || null,
         notes: data.notes || null,

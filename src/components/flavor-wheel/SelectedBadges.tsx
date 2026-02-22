@@ -138,7 +138,7 @@ export function SelectedBadges({
           <button
             type="button"
             onClick={onClear}
-            className="text-xs font-medium text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200 transition-colors"
+            className="rounded-md border border-stone-300 px-2 py-0.5 text-xs font-medium text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-700 dark:border-stone-600 dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-200"
           >
             Clear
           </button>

@@ -66,3 +66,12 @@ export default defineConfig({
   verbose: true,
   strict: true,
 });
+
+// Note: Enhanced migration logging is available in scripts/migrate.ts
+// When running migrations via `pnpm db:migrate` (or `tsx scripts/migrate.ts`),
+// you'll see detailed status including:
+// - All migration files found
+// - Which migrations are already applied in the database
+// - Which migrations are pending
+// - Which migrations were newly applied after running
+// This helps compare filesystem migrations vs database state.

@@ -198,7 +198,7 @@ export function NestedBodySelector({
       </div>
       {selectedName && (
         <SelectedBadges
-          title="Selected"
+          title="Selected Body"
           items={[
             {
               label: selectedDescriptor || selectedCategory || "",

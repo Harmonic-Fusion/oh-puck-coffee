@@ -10,6 +10,8 @@ import { BrewTimer } from "./BrewTimer";
 import { NestedFlavorWheel } from "@/components/flavor-wheel/NestedFlavorWheel";
 import { NestedBodySelector } from "@/components/flavor-wheel/NestedBodySelector";
 import { AdjectivesIntensifiersSelector } from "@/components/flavor-wheel/AdjectivesIntensifiersSelector";
+import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import { AppRoutes } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
 
 // ── Results step types and configuration ──
@@ -165,7 +167,7 @@ export function SectionResults() {
               <NumberStepper
                 label="Actual Yield"
                 suffix="g"
-                secondarySuffix={actualRatio ? `1:${actualRatio}` : undefined}
+                subtitle={`Ratio: ${actualRatio ? `1:${actualRatio}` : "-/-"}`}
                 value={field.value}
                 onChange={(val) => field.onChange(val)}
                 min={0}
@@ -173,6 +175,7 @@ export function SectionResults() {
                 step={0.1}
                 placeholder="—"
                 error={errors.yieldActualGrams?.message}
+                id="yieldActualGrams"
                 placeholderAction={
                   yieldTarget
                     ? {
@@ -197,7 +200,7 @@ export function SectionResults() {
                 <NumberStepper
                   label="Brew Time"
                   suffix="sec"
-                  secondarySuffix={flowRate ? `${flowRate} g/s` : undefined}
+                  subtitle={`Flow Rate: ${flowRate ? `${flowRate} g/s` : "-:-"}`}
                   value={field.value}
                   onChange={(val) => field.onChange(val)}
                   min={0}
@@ -206,6 +209,7 @@ export function SectionResults() {
                   placeholder="—"
                   error={errors.brewTimeSecs?.message}
                   noRound={true}
+                  id="brewTimeSecs"
                   labelExtra={
                     <div className="flex items-center gap-1">
                       {TIME_OPTIONS.map((time) => (
@@ -261,6 +265,7 @@ export function SectionResults() {
                 step={0.2}
                 placeholder="—"
                 error={errors.estimateMaxPressure?.message}
+                id="estimateMaxPressure"
                 labelExtra={
                   <div className="flex items-center gap-1">
                     {PRESSURE_OPTIONS.map((p) => (
@@ -303,6 +308,7 @@ export function SectionResults() {
                 max={5}
                 step={0.5}
                 error={errors.shotQuality?.message}
+                id="shotQuality"
                 labels={{
                   1: "Failed to Extract",
                   2: "Severe channeling or spraying",
@@ -330,6 +336,7 @@ export function SectionResults() {
                 max={5}
                 step={0.5}
                 error={errors.rating?.message}
+                id="rating"
                 labels={{
                   1: "Didn't enjoy",
                   2: "Somewhat enjoyed",
@@ -350,6 +357,7 @@ export function SectionResults() {
             placeholder="Any additional observations..."
             error={errors.notes?.message}
             rows={4}
+            id="notes"
             {...register("notes")}
           />
         );
@@ -414,11 +422,20 @@ export function SectionResults() {
   };
 
   return (
-    <section className="space-y-6">
+    <section id="results" className="space-y-6">
       <div className="flex items-center justify-center gap-2">
         <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
           Results & Tasting
         </h2>
+        <a
+          href={`${AppRoutes.blog.shotLog.path}#Results`}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Results guide"
+          className="text-stone-400 transition-colors hover:text-amber-600 dark:text-stone-500 dark:hover:text-amber-400"
+        >
+          <InformationCircleIcon className="h-5 w-5" />
+        </a>
         <div className="relative" ref={menuRef}>
           <button
             type="button"
@@ -475,6 +492,7 @@ export function SectionResults() {
           {} as Record<ResultsStepId, boolean>
         )}
         onChange={handleOrderChange}
+        requiredFields={["yieldActual", "rating"]}
         onReset={() => {
           const defaultOrder = DEFAULT_RESULTS_STEPS.map((s) => s.id);
           const defaultVisibility = DEFAULT_RESULTS_STEPS.reduce(

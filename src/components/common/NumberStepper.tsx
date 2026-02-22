@@ -97,6 +97,9 @@ interface NumberStepperProps {
   extraButtons?: React.ReactNode;
   /** When value is empty, show a clickable button instead of the placeholder */
   placeholderAction?: { label: string; onClick: () => void };
+  /** Always-visible subtitle shown below the label (e.g. computed ratio, flow rate) */
+  subtitle?: string;
+  id?: string;
 }
 
 export function NumberStepper({
@@ -117,10 +120,16 @@ export function NumberStepper({
   noRound = false,
   extraButtons,
   placeholderAction,
+  subtitle,
+  id,
 }: NumberStepperProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Track whether the current interaction is a manual keyboard edit (vs stepper +/− button).
+  // When true, pressing Enter commits the edit but does NOT auto-advance to the next field.
+  const isManualInput = useRef(false);
 
   // Derive decimal precision from step if not explicitly provided
   const decimals =
@@ -173,6 +182,7 @@ export function NumberStepper({
   // Enter editing mode when value is tapped
   const startEditing = useCallback(() => {
     if (disabled) return;
+    isManualInput.current = true;
     setEditValue(value != null ? formatValue(value) : "");
     setIsEditing(true);
   }, [disabled, value, formatValue]);
@@ -192,6 +202,7 @@ export function NumberStepper({
     const trimmed = editValue.trim();
     if (trimmed === "") {
       onChange(undefined);
+      isManualInput.current = false;
       return;
     }
     const parsed = parseFloat(trimmed);
@@ -199,6 +210,7 @@ export function NumberStepper({
       const final = noRound ? parsed : parseFloat(parsed.toFixed(decimals));
       onChange(clamp(final));
     }
+    isManualInput.current = false;
   }, [editValue, onChange, clamp, decimals, noRound]);
 
   /** Advance focus to the next focusable field in the form */
@@ -223,9 +235,14 @@ export function NumberStepper({
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
+        // Capture before commitEdit resets the flag
+        const wasManual = isManualInput.current;
         commitEdit();
-        // Defer focus advance so the DOM has updated after commitEdit
-        requestAnimationFrame(() => focusNextField());
+        // Only auto-advance to the next field for stepper-driven changes,
+        // not when the user is manually typing a value.
+        if (!wasManual) {
+          requestAnimationFrame(() => focusNextField());
+        }
       } else if (e.key === "Escape") {
         setIsEditing(false);
       }
@@ -259,6 +276,9 @@ export function NumberStepper({
           {hint && !error && (
             <p className="mt-0.5 text-xs text-stone-500">{hint}</p>
           )}
+          {subtitle && (
+            <p className="mt-0.5 text-sm font-medium text-stone-500 dark:text-stone-400">{subtitle}</p>
+          )}
         </div>
       )}
 
@@ -266,6 +286,7 @@ export function NumberStepper({
       <div className="flex items-center gap-2">
         {/* Value display / editable input */}
         <div
+          id={id}
           onClick={startEditing}
           onKeyDown={handleValueDisplayKeyDown}
           tabIndex={disabled ? -1 : 0}

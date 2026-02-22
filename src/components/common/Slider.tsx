@@ -13,6 +13,7 @@ interface SliderProps {
   disabled?: boolean;
   showValue?: boolean;
   labels?: Record<number, string>; // Map of integer values to label text
+  id?: string;
 }
 
 export function Slider({
@@ -26,6 +27,7 @@ export function Slider({
   disabled = false,
   showValue = true,
   labels,
+  id,
 }: SliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [hasInteracted, setHasInteracted] = useState(false);
@@ -94,7 +96,7 @@ export function Slider({
             {label}
           </span>
           {showValue && value > 0 && (
-            <span className="rounded-full bg-amber-100 px-3 py-1 text-lg font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+            <span className="rounded-full bg-amber-100 px-3 py-1 text-md font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
               {value} / {max}
             </span>
           )}
@@ -104,6 +106,7 @@ export function Slider({
       <div className="px-6">
       {/* Track bar with thumb */}
       <div
+        id={id}
         ref={trackRef}
         role="slider"
         tabIndex={disabled ? -1 : 0}
@@ -178,7 +181,7 @@ export function Slider({
               {/* Number + label for whole numbers */}
               {isWhole && (
                 <>
-                  <span className="mt-1 text-md font-medium text-stone-500 dark:text-stone-400">
+                  <span className="mt-1 text-xl font-medium text-stone-500 dark:text-stone-400">
                     {stepValue}
                   </span>
                   {labelText && (

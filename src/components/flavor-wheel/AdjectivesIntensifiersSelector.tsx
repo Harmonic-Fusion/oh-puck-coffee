@@ -139,7 +139,7 @@ export function AdjectivesIntensifiersSelector({
         })}
       </div>
       <SelectedBadges
-        title="Selected"
+        title="Selected Adjectives"
         items={value.map((adjective) => {
           // Find which row and side this adjective belongs to
           let color = "rgba(158, 158, 158, 0.3)"; // Default color

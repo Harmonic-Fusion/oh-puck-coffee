@@ -9,6 +9,9 @@ import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel/flavor-wheel-data";
 import { BODY_SELECTOR_DATA } from "@/shared/flavor-wheel/body-data";
 import { ADJECTIVES_INTENSIFIERS_DATA } from "@/shared/flavor-wheel/adjectives-data";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
+import { formatRating } from "@/lib/format-rating";
+import { formatTemp, roundToOneDecimal } from "@/lib/format-numbers";
+import { useTempUnit } from "@/lib/use-temp-unit";
 
 interface SharedShot {
   id: string;
@@ -48,17 +51,24 @@ interface SharedShotViewProps {
 function DetailRow({
   label,
   value,
+  subtitle,
 }: {
   label: string;
   value: string | number | null | undefined;
+  subtitle?: string;
 }) {
   if (value == null) return null;
   return (
     <div className="flex justify-between py-2.5 text-sm">
       <span className="text-stone-500 dark:text-stone-400">{label}</span>
-      <span className="font-medium text-stone-800 dark:text-stone-200">
-        {value}
-      </span>
+      <div className="text-right">
+        <span className="font-medium text-stone-800 dark:text-stone-200">
+          {value}
+        </span>
+        {subtitle && (
+          <p className="text-xs text-stone-400 dark:text-stone-500">{subtitle}</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -66,9 +76,10 @@ function DetailRow({
 export function SharedShotView({ shot }: SharedShotViewProps) {
   const { data: session } = useSession();
   const isLoggedIn = !!session?.user;
+  const [tempUnit] = useTempUnit();
 
   const ratio =
-    shot.brewRatio != null ? shot.brewRatio.toFixed(1) : null;
+    shot.brewRatio != null ? roundToOneDecimal(shot.brewRatio) : null;
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-stone-50 px-4 py-8 dark:bg-stone-950">
@@ -143,16 +154,16 @@ export function SharedShotView({ shot }: SharedShotViewProps) {
 
         {/* Rating */}
         {shot.rating != null && (
-          <div className="mb-4 flex items-center gap-2 rounded-lg bg-stone-50 px-4 py-3 dark:bg-stone-800">
+          <div className="mb-4 flex flex-col gap-2 rounded-lg bg-stone-50 px-4 py-3 dark:bg-stone-800">
             <span className="text-sm text-stone-500 dark:text-stone-400">
               Rating
             </span>
-            <span className="ml-auto text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {shot.rating}
-            </span>
-            <span className="text-sm text-stone-400 dark:text-stone-500">
-              / 5
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {shot.rating}
+              </span>
+              <span className="text-lg">{formatRating(shot.rating ? parseFloat(shot.rating) : null)}</span>
+            </div>
           </div>
         )}
 
@@ -162,27 +173,28 @@ export function SharedShotView({ shot }: SharedShotViewProps) {
             Recipe
           </h3>
           <div className="divide-y divide-stone-100 rounded-lg border border-stone-200 px-4 dark:divide-stone-800 dark:border-stone-700">
-            <DetailRow label="Dose" value={`${shot.doseGrams}g`} />
+            <DetailRow label="Dose" value={`${roundToOneDecimal(shot.doseGrams)}g`} />
             <DetailRow
               label="Target Yield"
-              value={`${shot.yieldGrams}g${ratio ? ` (1:${ratio})` : ""}`}
+              value={`${roundToOneDecimal(shot.yieldGrams)}g`}
+              subtitle={ratio ? `1:${ratio}` : "-/-"}
             />
             <DetailRow label="Grind Level" value={shot.grindLevel} />
             <DetailRow
               label="Brew Temp"
-              value={shot.brewTempC ? `${shot.brewTempC}°C` : null}
+              value={formatTemp(shot.brewTempC, tempUnit)}
             />
             <DetailRow
               label="Pre-infusion"
               value={
                 shot.preInfusionDuration
-                  ? `${shot.preInfusionDuration}s`
+                  ? `${roundToOneDecimal(shot.preInfusionDuration)}s`
                   : null
               }
             />
             <DetailRow
               label="Brew Pressure"
-              value={shot.brewPressure ? `${shot.brewPressure} bar` : null}
+              value={shot.brewPressure ? `${roundToOneDecimal(shot.brewPressure)} bar` : null}
             />
             <DetailRow label="Grinder" value={shot.grinderName} />
             <DetailRow label="Machine" value={shot.machineName} />
@@ -200,13 +212,14 @@ export function SharedShotView({ shot }: SharedShotViewProps) {
               {shot.brewTimeSecs && (
                 <DetailRow
                   label="Brew Time"
-                  value={`${shot.brewTimeSecs}s${shot.flowRate ? ` · ${shot.flowRate} g/s` : ""}`}
+                  value={`${roundToOneDecimal(shot.brewTimeSecs)}s`}
+                  subtitle={shot.flowRate ? `${roundToOneDecimal(shot.flowRate)} g/s` : "-:-"}
                 />
               )}
               {shot.estimateMaxPressure && (
                 <DetailRow
                   label="Est. Max Pressure"
-                  value={`${shot.estimateMaxPressure} bar`}
+                  value={`${roundToOneDecimal(shot.estimateMaxPressure)} bar`}
                 />
               )}
             </div>

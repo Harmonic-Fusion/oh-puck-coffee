@@ -11,6 +11,9 @@ import { getFlavorColor, getBodyColor } from "@/shared/flavor-wheel/colors";
 import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel/flavor-wheel-data";
 import { BODY_SELECTOR_DATA } from "@/shared/flavor-wheel/body-data";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
+import { formatRating } from "@/lib/format-rating";
+import { formatTemp, roundToOneDecimal } from "@/lib/format-numbers";
+import { useTempUnit } from "@/lib/use-temp-unit";
 
 export interface ShotSummary extends ShotShareData {
   shotId: string;
@@ -24,7 +27,7 @@ interface ShotSuccessModalProps {
 
 export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalProps) {
   const router = useRouter();
-  const [copied, setCopied] = useState(false);
+  const [tempUnit] = useTempUnit();
   const createShareLink = useCreateShareLink();
 
   // Auto-create share link when modal opens
@@ -43,7 +46,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
 
     const shareData = {
       title: "Journey before Destination!",
-      text: summary ? buildShotShareText(summary) : "Check out my espresso shot",
+      text: summary ? buildShotShareText(summary, tempUnit) : "Check out my espresso shot",
       url: shareUrl,
     };
 
@@ -67,8 +70,6 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
     try {
       const fullText = `${shareData.text}\n\n${shareData.url}`;
       await navigator.clipboard.writeText(fullText);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch (clipboardErr) {
       console.error("Error copying to clipboard:", clipboardErr);
     }
@@ -78,7 +79,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
 
   const actualYield = summary.yieldActualGrams ?? summary.yieldGrams;
   const ratio = summary.doseGrams > 0
-    ? (actualYield / summary.doseGrams).toFixed(1)
+    ? roundToOneDecimal(actualYield / summary.doseGrams)
     : null;
   const flavors = summary.flavors || [];
 
@@ -137,17 +138,17 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
               Recipe
             </h3>
             <div className="flex flex-wrap gap-2">
-              <SummaryBadge label="Dose" value={`${summary.doseGrams}g`} />
-              <SummaryBadge label="Yield" value={`${actualYield}g`} />
+              <SummaryBadge label="Dose" value={`${roundToOneDecimal(summary.doseGrams)}g`} />
+              <SummaryBadge label="Yield" value={`${roundToOneDecimal(actualYield)}g`} />
               {ratio && <SummaryBadge label="Ratio" value={`1:${ratio}`} />}
               {summary.grindLevel != null && (
                 <SummaryBadge label="Grind" value={`${summary.grindLevel}`} />
               )}
               {summary.brewTempC != null && (
-                <SummaryBadge label="Temp" value={`${summary.brewTempC}°C`} />
+                <SummaryBadge label="Temp" value={formatTemp(summary.brewTempC, tempUnit) ?? ""} />
               )}
               {summary.brewPressure != null && summary.brewPressure !== 9 && (
-                <SummaryBadge label="Pressure" value={`${summary.brewPressure} bar`} />
+                <SummaryBadge label="Pressure" value={`${roundToOneDecimal(summary.brewPressure)} bar`} />
               )}
             </div>
             {(summary.grinderName || summary.machineName) && (
@@ -163,12 +164,14 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
               Results
             </h3>
             <div className="flex flex-wrap gap-2">
-              <ScoreBadge label="Quality" value={summary.shotQuality} />
+              {summary.shotQuality != null && (
+                <ScoreBadge label="Quality" value={summary.shotQuality} />
+              )}
               {summary.rating != null && (
-                <ScoreBadge label="Rating" value={summary.rating} />
+                <ScoreBadge label="Rating" value={summary.rating} showStars={true} />
               )}
               {summary.brewTimeSecs != null && (
-                <SummaryBadge label="Time" value={`${summary.brewTimeSecs}s`} />
+                <SummaryBadge label="Time" value={`${roundToOneDecimal(summary.brewTimeSecs)}s`} />
               )}
             </div>
 
@@ -244,33 +247,6 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
           </div>
         </div>
 
-        {/* Share link */}
-        <div className="mb-5 flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 dark:border-stone-700 dark:bg-stone-900">
-          <input
-            readOnly
-            value={shareUrl}
-            className="min-w-0 flex-1 truncate bg-transparent text-xs text-stone-500 outline-none dark:text-stone-400"
-            onClick={(e) => (e.target as HTMLInputElement).select()}
-          />
-          <button
-            onClick={async () => {
-              if (!shareUrl || !summary) return;
-              try {
-                const text = buildShotShareText(summary);
-                const fullText = `${text}\n\n${shareUrl}`;
-                await navigator.clipboard.writeText(fullText);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              } catch {
-                // ignore
-              }
-            }}
-            className="shrink-0 rounded-md bg-stone-100 px-2.5 py-1 text-xs font-medium text-stone-600 transition-colors hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-          >
-            {copied ? "Copied!" : "Copy"}
-          </button>
-        </div>
-
         {/* Action buttons */}
         <div className="flex gap-3">
           <Button
@@ -289,7 +265,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
             className="flex-1"
             onClick={() => {
               onClose();
-              router.push(AppRoutes.log.path + "#recipe");
+              router.push(`${AppRoutes.log.path}?previousShotId=${summary.shotId}#recipe`);
             }}
           >
             Log Another
@@ -301,7 +277,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
             className="flex-1"
             onClick={handleShare}
           >
-            {copied ? "Copied!" : "Share"}
+            Share
           </Button>
         </div>
       </div>
@@ -350,12 +326,12 @@ function SummaryBadge({ label, value }: { label: string; value: string }) {
 }
 
 /** Color-coded badge for 1–5 score values (red → yellow → green) */
-function ScoreBadge({ label, value }: { label: string; value: number }) {
+function ScoreBadge({ label, value, showStars }: { label: string; value: number; showStars?: boolean }) {
   const colors = getScoreColors(value);
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${colors.bg} ${colors.text}`}>
       <span className={colors.label}>{label}</span>
-      {value}/5
+      {showStars ? formatRating(value) : `${value}/5`}
     </span>
   );
 }

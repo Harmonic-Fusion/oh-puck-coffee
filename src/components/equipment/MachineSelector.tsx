@@ -8,12 +8,14 @@ interface MachineSelectorProps {
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  id?: string;
 }
 
 export function MachineSelector({
   value,
   onChange,
   error,
+  id,
 }: MachineSelectorProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
@@ -44,7 +46,7 @@ export function MachineSelector({
   return (
     <div className="w-full">
       <label className="mb-2.5 block text-base font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
-        Machine <span className="font-normal text-stone-400">(optional)</span>
+        Machine
       </label>
       {!showCreate ? (
         <div className="flex gap-2">
@@ -58,6 +60,7 @@ export function MachineSelector({
               error={error}
               onAddNew={(text) => { setNewName(text); setShowCreate(true); }}
               emptyMessage="No machines found"
+              id={id}
             />
           </div>
         </div>

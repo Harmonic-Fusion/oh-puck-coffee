@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useShot, type ShotWithJoins } from "@/components/shots/hooks";
 import { Button } from "@/components/common/Button";
+import { formatRating } from "@/lib/format-rating";
+import { roundToOneDecimal } from "@/lib/format-numbers";
 
 interface PreviousShotRowProps {
   shotId: string | null;
@@ -29,12 +31,12 @@ function ShotBadges({
       )}
       {rating != null && (
         <span className="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
-          Rating: {rating}/5
+          Rating: {formatRating(rating)}
         </span>
       )}
       {brewTimeSecs && (
         <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-800 dark:bg-green-900/40 dark:text-green-300">
-          {parseFloat(brewTimeSecs)}s
+          {roundToOneDecimal(brewTimeSecs)}s
         </span>
       )}
       {ratio && (

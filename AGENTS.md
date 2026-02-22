@@ -187,7 +187,7 @@ END $$;
 ALTER TABLE "my_table" DROP CONSTRAINT IF EXISTS "old_constraint";
 ```
 
-**Why:** We run migrations both via `drizzle-kit migrate` and a programmatic `scripts/migrate.ts` startup script. These use separate tracker tables (`drizzle.__drizzle_migrations` vs `public.__drizzle_migrations`). Idempotent SQL ensures migrations never fail regardless of which tracker recorded them.
+**Why:** We use a programmatic `scripts/migrate.ts` script (via `pnpm db:migrate`) that provides enhanced logging and handles both `drizzle` and `public` schema migration tables. Idempotent SQL ensures migrations never fail regardless of which schema the migration tracker is in.
 
 ## Authentication
 

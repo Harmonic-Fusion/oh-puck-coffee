@@ -133,7 +133,6 @@ export const shots = pgTable("shots", {
     .notNull()
     .references(() => beans.id, { onDelete: "cascade" }),
   grinderId: uuid("grinder_id")
-    .notNull()
     .references(() => grinders.id),
   machineId: uuid("machine_id").references(() => machines.id),
   // Recipe
@@ -145,13 +144,13 @@ export const shots = pgTable("shots", {
   brewPressure: numeric("brew_pressure", { precision: 4, scale: 1 }).default("9"),
   // Results
   brewTimeSecs: numeric("brew_time_secs", { precision: 5, scale: 1 }),
-  yieldActualGrams: numeric("yield_actual_grams", { precision: 5, scale: 1 }),
+  yieldActualGrams: numeric("yield_actual_grams", { precision: 5, scale: 1 }).notNull(),
   estimateMaxPressure: numeric("estimate_max_pressure", { precision: 4, scale: 1 }),
   flowControl: numeric("flow_control", { precision: 4, scale: 1 }),
   // Computed (stored on write)
   flowRate: numeric("flow_rate", { precision: 5, scale: 2 }),
   // Subjective
-  shotQuality: numeric("shot_quality", { precision: 3, scale: 1 }).notNull(), // 1-5 with 0.5 steps
+  shotQuality: numeric("shot_quality", { precision: 3, scale: 1 }), // 1-5 with 0.5 steps (optional)
   rating: numeric("rating", { precision: 3, scale: 1 }), // 1-5 with 0.5 steps (optional)
   toolsUsed: jsonb("tools_used").$type<string[]>(),
   notes: text("notes"),

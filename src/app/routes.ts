@@ -22,6 +22,11 @@ export const AppRoutes = routesBuilder({
   careers: { path: "/careers", _is_public: true },
   contact: { path: "/contact", _is_public: true },
   socialMedia: { path: "/social-media", _is_public: true },
+  blog: {
+    path: "/blog",
+    _is_public: true,
+    shotLog: { path: "/shot-log", _is_public: true },
+  },
   share: {
     path: "/share",
     _is_public: true,

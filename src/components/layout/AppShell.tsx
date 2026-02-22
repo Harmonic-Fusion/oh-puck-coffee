@@ -13,9 +13,9 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
       <Sidebar />
-      <div className={`transition-all duration-300 ${collapsed ? "lg:pl-20" : "lg:pl-64"}`}>
+      <div className={`transition-all duration-300 ${collapsed ? "sm:pl-20" : "sm:pl-64"}`}>
         <NavBar />
-        <main className="mx-auto max-w-5xl px-4 py-6 pb-20 sm:pb-6 lg:pb-6">
+        <main className="mx-auto max-w-5xl px-4 py-6 pb-20 sm:pb-6">
           <ErrorBoundary>
             <Suspense
               fallback={

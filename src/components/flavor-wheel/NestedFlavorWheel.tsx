@@ -432,7 +432,7 @@ export function NestedFlavorWheel({
         ))}
       </div>
       <SelectedBadges
-        title="Selected"
+        title="Selected Flavors"
         items={selectedFlavorWords.map((flavor) => ({
           label: flavor.name,
           color: getFlavorColor(flavor.path),

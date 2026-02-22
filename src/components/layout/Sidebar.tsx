@@ -11,11 +11,12 @@ import {
   UserIcon,
   Cog6ToothIcon,
   ArrowRightStartOnRectangleIcon,
+  ChatBubbleLeftRightIcon,
   Bars3Icon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 import { useSidebar } from "./SidebarContext";
+import { FeedbackModal } from "@/components/common/FeedbackModal";
 
 const navItems = [
   { label: "Dashboard", href: AppRoutes.dashboard.path, icon: ChartBarIcon },
@@ -27,6 +28,7 @@ export function Sidebar() {
   const { data: session } = useSession();
   const { collapsed, setCollapsed } = useSidebar();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const toggleCollapsed = () => {
@@ -62,40 +64,29 @@ export function Sidebar() {
   const isUserMenuActive = isHistoryActive || isSettingsActive;
 
   return (
-    <aside className={`hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-40 lg:flex lg:flex-col transition-all duration-300 ${collapsed ? "lg:w-20" : "lg:w-64"}`}>
+    <aside className={`hidden sm:fixed sm:inset-y-0 sm:left-0 sm:z-40 sm:flex sm:flex-col transition-all duration-300 ${collapsed ? "sm:w-20" : "sm:w-64"}`}>
       <div className={`flex grow flex-col gap-y-5 overflow-y-auto border-r border-stone-200 bg-white pb-4 dark:border-stone-700 dark:bg-stone-900 transition-all duration-300 ${collapsed ? "px-3" : "px-6"}`}>
         <div className={`flex h-16 shrink-0 items-center ${collapsed ? "justify-center" : "gap-2"}`}>
-          <img
-            src="/logos/logo_complex.png"
-            alt="Coffee Tracker"
-            className="h-8 w-8 flex-shrink-0"
-          />
           {!collapsed && (
-            <span className="text-lg font-bold text-amber-800 dark:text-amber-500">
-              Coffee Tracker
-            </span>
+            <>
+              <img
+                src="/logos/logo_complex.png"
+                alt="Coffee Tracker"
+                className="h-8 w-8 flex-shrink-0"
+              />
+              <span className="text-lg font-bold text-amber-800 dark:text-amber-500">
+                Coffee Tracker
+              </span>
+            </>
           )}
-          {!collapsed && (
-            <button
-              onClick={toggleCollapsed}
-              className="ml-auto rounded-md p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-              aria-label="Collapse sidebar"
-            >
-              <XMarkIcon className="h-5 w-5" />
-            </button>
-          )}
+          <button
+            onClick={toggleCollapsed}
+            className={`rounded-md p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300 ${collapsed ? "" : "ml-auto"}`}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <Bars3Icon className="h-5 w-5" />
+          </button>
         </div>
-        {collapsed && (
-          <div className="flex justify-center px-3">
-            <button
-              onClick={toggleCollapsed}
-              className="rounded-md p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-              aria-label="Expand sidebar"
-            >
-              <Bars3Icon className="h-5 w-5" />
-            </button>
-          </div>
-        )}
         <nav className="flex flex-1 flex-col">
           {/* Main nav: Dashboard, Log */}
           <ul role="list" className="flex flex-1 flex-col gap-y-1">
@@ -205,6 +196,16 @@ export function Sidebar() {
                   <Cog6ToothIcon className="h-4 w-4 text-stone-400 dark:text-stone-500" />
                   Profile
                 </Link>
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    setIsFeedbackModalOpen(true);
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
+                >
+                  <ChatBubbleLeftRightIcon className="h-4 w-4 text-stone-400 dark:text-stone-500" />
+                  Send Feedback
+                </button>
                 <div className="my-1 border-t border-stone-100 dark:border-stone-800" />
                 <button
                   onClick={() => signOut({ callbackUrl: AppRoutes.login.path })}
@@ -218,6 +219,10 @@ export function Sidebar() {
           </div>
         </nav>
       </div>
+      <FeedbackModal
+        open={isFeedbackModalOpen}
+        onClose={() => setIsFeedbackModalOpen(false)}
+      />
     </aside>
   );
 }

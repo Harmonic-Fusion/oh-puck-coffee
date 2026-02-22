@@ -13,9 +13,10 @@ interface BeanSelectorProps {
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  id?: string;
 }
 
-export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
+export function BeanSelector({ value, onChange, error, id }: BeanSelectorProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [newName, setNewName] = useState("");
@@ -246,6 +247,7 @@ export function BeanSelector({ value, onChange, error }: BeanSelectorProps) {
                 ? "No beans yet — create one below"
                 : "No beans found"
             }
+            id={id}
           />
           {beanDetailsSection}
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}

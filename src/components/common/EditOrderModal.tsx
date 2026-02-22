@@ -38,6 +38,7 @@ interface EditOrderModalProps<T extends OrderItem, TId extends string = string> 
   defaultVisibility: Record<TId, boolean>;
   onChange: (order: TId[], visibility: Record<TId, boolean>) => void;
   onReset: () => void;
+  requiredFields?: TId[];
 }
 
 /**
@@ -47,10 +48,12 @@ function SortableOrderItem({
   item,
   isVisible,
   onToggleVisibility,
+  isRequired = false,
 }: {
   item: OrderItem;
   isVisible: boolean;
   onToggleVisibility: () => void;
+  isRequired?: boolean;
 }) {
   const {
     attributes,
@@ -95,15 +98,19 @@ function SortableOrderItem({
           <circle cx="15" cy="19" r="1.5" />
         </svg>
       </div>
-      <label className="flex flex-1 items-center gap-2 cursor-pointer">
+      <label className={`flex flex-1 items-center gap-2 ${isRequired ? "" : "cursor-pointer"}`}>
         <input
           type="checkbox"
           checked={isVisible}
           onChange={onToggleVisibility}
-          className="h-4 w-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
+          disabled={isRequired}
+          className="h-4 w-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500 disabled:opacity-50 disabled:cursor-not-allowed dark:border-stone-600"
         />
-        <span className="flex-1 text-sm font-medium text-stone-800 dark:text-stone-200">
+        <span className={`flex-1 text-sm font-medium text-stone-800 dark:text-stone-200 ${isRequired ? "opacity-75" : ""}`}>
           {item.label}
+          {isRequired && (
+            <span className="ml-2 text-xs text-stone-500 dark:text-stone-400">(required)</span>
+          )}
         </span>
       </label>
     </div>
@@ -125,6 +132,7 @@ export function EditOrderModal<T extends OrderItem, TId extends string = string>
   defaultVisibility,
   onChange,
   onReset,
+  requiredFields = [],
 }: EditOrderModalProps<T, TId>) {
   const [localOrder, setLocalOrder] = useState<TId[]>(order);
   const [localVisibility, setLocalVisibility] = useState<Record<TId, boolean>>(visibility);
@@ -167,11 +175,18 @@ export function EditOrderModal<T extends OrderItem, TId extends string = string>
   };
 
   const toggleVisibility = (itemId: TId) => {
+    // Prevent hiding required fields
+    if (requiredFields.includes(itemId)) return;
     setLocalVisibility((prev) => ({ ...prev, [itemId]: !prev[itemId] }));
   };
 
   const handleSave = () => {
-    onChange(localOrder, localVisibility);
+    // Ensure required fields are always visible
+    const finalVisibility = { ...localVisibility };
+    for (const fieldId of requiredFields) {
+      finalVisibility[fieldId] = true;
+    }
+    onChange(localOrder, finalVisibility);
     onClose();
   };
 
@@ -223,12 +238,14 @@ export function EditOrderModal<T extends OrderItem, TId extends string = string>
             <div className="space-y-2">
               {orderedItems.map((item) => {
                 const itemId = item.id as TId;
+                const isRequired = requiredFields.includes(itemId);
                 return (
                   <SortableOrderItem
                     key={item.id}
                     item={item}
                     isVisible={localVisibility[itemId] ?? false}
                     onToggleVisibility={() => toggleVisibility(itemId)}
+                    isRequired={isRequired}
                   />
                 );
               })}

@@ -18,6 +18,7 @@ interface SearchableSelectProps {
   emptyMessage?: string;
   className?: string;
   disabled?: boolean;
+  id?: string;
 }
 
 export function SearchableSelect({
@@ -31,6 +32,7 @@ export function SearchableSelect({
   emptyMessage = "No items found",
   className = "",
   disabled = false,
+  id,
 }: SearchableSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -85,6 +87,7 @@ export function SearchableSelect({
     <div className={`relative w-full ${className}`} ref={containerRef}>
       <button
         type="button"
+        id={id}
         onClick={handleToggle}
         disabled={disabled}
         className={`h-16 w-full rounded-xl border-2 px-4 text-left text-base transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
@@ -150,21 +153,36 @@ export function SearchableSelect({
             )}
           </div>
 
-          {/* Add new button */}
-          {onAddNew && (
-            <div className="border-t border-stone-200 p-2 dark:border-stone-700">
-              <button
-                type="button"
-                onClick={() => {
-                  const text = searchQuery;
-                  setIsOpen(false);
-                  setSearchQuery("");
-                  onAddNew(text);
-                }}
-                className="w-full rounded-md border-2 border-stone-300 bg-stone-50 px-3 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
-              >
-                + Add New
-              </button>
+          {/* Deselect and Add new buttons */}
+          {(value || onAddNew) && (
+            <div className="border-t border-stone-200 p-2 dark:border-stone-700 flex gap-2">
+              {value && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange("");
+                    setIsOpen(false);
+                    setSearchQuery("");
+                  }}
+                  className="flex-1 rounded-md border-2 border-stone-300 bg-stone-50 px-3 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
+                >
+                  Deselect
+                </button>
+              )}
+              {onAddNew && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = searchQuery;
+                    setIsOpen(false);
+                    setSearchQuery("");
+                    onAddNew(text);
+                  }}
+                  className="flex-1 rounded-md border-2 border-stone-300 bg-stone-50 px-3 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-100 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
+                >
+                  + Add New
+                </button>
+              )}
             </div>
           )}
         </div>

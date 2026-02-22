@@ -15,6 +15,7 @@ import { ShotRow } from "./ShotRow";
 import { getFlavorColor } from "@/shared/flavor-wheel/colors";
 import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel/flavor-wheel-data";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
+import { formatRating } from "@/lib/format-rating";
 
 const columnHelper = createColumnHelper<ShotWithJoins>();
 
@@ -78,9 +79,9 @@ const columns = [
       const val = info.getValue();
       if (val == null) return "—";
       return (
-        <span className="inline-flex items-center gap-1">
+        <span className="inline-flex items-center gap-1.5">
           <span className="font-semibold text-amber-600 dark:text-amber-400">{val}</span>
-          <span className="text-stone-400 dark:text-stone-500">/ 5</span>
+          <span className="text-base">{formatRating(val)}</span>
         </span>
       );
     },

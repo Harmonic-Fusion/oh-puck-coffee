@@ -9,12 +9,14 @@ interface GrinderSelectorProps {
   value: string;
   onChange: (value: string) => void;
   error?: string;
+  id?: string;
 }
 
 export function GrinderSelector({
   value,
   onChange,
   error,
+  id,
 }: GrinderSelectorProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState("");
@@ -85,6 +87,7 @@ export function GrinderSelector({
               error={error}
               onAddNew={(text) => { setNewName(text); setShowCreate(true); }}
               emptyMessage="No grinders found"
+              id={id}
             />
           </div>
         </div>
