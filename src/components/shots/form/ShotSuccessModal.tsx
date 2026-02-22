@@ -46,7 +46,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
 
     const shareData = {
       title: "Journey before Destination!",
-      text: summary ? buildShotShareText(summary, tempUnit) : "Check out my espresso shot",
+      text: summary ? buildShotShareText({ ...summary, url: shareUrl }, tempUnit) : "Check out my espresso shot",
       url: shareUrl,
     };
 
@@ -66,10 +66,9 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
       }
     }
 
-    // Fallback: Copy full text + URL to clipboard
+    // Fallback: Copy text to clipboard (URL is already in the text)
     try {
-      const fullText = `${shareData.text}\n\n${shareData.url}`;
-      await navigator.clipboard.writeText(fullText);
+      await navigator.clipboard.writeText(shareData.text);
     } catch (clipboardErr) {
       console.error("Error copying to clipboard:", clipboardErr);
     }

@@ -64,7 +64,7 @@ describe("buildShotShareText", () => {
         "Quality 4/5",
         "",
         "☕ Tasting Notes",
-        "Rating 5/5 *****",
+        "Rating 5 ⭐⭐⭐⭐⭐",
         "Silky body",
         "Blueberry, Jasmine, Honey",
         "Clean, Wild, Sweet",
@@ -272,13 +272,13 @@ describe("buildShotShareText", () => {
     it("shows rating with stars", () => {
       const text = buildShotShareText(makeShot({ rating: 5 }));
       expect(text).toContain("☕ Tasting Notes");
-      expect(text).toContain("Rating 5/5 *****");
+      expect(text).toContain("Rating 5 ⭐⭐⭐⭐⭐");
     });
 
     it("shows correct number of stars for rating", () => {
       const text = buildShotShareText(makeShot({ rating: 3 }));
-      expect(text).toContain("Rating 3/5 ***");
-      expect(text).not.toContain("****");
+      expect(text).toContain("Rating 3 ⭐⭐⭐");
+      expect(text).not.toContain("⭐⭐⭐⭐");
     });
 
     it("shows body on its own line", () => {

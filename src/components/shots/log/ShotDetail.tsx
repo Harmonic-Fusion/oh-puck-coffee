@@ -133,6 +133,7 @@ export function ShotDetail({
           bodyTexture: shot.bodyTexture,
           adjectives: shot.adjectives,
           notes: shot.notes,
+          url: shareUrl,
         }, tempUnit),
         url: shareUrl,
       };
@@ -153,10 +154,9 @@ export function ShotDetail({
         }
       }
 
-      // Fallback: Copy full text + URL to clipboard
+      // Fallback: Copy text to clipboard (URL is already in the text)
       try {
-        const fullText = `${shareData.text}\n\n${shareData.url}`;
-        await navigator.clipboard.writeText(fullText);
+        await navigator.clipboard.writeText(shareData.text);
         setShareCopied(true);
         setTimeout(() => setShareCopied(false), 2000);
       } catch (clipboardErr) {

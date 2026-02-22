@@ -5,6 +5,7 @@
  * and null lines are stripped out so there are no awkward blanks.
  */
 
+import { formatRating } from "@/lib/format-rating";
 import { formatTemp, roundToOneDecimal, type TempUnit } from "@/lib/format-numbers";
 
 export interface ShotShareData {
@@ -44,7 +45,8 @@ export interface ShotShareData {
 // resolves to "" collapses entirely (no stray blank lines).
 
 const BEAN_SECTION = `\
-🫘 {beanName}
+🫘 Beans
+{beanName}
 {beanOrigin} · {beanRoaster}
 {roastLevel} · {processingMethod} · {roastDate}`;
 
@@ -179,7 +181,7 @@ function buildVars(shot: ShotShareData, tempUnit: TempUnit): TemplateVars {
 
   // Tasting (separate lines for each)
   const rating = shot.rating != null
-    ? `Rating ${shot.rating}/5 ${"*".repeat(shot.rating)}`
+    ? `Rating ${formatRating(shot.rating)}`
     : "";
 
   const bodyDisplay = shot.bodyTexture && shot.bodyTexture.length > 0
