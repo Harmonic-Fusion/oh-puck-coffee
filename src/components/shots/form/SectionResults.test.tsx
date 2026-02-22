@@ -83,7 +83,21 @@ describe("SectionResults", () => {
     expect(screen.getByText("Notes are required")).toBeInTheDocument();
   });
 
-  it("renders Shot Quality slider", () => {
+  it("renders Shot Quality slider when visible", () => {
+    // "shotQuality" is hidden by default; set localStorage to make it visible
+    const visibility = {
+      yieldActual: true,
+      brewTime: true,
+      estimateMaxPressure: false,
+      shotQuality: true,
+      rating: true,
+      notes: true,
+      flavors: false,
+      body: false,
+      adjectives: false,
+    };
+    localStorage.setItem("coffee-results-visibility", JSON.stringify(visibility));
+
     render(
       <TestWrapper>
         <SectionResults />

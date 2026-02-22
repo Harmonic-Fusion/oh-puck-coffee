@@ -157,7 +157,7 @@ export async function appendShotRow(
     preInfusionDuration?: string | null;
     brewPressure?: string | null;
     flowRate?: string | null;
-    shotQuality: number;
+    shotQuality: number | null;
     rating?: number | null;
     flavors?: string[] | null;
     bodyTexture?: string[] | null;
@@ -192,7 +192,7 @@ export async function appendShotRow(
     shot.preInfusionDuration ?? "",
     shot.brewPressure ?? "",
     shot.flowRate ?? "",
-    shot.shotQuality,
+    shot.shotQuality ?? "",
     shot.rating ?? "",
     flavorWheelStr,
     shot.bodyTexture && shot.bodyTexture.length > 0

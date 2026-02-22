@@ -63,10 +63,11 @@ export async function GET(
 
   const shotCount = beanShots.length;
 
-  // Average quality
-  const avgQuality = shotCount > 0
+  // Average quality (only where shotQuality is not null)
+  const qualityShots = beanShots.filter((s) => s.shotQuality != null);
+  const avgQuality = qualityShots.length > 0
     ? parseFloat(
-        (beanShots.reduce((acc, s) => acc + parseFloat(s.shotQuality), 0) / shotCount).toFixed(1)
+        (qualityShots.reduce((acc, s) => acc + parseFloat(s.shotQuality ?? "0"), 0) / qualityShots.length).toFixed(1)
       )
     : null;
 

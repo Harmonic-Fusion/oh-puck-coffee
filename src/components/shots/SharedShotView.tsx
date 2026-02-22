@@ -32,7 +32,7 @@ interface SharedShot {
   estimateMaxPressure: string | null;
   flowControl: string | null;
   flowRate: string | null;
-  shotQuality: string;
+  shotQuality: string | null;
   rating: string | null;
   notes: string | null;
   flavors: string[] | null;
