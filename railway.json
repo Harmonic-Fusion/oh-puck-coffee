@@ -13,7 +13,7 @@
       "tailwind.config.*",
       "postcss.config.*",
       "drizzle.config.ts",
-      "src/db/schema.ts",
+      "src/**",
       "railway.json"
     ]
   },
