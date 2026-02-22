@@ -1,9 +1,23 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { readEnvDatabaseUrl } from "../src/lib/dot-env";
+import { config } from "dotenv";
 import { sql } from "drizzle-orm";
 
-const client = postgres(readEnvDatabaseUrl());
+function loadEnv(): void {
+  config({ path: ".env" });
+  config({ path: ".env.local", override: false });
+}
+
+function getDatabaseUrl(): string {
+  loadEnv();
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl || databaseUrl.trim() === "") {
+    throw new Error("DATABASE_URL environment variable is required but not set");
+  }
+  return databaseUrl;
+}
+
+const client = postgres(getDatabaseUrl());
 const db = drizzle(client);
 
 async function checkSchema() {
@@ -23,26 +37,31 @@ async function checkSchema() {
 
   console.log("Columns in shots table:");
   console.log("─".repeat(60));
-  for (const col of columns.rows) {
-    const nullable = col.is_nullable === "YES" ? "NULL" : "NOT NULL";
-    console.log(`  ${col.column_name.padEnd(30)} ${col.data_type.padEnd(20)} ${nullable}`);
+  for (const col of columns) {
+    const row = col as { column_name: string; data_type: string; is_nullable: string };
+    const nullable = row.is_nullable === "YES" ? "NULL" : "NOT NULL";
+    console.log(`  ${row.column_name.padEnd(30)} ${row.data_type.padEnd(20)} ${nullable}`);
   }
   console.log("─".repeat(60));
-  console.log(`\nTotal columns: ${columns.rows.length}`);
+  console.log(`\nTotal columns: ${columns.length}`);
 
   // Check specifically for flavor-related columns
-  const flavorColumns = columns.rows.filter((col: any) => 
-    col.column_name.includes("flavor") || 
-    col.column_name === "body_texture" || 
-    col.column_name === "adjectives"
-  );
+  const flavorColumns = columns.filter((col) => {
+    const row = col as { column_name: string; data_type: string; is_nullable: string };
+    return (
+      row.column_name.includes("flavor") || 
+      row.column_name === "body_texture" || 
+      row.column_name === "adjectives"
+    );
+  });
 
   console.log("\nFlavor-related columns:");
   if (flavorColumns.length === 0) {
     console.log("  ⚠️  No flavor-related columns found!");
   } else {
     for (const col of flavorColumns) {
-      console.log(`  ✓ ${col.column_name} (${col.data_type})`);
+      const row = col as { column_name: string; data_type: string; is_nullable: string };
+      console.log(`  ✓ ${row.column_name} (${row.data_type})`);
     }
   }
 

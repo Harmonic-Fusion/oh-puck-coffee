@@ -1,9 +1,23 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { grinders, machines, tools } from "../src/db/schema";
-import { readEnvDatabaseUrl } from "../src/lib/dot-env";
+import { config } from "dotenv";
 
-const client = postgres(readEnvDatabaseUrl());
+function loadEnv(): void {
+  config({ path: ".env" });
+  config({ path: ".env.local", override: false });
+}
+
+function getDatabaseUrl(): string {
+  loadEnv();
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl || databaseUrl.trim() === "") {
+    throw new Error("DATABASE_URL environment variable is required but not set");
+  }
+  return databaseUrl;
+}
+
+const client = postgres(getDatabaseUrl());
 const db = drizzle(client);
 
 const DEFAULT_GRINDERS = [

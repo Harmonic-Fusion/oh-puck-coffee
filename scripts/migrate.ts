@@ -9,7 +9,7 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { existsSync } from "fs";
 import { readdir } from "fs/promises";
-import { readEnvDatabaseUrl } from "../src/lib/dot-env";
+import { config } from "dotenv";
 
 function maskDatabaseUrl(url: string): string {
   return url.replace(/:[^:@]*@/, ":***@").replace(/\/\/[^:]*:/, "//***:");
@@ -43,12 +43,46 @@ async function checkMigrationsFolder(): Promise<void> {
 }
 
 
+/**
+ * Load environment variables using dotenv with standard resolution order:
+ * 1. .env (lowest priority)
+ * 2. .env.local (overrides .env)
+ * 3. process.env (highest priority, overrides all)
+ * 
+ * dotenv.config() will not override existing process.env values.
+ */
+function loadEnv(): void {
+  // Load .env first (lower priority)
+  config({ path: ".env" });
+  // Load .env.local (higher priority, but won't override process.env)
+  config({ path: ".env.local", override: false });
+}
+
+/**
+ * Get DATABASE_URL from environment variables.
+ * Uses standard resolution order: .env → .env.local → process.env
+ * 
+ * @throws Error if DATABASE_URL is missing or empty
+ */
+function getDatabaseUrl(): string {
+  // Load environment variables from .env files
+  loadEnv();
+
+  const databaseUrl = process.env.DATABASE_URL;
+  
+  if (!databaseUrl || databaseUrl.trim() === "") {
+    throw new Error("DATABASE_URL environment variable is required but not set");
+  }
+
+  return databaseUrl;
+}
+
 async function runMigrations() {
   console.log("🔄 Starting migration process...");
   console.log(`📦 Working directory: ${process.cwd()}`);
   console.log(`🔧 Node version: ${process.version}`);
 
-  const databaseUrl = readEnvDatabaseUrl();
+  const databaseUrl = getDatabaseUrl();
 
   // Log masked database URL
   const maskedUrl = maskDatabaseUrl(databaseUrl);

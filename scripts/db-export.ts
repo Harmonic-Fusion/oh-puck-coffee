@@ -12,9 +12,23 @@
 import { execSync } from "child_process";
 import { mkdirSync, writeFileSync } from "fs";
 import { resolve } from "path";
-import { readEnvDatabaseUrl } from "../src/lib/dot-env";
+import { config } from "dotenv";
 
-const DATABASE_URL = readEnvDatabaseUrl();
+function loadEnv(): void {
+  config({ path: ".env" });
+  config({ path: ".env.local", override: false });
+}
+
+function getDatabaseUrl(): string {
+  loadEnv();
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl || databaseUrl.trim() === "") {
+    throw new Error("DATABASE_URL environment variable is required but not set");
+  }
+  return databaseUrl;
+}
+
+const DATABASE_URL = getDatabaseUrl();
 
 // ---------------------------------------------------------------------------
 // Build output path: ./data/{YYYY-MM-DD}/backup-{HH-MM-SS}.sql
