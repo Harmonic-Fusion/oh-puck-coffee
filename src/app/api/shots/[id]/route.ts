@@ -160,7 +160,7 @@ export async function PATCH(
       brewPressure: data.brewPressure ? String(data.brewPressure) : null,
       flowRate: flowRate ? String(flowRate) : null,
       shotQuality: data.shotQuality ? String(data.shotQuality) : null,
-      rating: data.rating ? String(data.rating) : null,
+      rating: String(data.rating),
         toolsUsed: data.toolsUsed || null,
         notes: data.notes || null,
         flavors: data.flavors || null,

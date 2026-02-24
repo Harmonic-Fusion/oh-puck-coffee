@@ -113,7 +113,7 @@ function applyUrlParamsToForm(
  *   3. Duplicate shot data in sessionStorage
  *   4. Last shot from the database (most recent)
  *
- * Results & Tasting fields are intentionally never pre-populated.
+ * Results and Tasting Notes fields are intentionally never pre-populated.
  */
 export function useShotPrePopulation(
   methods: UseFormReturn<CreateShot>,
@@ -231,7 +231,7 @@ export function useShotPrePopulation(
       applyRecipeToForm(methods, shotToRecipeValues(lastShot));
     }
 
-    // Results & Tasting and Flavor Wheel are intentionally NOT pre-populated
+    // Results and Tasting Notes fields are intentionally NOT pre-populated
   }, [
     searchParams,
     lastShot,

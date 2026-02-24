@@ -1,13 +1,31 @@
 import Link from "next/link";
+import { PlusIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 
 const SECTIONS = [
-  { id: "Bean", label: "Bean" },
-  { id: "Grinder", label: "Grinder" },
-  { id: "Machine", label: "Machine" },
+  { id: "Setup", label: "Setup" },
   { id: "Recipe", label: "Recipe" },
   { id: "Results", label: "Results" },
+  { id: "Tasting-Notes", label: "Tasting Notes" },
 ] as const;
+
+function HiddenFieldIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <PlusIcon className={`${className} font-bold`} strokeWidth={2.5} />
+  );
+}
+
+function HiddenFieldLink({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <a
+      href="#hidden-fields-note"
+      className="text-stone-400 transition-colors hover:text-amber-600 dark:text-stone-500 dark:hover:text-amber-400"
+      aria-label="This field is hidden by default and can be enabled"
+    >
+      <HiddenFieldIcon className={className} />
+    </a>
+  );
+}
 
 export default function ShotLogBlogPage() {
   return (
@@ -71,102 +89,129 @@ export default function ShotLogBlogPage() {
             help you capture the data that matters most.
           </p>
 
-          <div className="mt-12 space-y-16">
-            {/* Bean */}
-            <section id="Bean">
-              <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-100">
-                ☕ Bean
-              </h2>
-              <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-                Select the coffee beans you're using for this shot. The bean
-                selection is the foundation of every shot log — knowing which
-                coffee you used lets you compare results across different beans
-                and track how a specific roast evolves over time.
-              </p>
-              <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-5 dark:border-stone-700 dark:bg-stone-900">
-                <h3 className="font-semibold text-stone-800 dark:text-stone-200">
-                  Tips
-                </h3>
-                <ul className="mt-2 list-inside list-disc space-y-1 text-stone-600 dark:text-stone-400">
-                  <li>
-                    Add the roaster name and roast date when creating a new bean
-                    for easy identification later.
-                  </li>
-                  <li>
-                    Track &ldquo;days post roast&rdquo; to learn how your beans
-                    taste as they age.
-                  </li>
-                  <li>
-                    Use the search to quickly find previously added beans.
-                  </li>
-                </ul>
+          {/* Hidden Fields Note */}
+          <div id="hidden-fields-note" className="scroll-mt-24 mt-8 rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-900/20">
+            <div className="flex items-start gap-3">
+              <InformationCircleIcon className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <div>
+                <p className="font-semibold text-amber-900 dark:text-amber-100">
+                  Hidden Fields
+                </p>
+                <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
+                  Some fields are hidden by default to keep the form clean. You can enable them from the section menu (three-dot icon) in each section. Fields that can be enabled are marked with a{" "}
+                  <HiddenFieldIcon className="inline h-4 w-4 align-text-bottom" /> icon next to their name.
+                </p>
               </div>
-            </section>
+            </div>
+          </div>
 
-            {/* Grinder */}
-            <section id="Grinder">
-              <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-100">
-                ⚙️ Grinder
+          <div className="mt-12 space-y-20">
+            {/* Setup */}
+            <section id="Setup" className="scroll-mt-24">
+              <h2 className="mb-8 border-b-2 border-stone-200 pb-4 text-3xl font-bold text-stone-900 dark:border-stone-700 dark:text-stone-100">
+                Setup
               </h2>
               <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-                Choose the grinder you're using. The grind is arguably the most
-                important variable in espresso — different grinders produce
-                different particle distributions, and even the same numeric
-                grind setting can mean very different things across models.
-              </p>
-              <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-5 dark:border-stone-700 dark:bg-stone-900">
-                <h3 className="font-semibold text-stone-800 dark:text-stone-200">
-                  Tips
-                </h3>
-                <ul className="mt-2 list-inside list-disc space-y-1 text-stone-600 dark:text-stone-400">
-                  <li>
-                    Select &ldquo;Pre-ground&rdquo; if you're using
-                    pre-ground coffee — the grind level field will be hidden
-                    automatically.
-                  </li>
-                  <li>
-                    Add multiple grinders if you switch between them to compare
-                    results.
-                  </li>
-                  <li>
-                    Grind level is a numeric setting on your grinder (e.g., 12
-                    on a Niche Zero or 2.5 on a Comandante).
-                  </li>
-                </ul>
-              </div>
-            </section>
-
-            {/* Machine */}
-            <section id="Machine">
-              <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-100">
-                🔧 Machine
-              </h2>
-              <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-                Select your espresso machine. Different machines have different
-                boiler types, pressure profiles, and temperature stability — all
-                of which affect extraction. Tracking the machine helps you
+                Configure your equipment and beans before pulling the shot. These
+                selections form the foundation of every shot log and help you
                 understand results in context.
               </p>
-              <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50 p-5 dark:border-stone-700 dark:bg-stone-900">
-                <h3 className="font-semibold text-stone-800 dark:text-stone-200">
-                  Tips
-                </h3>
-                <ul className="mt-2 list-inside list-disc space-y-1 text-stone-600 dark:text-stone-400">
-                  <li>
-                    This field is optional — useful if you always use the same
-                    machine, but important if you have access to multiple.
-                  </li>
-                  <li>
-                    Add a new machine any time from the dropdown.
-                  </li>
-                </ul>
+
+              <div className="mt-8 space-y-8">
+                <div>
+                  <h3 className="text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Bean
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Select the coffee beans you're using for this shot. The bean
+                    selection is the foundation of every shot log — knowing which
+                    coffee you used lets you compare results across different beans
+                    and track how a specific roast evolves over time.
+                  </p>
+                  <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
+                    <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
+                      💡 Tips
+                    </p>
+                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-stone-600 dark:text-stone-400">
+                      <li>
+                        Add the roaster name and roast date when creating a new bean
+                        for easy identification later.
+                      </li>
+                      <li>
+                        Track &ldquo;days post roast&rdquo; to learn how your beans
+                        taste as they age.
+                      </li>
+                      <li>
+                        Use the search to quickly find previously added beans.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Grinder
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Choose the grinder you're using. The grind is arguably the most
+                    important variable in espresso — different grinders produce
+                    different particle distributions, and even the same numeric
+                    grind setting can mean very different things across models.
+                  </p>
+                  <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
+                    <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
+                      💡 Tips
+                    </p>
+                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-stone-600 dark:text-stone-400">
+                      <li>
+                        Select &ldquo;Pre-ground&rdquo; if you're using
+                        pre-ground coffee — the grind level field will be hidden
+                        automatically.
+                      </li>
+                      <li>
+                        Add multiple grinders if you switch between them to compare
+                        results.
+                      </li>
+                      <li>
+                        Grind level is a numeric setting on your grinder (e.g., 12
+                        on a Niche Zero or 2.5 on a Comandante).
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Machine
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Select your espresso machine. Different machines have different
+                    boiler types, pressure profiles, and temperature stability — all
+                    of which affect extraction. Tracking the machine helps you
+                    understand results in context.
+                  </p>
+                  <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
+                    <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
+                      💡 Tips
+                    </p>
+                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-stone-600 dark:text-stone-400">
+                      <li>
+                        This field is optional — useful if you always use the same
+                        machine, but important if you have access to multiple.
+                      </li>
+                      <li>
+                        Add a new machine any time from the dropdown.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
               </div>
             </section>
 
             {/* Recipe */}
-            <section id="Recipe">
-              <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-100">
-                📝 Recipe
+            <section id="Recipe" className="scroll-mt-24">
+              <h2 className="mb-8 border-b-2 border-stone-200 pb-4 text-3xl font-bold text-stone-900 dark:border-stone-700 dark:text-stone-100">
+                Recipe
               </h2>
               <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
                 The recipe defines your input parameters — the variables you
@@ -174,9 +219,9 @@ export default function ShotLogBlogPage() {
                 the key to reproducible espresso.
               </p>
 
-              <div className="mt-6 space-y-6">
+              <div className="mt-8 space-y-8">
                 <div>
-                  <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+                  <h3 className="text-xl font-semibold text-stone-800 dark:text-stone-200">
                     Dose
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
@@ -186,7 +231,7 @@ export default function ShotLogBlogPage() {
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+                  <h3 className="text-xl font-semibold text-stone-800 dark:text-stone-200">
                     Target Yield
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
@@ -197,8 +242,19 @@ export default function ShotLogBlogPage() {
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+                  <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Grind Level
+                    <HiddenFieldLink />
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    The numeric grind setting on your grinder. The grind level is
+                    specific to each grinder model and helps you dial in your shots.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
                     Brew Temperature
+                    <HiddenFieldLink />
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
                     The water temperature for brewing, shown in °F or °C. Use
@@ -208,63 +264,248 @@ export default function ShotLogBlogPage() {
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-                    Pre-infusion & Pressure
+                  <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Brew Pressure
+                    <HiddenFieldLink />
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    Pre-infusion is a low-pressure soak before full extraction,
-                    measured in seconds. Brew pressure is the extraction pressure
-                    in bars (typically 6–12 bar). Both fields are hidden by
-                    default — enable them from the recipe menu if your machine
-                    supports these features.
+                    The extraction pressure in bars (typically 6–12 bar). Enable
+                    this field if your machine supports pressure control.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Pre-infusion
+                    <HiddenFieldLink />
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    A low-pressure soak before full extraction, measured in seconds.
+                    Enable this field if your machine supports pre-infusion.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Tools Used
+                    <HiddenFieldLink />
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Select any tools you used during preparation (e.g., WDT tool,
+                    distribution tool, leveler).
                   </p>
                 </div>
               </div>
             </section>
 
             {/* Results */}
-            <section id="Results">
-              <h2 className="text-2xl font-bold text-stone-900 dark:text-stone-100">
-                📊 Results
+            <section id="Results" className="scroll-mt-24">
+              <h2 className="mb-8 border-b-2 border-stone-200 pb-4 text-3xl font-bold text-stone-900 dark:border-stone-700 dark:text-stone-100">
+                Results
               </h2>
               <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-                Results capture what actually happened during the shot — the
-                measurable outcomes and your subjective evaluation.
+                Results capture the measurable outcomes of your shot — what
+                actually happened during extraction. These objective measurements
+                help you understand the technical performance of your shot.
               </p>
 
-              <div className="mt-6 space-y-6">
+              <div className="mt-8 space-y-8">
                 <div>
-                  <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-                    Actual Yield & Brew Time
+                  <h3 className="text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Actual Yield
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    The actual weight of espresso produced and how long the shot
-                    took. The calculated ratio and flow rate are shown
-                    automatically based on these values. Use the built-in timer
-                    to track brew time hands-free.
+                    The actual weight of espresso produced in grams. The
+                    calculated ratio (e.g., 1:2) is shown automatically based on
+                    your dose and actual yield. Use the quick button to copy your
+                    target yield if it matches.
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-                    Rating & Quality
+                  <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Brew Time
+                    <HiddenFieldLink />
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    Rate your shot from 1–5 and optionally describe the overall
-                    shot quality (e.g., balanced, sour, bitter). The star rating
-                    helps you quickly spot your best shots in the history.
+                    How long the shot took from start to finish, in seconds. The
+                    calculated flow rate (g/s) is shown automatically. Use the
+                    built-in timer to track brew time hands-free.
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-                    Flavors, Body & Adjectives
+                  <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Est. Max Pressure
+                    <HiddenFieldLink />
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    The estimated maximum pressure reached during extraction, in
+                    bars. Enable this field if you want to track pressure profiles.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Shot Quality
+                    <HiddenFieldLink />
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Rate the technical quality of the extraction from 1–5. This
+                    measures extraction evenness, not taste. Enable this field to track
+                    extraction quality separately from taste.
+                  </p>
+                  <div className="mt-6 rounded-lg border border-stone-200 bg-stone-50 p-6 dark:border-stone-700 dark:bg-stone-900">
+                    <h4 className="mb-3 text-lg font-semibold text-stone-800 dark:text-stone-200">
+                      Understanding Shot Quality
+                    </h4>
+                    <p className="mb-4 text-sm text-stone-600 dark:text-stone-400">
+                      Shot quality ratings help you assess extraction evenness:
+                    </p>
+                    <div className="mb-4 grid gap-4 md:grid-cols-3">
+                      <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
+                        <img
+                          src="/images/shot-quality/poor_extraction.png"
+                          alt="Poor extraction showing severe channeling and spraying"
+                          className="mb-3 max-h-48 w-full rounded object-cover"
+                        />
+                        <p className="mb-1 text-sm font-semibold text-stone-800 dark:text-stone-200">
+                          1-2: Poor — Severe Channeling
+                        </p>
+                        <p className="text-xs text-stone-600 dark:text-stone-400">
+                          This image demonstrates a failed extraction. Notice the severe channeling and spraying, with multiple thin, uneven streams of coffee. The flow is turbulent and messy, and a proper crema has failed to form, indicating a lack of pressure and even extraction.
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
+                        <img
+                          src="/images/shot-quality/moderate_extraction.png"
+                          alt="Moderate extraction showing some channeling"
+                          className="mb-3 max-h-48 w-full rounded object-cover"
+                        />
+                        <p className="mb-1 text-sm font-semibold text-stone-800 dark:text-stone-200">
+                          3: Moderate — Some Channeling
+                        </p>
+                        <p className="text-xs text-stone-600 dark:text-stone-400">
+                          This shot shows a moderate level of quality. While it&apos;s a significant improvement over the poor shot, there are still visible signs of channeling and unevenness. The flow is not a single, consistent stream, and the crema is thin and patchy, indicating partial extraction issues.
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
+                        <img
+                          src="/images/shot-quality/excellent_extraction.png"
+                          alt="Excellent extraction showing even flow and rich crema"
+                          className="mb-3 max-h-48 w-full rounded object-cover"
+                        />
+                        <p className="mb-1 text-sm font-semibold text-stone-800 dark:text-stone-200">
+                          4-5: Excellent — Good to Excellent Even Extraction
+                        </p>
+                        <p className="text-xs text-stone-600 dark:text-stone-400">
+                          This image depicts an excellent espresso shot. There is no visible channeling. The flow is a single, consistent, honey-like stream, and a thick, rich, uniform crema with a beautiful reddish-brown hue has formed on top, indicating a perfect and even extraction.
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-sm text-stone-600 dark:text-stone-400">
+                      For detailed guidance on understanding espresso extraction quality, channeling, and what makes a good shot, see these resources:{" "}
+                      <a
+                        href="https://craftcoffeespot.com/espresso/espresso-channeling/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-amber-600 underline transition-colors hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                      >
+                        Craft Coffee Spot
+                      </a>
+                      {", "}
+                      <a
+                        href="https://coffeemachinetools.com/7-proven-ways-to-eliminate-channeling-in-espresso-extraction/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-amber-600 underline transition-colors hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                      >
+                        Coffee Machine Tools
+                      </a>
+                      {", "}
+                      <a
+                        href="https://mycoffeeexplorer.com/blog/espresso-channeling-explained"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-amber-600 underline transition-colors hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                      >
+                        My Coffee Explorer
+                      </a>
+                      {", and "}
+                      <a
+                        href="https://www.beanground.com/espresso-channeling/"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="font-medium text-amber-600 underline transition-colors hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+                      >
+                        Bean Ground
+                      </a>
+                      {" "}which explain how to identify, diagnose, and fix channeling issues that affect shot quality.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Tasting Notes */}
+            <section id="Tasting-Notes" className="scroll-mt-24">
+              <h2 className="mb-8 border-b-2 border-stone-200 pb-4 text-3xl font-bold text-stone-900 dark:border-stone-700 dark:text-stone-100">
+                Tasting Notes
+              </h2>
+              <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
+                Tasting notes capture your subjective experience of the shot —
+                what it tastes like, how it feels, and your overall enjoyment.
+                These fields help you develop your palate and identify what you
+                like.
+              </p>
+
+              <div className="mt-8 space-y-8">
+                <div>
+                  <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Flavors
+                    <HiddenFieldLink />
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
                     Use the SCA-inspired flavor wheel to tag specific tasting
-                    notes (chocolate, citrus, floral, etc.). The body selector
-                    captures mouthfeel, and adjectives let you describe
-                    intensifiers like &ldquo;bright&rdquo; or
-                    &ldquo;heavy.&rdquo; These fields are hidden by default —
-                    enable them from the results menu.
+                    notes (chocolate, citrus, floral, etc.). Navigate through
+                    categories to find the flavors you detect.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Body / Texture
+                    <HiddenFieldLink />
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Capture the mouthfeel and texture of the shot (e.g., creamy,
+                    thin, syrupy, velvety).
+                  </p>
+                </div>
+                <div>
+                  <h3 className="flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Adjectives & Intensifiers
+                    <HiddenFieldLink />
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Describe intensifiers like &ldquo;bright,&rdquo;
+                    &ldquo;heavy,&rdquo; &ldquo;balanced,&rdquo; or
+                    &ldquo;complex.&rdquo;
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Rating
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Rate your overall enjoyment of the shot from 1–5. This is
+                    your subjective rating of how much you liked it, separate
+                    from technical quality. The star rating helps you quickly
+                    spot your best shots in the history.
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Notes
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Any additional observations, thoughts, or context about the
+                    shot. Use this for free-form notes that don&apos;t fit into
+                    the structured fields above.
                   </p>
                 </div>
               </div>

@@ -27,7 +27,7 @@ export const createShotSchema = z.object({
     const step = 0.5;
     const normalized = Math.round(val / step) * step;
     return Math.abs(val - normalized) < 0.01;
-  }, { message: "Rating must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }).optional(),
+  }, { message: "Rating must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }),
   toolsUsed: z.array(z.string()).optional(),
   notes: z.string().optional(),
   // Flavor data (optional) - separate fields

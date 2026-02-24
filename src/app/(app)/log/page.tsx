@@ -77,9 +77,7 @@ export default function LogPage() {
           <TypewriterText text={phrase} />
         </p>
       </div>
-      <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900">
-        <ShotForm />
-      </div>
+      <ShotForm />
     </div>
   );
 }

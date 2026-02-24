@@ -6,6 +6,7 @@ import { NumberStepper } from "@/components/common/NumberStepper";
 import { Slider } from "@/components/common/Slider";
 import { Textarea } from "@/components/common/Textarea";
 import { EditOrderModal } from "@/components/common/EditOrderModal";
+import { Card } from "@/components/common/Card";
 import { BrewTimer } from "./BrewTimer";
 import { NestedFlavorWheel } from "@/components/flavor-wheel/NestedFlavorWheel";
 import { NestedBodySelector } from "@/components/flavor-wheel/NestedBodySelector";
@@ -18,8 +19,11 @@ import type { CreateShot } from "@/shared/shots/schema";
 
 const RESULTS_ORDER_KEY = "coffee-results-order";
 const RESULTS_VISIBILITY_KEY = "coffee-results-visibility";
+const TASTING_ORDER_KEY = "coffee-tasting-order";
+const TASTING_VISIBILITY_KEY = "coffee-tasting-visibility";
 
-type ResultsStepId = "yieldActual" | "brewTime" | "estimateMaxPressure" | "shotQuality" | "rating" | "notes" | "flavors" | "body" | "adjectives";
+type ResultsStepId = "yieldActual" | "brewTime" | "estimateMaxPressure" | "shotQuality";
+type TastingStepId = "flavors" | "body" | "adjectives" | "rating" | "notes";
 
 interface ResultsStepConfig {
   id: ResultsStepId;
@@ -27,21 +31,30 @@ interface ResultsStepConfig {
   visible: boolean;
 }
 
+interface TastingStepConfig {
+  id: TastingStepId;
+  label: string;
+  visible: boolean;
+}
+
 const DEFAULT_RESULTS_STEPS: ResultsStepConfig[] = [
   { id: "yieldActual", label: "Actual Yield", visible: true },
-  { id: "brewTime", label: "Brew Time", visible: true },
+  { id: "brewTime", label: "Brew Time", visible: false },
   { id: "estimateMaxPressure", label: "Est. Max Pressure", visible: false },
   { id: "shotQuality", label: "Shot Quality", visible: false },
-  { id: "rating", label: "Rating", visible: true },
-  { id: "notes", label: "Notes", visible: true },
+];
+
+const DEFAULT_TASTING_STEPS: TastingStepConfig[] = [
   { id: "flavors", label: "Flavors", visible: false },
   { id: "body", label: "Body / Texture", visible: false },
   { id: "adjectives", label: "Adjectives & Intensifiers", visible: false },
+  { id: "rating", label: "Rating", visible: true },
+  { id: "notes", label: "Notes", visible: true },
 ];
 
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
 
-// ── LocalStorage helpers ──
+// ── LocalStorage helpers for Results ──
 
 function getSavedResultsOrder(): ResultsStepId[] {
   if (typeof window === "undefined") return DEFAULT_RESULTS_STEPS.map((s) => s.id);
@@ -83,6 +96,48 @@ function saveResultsVisibility(visibility: Record<ResultsStepId, boolean>): void
   localStorage.setItem(RESULTS_VISIBILITY_KEY, JSON.stringify(visibility));
 }
 
+// ── LocalStorage helpers for Tasting Notes ──
+
+function getSavedTastingOrder(): TastingStepId[] {
+  if (typeof window === "undefined") return DEFAULT_TASTING_STEPS.map((s) => s.id);
+  const saved = localStorage.getItem(TASTING_ORDER_KEY);
+  if (!saved) return DEFAULT_TASTING_STEPS.map((s) => s.id);
+  try {
+    const parsed = JSON.parse(saved) as TastingStepId[];
+    const defaultIds = DEFAULT_TASTING_STEPS.map((s) => s.id);
+    const valid = defaultIds.every((id) => parsed.includes(id));
+    return valid ? parsed : DEFAULT_TASTING_STEPS.map((s) => s.id);
+  } catch {
+    return DEFAULT_TASTING_STEPS.map((s) => s.id);
+  }
+}
+
+function getSavedTastingVisibility(): Record<TastingStepId, boolean> {
+  if (typeof window === "undefined") {
+    return DEFAULT_TASTING_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<TastingStepId, boolean>);
+  }
+  const saved = localStorage.getItem(TASTING_VISIBILITY_KEY);
+  if (!saved) {
+    return DEFAULT_TASTING_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<TastingStepId, boolean>);
+  }
+  try {
+    const parsed = JSON.parse(saved) as Record<string, boolean>;
+    return DEFAULT_TASTING_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: parsed[step.id] ?? step.visible }), {} as Record<TastingStepId, boolean>);
+  } catch {
+    return DEFAULT_TASTING_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<TastingStepId, boolean>);
+  }
+}
+
+function saveTastingOrder(order: TastingStepId[]): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TASTING_ORDER_KEY, JSON.stringify(order));
+}
+
+function saveTastingVisibility(visibility: Record<TastingStepId, boolean>): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TASTING_VISIBILITY_KEY, JSON.stringify(visibility));
+}
+
 // ── SectionResults Component ──
 
 export function SectionResults() {
@@ -111,9 +166,18 @@ export function SectionResults() {
   const [resultsVisibility, setResultsVisibility] = useState<Record<ResultsStepId, boolean>>(
     DEFAULT_RESULTS_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<ResultsStepId, boolean>)
   );
-  const [showMenu, setShowMenu] = useState(false);
-  const [showOrderModal, setShowOrderModal] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [showResultsMenu, setShowResultsMenu] = useState(false);
+  const [showResultsOrderModal, setShowResultsOrderModal] = useState(false);
+  const resultsMenuRef = useRef<HTMLDivElement>(null);
+
+  // ── Tasting Notes order and visibility ──
+  const [tastingOrder, setTastingOrder] = useState<TastingStepId[]>(DEFAULT_TASTING_STEPS.map((s) => s.id));
+  const [tastingVisibility, setTastingVisibility] = useState<Record<TastingStepId, boolean>>(
+    DEFAULT_TASTING_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<TastingStepId, boolean>)
+  );
+  const [showTastingMenu, setShowTastingMenu] = useState(false);
+  const [showTastingOrderModal, setShowTastingOrderModal] = useState(false);
+  const tastingMenuRef = useRef<HTMLDivElement>(null);
 
   // Active pressure quick-select for Estimate Max Pressure
   const [activePressure, setActivePressure] = useState<number | null>(null);
@@ -122,37 +186,56 @@ export function SectionResults() {
   useEffect(() => {
     setResultsOrder(getSavedResultsOrder());
     setResultsVisibility(getSavedResultsVisibility());
+    setTastingOrder(getSavedTastingOrder());
+    setTastingVisibility(getSavedTastingVisibility());
   }, []);
 
-  // Handle click outside to close menu
+  // Handle click outside to close menus
   useEffect(() => {
-    if (!showMenu) return;
+    if (!showResultsMenu && !showTastingMenu) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowMenu(false);
+      if (resultsMenuRef.current && !resultsMenuRef.current.contains(e.target as Node)) {
+        setShowResultsMenu(false);
+      }
+      if (tastingMenuRef.current && !tastingMenuRef.current.contains(e.target as Node)) {
+        setShowTastingMenu(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showMenu]);
+  }, [showResultsMenu, showTastingMenu]);
 
   // ── Results order modal handlers ──
-  const handleOrderChange = useCallback((newOrder: ResultsStepId[], newVisibility: Record<ResultsStepId, boolean>) => {
+  const handleResultsOrderChange = useCallback((newOrder: ResultsStepId[], newVisibility: Record<ResultsStepId, boolean>) => {
     setResultsOrder(newOrder);
     setResultsVisibility(newVisibility);
     saveResultsOrder(newOrder);
     saveResultsVisibility(newVisibility);
   }, []);
 
+  // ── Tasting Notes order modal handlers ──
+  const handleTastingOrderChange = useCallback((newOrder: TastingStepId[], newVisibility: Record<TastingStepId, boolean>) => {
+    setTastingOrder(newOrder);
+    setTastingVisibility(newVisibility);
+    saveTastingOrder(newOrder);
+    saveTastingVisibility(newVisibility);
+  }, []);
+
   // Get ordered steps
-  const orderedSteps = useMemo(() => {
+  const orderedResultsSteps = useMemo(() => {
     return resultsOrder
       .map((id) => DEFAULT_RESULTS_STEPS.find((s) => s.id === id))
       .filter((step): step is ResultsStepConfig => step !== undefined);
   }, [resultsOrder]);
 
-  // Render a step component based on its ID
-  const renderStep = (stepId: ResultsStepId) => {
+  const orderedTastingSteps = useMemo(() => {
+    return tastingOrder
+      .map((id) => DEFAULT_TASTING_STEPS.find((s) => s.id === id))
+      .filter((step): step is TastingStepConfig => step !== undefined);
+  }, [tastingOrder]);
+
+  // Render a Results step component based on its ID
+  const renderResultsStep = (stepId: ResultsStepId) => {
     if (!resultsVisibility[stepId]) return null;
 
     switch (stepId) {
@@ -301,47 +384,16 @@ export function SectionResults() {
           />
         );
 
-      case "rating":
-        return (
-          <Controller
-            key="rating"
-            name="rating"
-            control={control}
-            render={({ field }) => (
-              <Slider
-                label="Rating"
-                value={field.value || 1}
-                onChange={field.onChange}
-                min={1}
-                max={5}
-                step={0.5}
-                error={errors.rating?.message}
-                id="rating"
-                labels={{
-                  1: "Didn't enjoy",
-                  2: "Somewhat enjoyed",
-                  3: "Enjoyed",
-                  4: "Really enjoyed",
-                  5: "Loved it",
-                }}
-              />
-            )}
-          />
-        );
+      default:
+        return null;
+    }
+  };
 
-      case "notes":
-        return (
-          <Textarea
-            key="notes"
-            label="Notes"
-            placeholder="Any additional observations..."
-            error={errors.notes?.message}
-            rows={4}
-            id="notes"
-            {...register("notes")}
-          />
-        );
+  // Render a Tasting Notes step component based on its ID
+  const renderTastingStep = (stepId: TastingStepId) => {
+    if (!tastingVisibility[stepId]) return null;
 
+    switch (stepId) {
       case "flavors":
         return (
           <Controller
@@ -396,73 +448,183 @@ export function SectionResults() {
           />
         );
 
+      case "rating":
+        return (
+          <Controller
+            key="rating"
+            name="rating"
+            control={control}
+            render={({ field }) => (
+              <Slider
+                label="Rating"
+                value={field.value || 1}
+                onChange={field.onChange}
+                min={1}
+                max={5}
+                step={0.5}
+                error={errors.rating?.message}
+                id="rating"
+                labels={{
+                  1: "Didn't enjoy",
+                  2: "Somewhat enjoyed",
+                  3: "Enjoyed",
+                  4: "Really enjoyed",
+                  5: "Loved it",
+                }}
+              />
+            )}
+          />
+        );
+
+      case "notes":
+        return (
+          <Textarea
+            key="notes"
+            label="Notes"
+            placeholder="Any additional observations..."
+            error={errors.notes?.message}
+            rows={4}
+            id="notes"
+            {...register("notes")}
+          />
+        );
+
       default:
         return null;
     }
   };
 
   return (
-    <section id="results" className="space-y-6">
-      <div className="flex items-center justify-center gap-2">
-        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-          Results & Tasting
-        </h2>
-        <a
-          href={`${AppRoutes.blog.shotLog.path}#Results`}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Results guide"
-          className="text-stone-400 transition-colors hover:text-amber-600 dark:text-stone-500 dark:hover:text-amber-400"
-        >
-          <InformationCircleIcon className="h-5 w-5" />
-        </a>
-        <div className="relative" ref={menuRef}>
-          <button
-            type="button"
-            onClick={() => setShowMenu(!showMenu)}
-            className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-            aria-label="Results menu"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-              />
-            </svg>
-          </button>
-          {showMenu && (
-            <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
+    <>
+      {/* Results Section */}
+      <Card>
+        <section id="results" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
+                Results
+              </h2>
+              <a
+                href={`${AppRoutes.blog.shotLog.path}#Results`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Results guide"
+                className="text-stone-400 transition-colors hover:text-amber-600 dark:text-stone-500 dark:hover:text-amber-400"
+              >
+                <InformationCircleIcon className="h-5 w-5" />
+              </a>
+            </div>
+            <div className="relative" ref={resultsMenuRef}>
               <button
                 type="button"
-                onClick={() => {
-                  setShowOrderModal(true);
-                  setShowMenu(false);
-                }}
-                className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                onClick={() => setShowResultsMenu(!showResultsMenu)}
+                className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+                aria-label="Results menu"
               >
-                Edit Order
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                  />
+                </svg>
               </button>
+              {showResultsMenu && (
+                <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowResultsOrderModal(true);
+                      setShowResultsMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                  >
+                    Edit Inputs
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
 
-      <div className="space-y-7">
-        {orderedSteps.map((step) => renderStep(step.id))}
-      </div>
+          <div className="space-y-7">
+            {orderedResultsSteps.map((step) => renderResultsStep(step.id))}
+          </div>
+        </section>
+      </Card>
+
+      {/* Tasting Notes Section */}
+      <Card>
+        <section id="tasting-notes" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
+                Tasting Notes
+              </h2>
+              <a
+                href={`${AppRoutes.blog.shotLog.path}#Tasting-Notes`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Tasting notes guide"
+                className="text-stone-400 transition-colors hover:text-amber-600 dark:text-stone-500 dark:hover:text-amber-400"
+              >
+                <InformationCircleIcon className="h-5 w-5" />
+              </a>
+            </div>
+            <div className="relative" ref={tastingMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowTastingMenu(!showTastingMenu)}
+                className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+                aria-label="Tasting notes menu"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                  />
+                </svg>
+              </button>
+              {showTastingMenu && (
+                <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTastingOrderModal(true);
+                      setShowTastingMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                  >
+                    Edit Inputs
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-7">
+            {orderedTastingSteps.map((step) => renderTastingStep(step.id))}
+          </div>
+        </section>
+      </Card>
 
       {/* Results Order Modal */}
       <EditOrderModal
-        open={showOrderModal}
-        onClose={() => setShowOrderModal(false)}
-        title="Change Results Order"
+        open={showResultsOrderModal}
+        onClose={() => setShowResultsOrderModal(false)}
+        title="Change Results Inputs"
         items={DEFAULT_RESULTS_STEPS}
         order={resultsOrder}
         visibility={resultsVisibility}
@@ -471,17 +633,42 @@ export function SectionResults() {
           (acc, step) => ({ ...acc, [step.id]: step.visible }),
           {} as Record<ResultsStepId, boolean>
         )}
-        onChange={handleOrderChange}
-        requiredFields={["yieldActual", "rating"]}
+        onChange={handleResultsOrderChange}
+        requiredFields={["yieldActual"]}
         onReset={() => {
           const defaultOrder = DEFAULT_RESULTS_STEPS.map((s) => s.id);
           const defaultVisibility = DEFAULT_RESULTS_STEPS.reduce(
             (acc, step) => ({ ...acc, [step.id]: step.visible }),
             {} as Record<ResultsStepId, boolean>
           );
-          handleOrderChange(defaultOrder, defaultVisibility);
+          handleResultsOrderChange(defaultOrder, defaultVisibility);
         }}
       />
-    </section>
+
+      {/* Tasting Notes Order Modal */}
+      <EditOrderModal
+        open={showTastingOrderModal}
+        onClose={() => setShowTastingOrderModal(false)}
+        title="Change Tasting Notes Inputs"
+        items={DEFAULT_TASTING_STEPS}
+        order={tastingOrder}
+        visibility={tastingVisibility}
+        defaultOrder={DEFAULT_TASTING_STEPS.map((s) => s.id)}
+        defaultVisibility={DEFAULT_TASTING_STEPS.reduce(
+          (acc, step) => ({ ...acc, [step.id]: step.visible }),
+          {} as Record<TastingStepId, boolean>
+        )}
+        onChange={handleTastingOrderChange}
+        requiredFields={["rating"]}
+        onReset={() => {
+          const defaultOrder = DEFAULT_TASTING_STEPS.map((s) => s.id);
+          const defaultVisibility = DEFAULT_TASTING_STEPS.reduce(
+            (acc, step) => ({ ...acc, [step.id]: step.visible }),
+            {} as Record<TastingStepId, boolean>
+          );
+          handleTastingOrderChange(defaultOrder, defaultVisibility);
+        }}
+      />
+    </>
   );
 }

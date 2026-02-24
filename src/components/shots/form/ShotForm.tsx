@@ -50,7 +50,7 @@ export function ShotForm() {
       preInfusionDuration: undefined,
       brewPressure: 9,
       shotQuality: undefined,
-      rating: undefined,
+      rating: 1,
       flavors: undefined,
       bodyTexture: undefined,
       adjectives: undefined,
@@ -137,22 +137,18 @@ export function ShotForm() {
     <FormProvider {...methods}>
       <form
         onSubmit={methods.handleSubmit(onSubmit)}
-        className="space-y-8"
+        className="space-y-6"
       >
         <SectionBasics />
-
-        <hr className="border-stone-200 dark:border-stone-700" />
 
         <SectionRecipe 
           previousShotId={previousShotId} 
           onViewShot={(shot) => setSelectedShot(shot)}
         />
 
-        <hr className="border-stone-200 dark:border-stone-700" />
-
         <SectionResults />
 
-        <div className="flex flex-col items-center gap-3 pt-6">
+        <div className="mt-8 flex flex-col items-center gap-3">
           <Button
             type="submit"
             loading={createShot.isPending}

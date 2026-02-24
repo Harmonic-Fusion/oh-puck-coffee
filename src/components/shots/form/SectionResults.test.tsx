@@ -20,13 +20,14 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe("SectionResults", () => {
-  it("renders section title", () => {
+  it("renders section titles", () => {
     render(
       <TestWrapper>
         <SectionResults />
       </TestWrapper>
     );
-    expect(screen.getByText("Results & Tasting")).toBeInTheDocument();
+    expect(screen.getByText("Results")).toBeInTheDocument();
+    expect(screen.getByText("Tasting Notes")).toBeInTheDocument();
   });
 
   it("renders Notes textarea", () => {
@@ -85,18 +86,13 @@ describe("SectionResults", () => {
 
   it("renders Shot Quality slider when visible", () => {
     // "shotQuality" is hidden by default; set localStorage to make it visible
-    const visibility = {
+    const resultsVisibility = {
       yieldActual: true,
       brewTime: true,
       estimateMaxPressure: false,
       shotQuality: true,
-      rating: true,
-      notes: true,
-      flavors: false,
-      body: false,
-      adjectives: false,
     };
-    localStorage.setItem("coffee-results-visibility", JSON.stringify(visibility));
+    localStorage.setItem("coffee-results-visibility", JSON.stringify(resultsVisibility));
 
     render(
       <TestWrapper>

@@ -242,6 +242,14 @@ export function NumberStepper({
         // not when the user is manually typing a value.
         if (!wasManual) {
           requestAnimationFrame(() => focusNextField());
+        } else {
+          // When manually editing, keep focus on the current field
+          requestAnimationFrame(() => {
+            const valueDisplay = containerRef.current?.querySelector<HTMLElement>('[role="textbox"]');
+            if (valueDisplay) {
+              valueDisplay.focus();
+            }
+          });
         }
       } else if (e.key === "Escape") {
         setIsEditing(false);

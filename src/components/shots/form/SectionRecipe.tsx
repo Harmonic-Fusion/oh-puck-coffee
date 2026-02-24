@@ -7,6 +7,7 @@ import { QRCode } from "@/components/common/QRCode";
 import { Modal } from "@/components/common/Modal";
 import { EditOrderModal } from "@/components/common/EditOrderModal";
 import { ToolSelector } from "@/components/equipment/ToolSelector";
+import { Card } from "@/components/common/Card";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
@@ -22,7 +23,7 @@ const DOSE_OPTIONS = [16, 18, 20, 22] as const;
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
 const DEFAULT_BREW_TEMP_F = 200;
 
-type RecipeStepId = "dose" | "yield" | "grindLevel" | "brewTemp" | "brewPressure" | "preInfusion" | "toolsUsed";
+type RecipeStepId = "previousShot" | "dose" | "yield" | "grindLevel" | "brewTemp" | "brewPressure" | "preInfusion" | "toolsUsed";
 
 interface RecipeStepConfig {
   id: RecipeStepId;
@@ -32,16 +33,18 @@ interface RecipeStepConfig {
 
 /**
  * Default recipe section order:
- * 1. Grind Level (visible by default)
- * 2. Dose (visible by default)
- * 3. Target Yield (visible by default)
- * 4. Brew Temp (hidden by default)
- * 5. Brew Pressure (hidden by default)
- * 6. Pre-infusion (hidden by default)
- * 7. Tools Used (hidden by default)
+ * 1. Previous Shot (visible by default when available)
+ * 2. Grind Level (hidden by default)
+ * 3. Dose (visible by default)
+ * 4. Target Yield (visible by default)
+ * 5. Brew Temp (hidden by default)
+ * 6. Brew Pressure (hidden by default)
+ * 7. Pre-infusion (hidden by default)
+ * 8. Tools Used (hidden by default)
  */
 const DEFAULT_STEPS: RecipeStepConfig[] = [
-  { id: "grindLevel", label: "Grind Level", visible: true },
+  { id: "previousShot", label: "Previous Shot", visible: true },
+  { id: "grindLevel", label: "Grind Level", visible: false },
   { id: "dose", label: "Dose", visible: true },
   { id: "yield", label: "Target Yield", visible: true },
   { id: "brewTemp", label: "Brew Temp", visible: false },
@@ -306,10 +309,17 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
   const renderStep = (stepId: RecipeStepId) => {
     if (!recipeVisibility[stepId]) return null;
 
+    // Hide previous shot if no previousShotId
+    if (stepId === "previousShot" && !previousShotId) return null;
+
     // Hide grind level if Pre-ground is selected
     if (stepId === "grindLevel" && isPreGround) return null;
 
     switch (stepId) {
+      case "previousShot":
+        return (
+          <PreviousShotRow key="previousShot" shotId={previousShotId!} onViewShot={onViewShot} />
+        );
       case "dose":
         return (
           <Controller
@@ -578,75 +588,74 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
   };
 
   return (
-    <section id="recipe" className="space-y-6">
-      <div className="flex items-center justify-center gap-2">
-        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-          Recipe
-        </h2>
-        <a
-          href={`${AppRoutes.blog.shotLog.path}#Recipe`}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Recipe guide"
-          className="text-stone-400 transition-colors hover:text-amber-600 dark:text-stone-500 dark:hover:text-amber-400"
-        >
-          <InformationCircleIcon className="h-5 w-5" />
-        </a>
-        <div className="relative" ref={menuRef}>
-          <button
-            type="button"
-            onClick={() => setShowMenu(!showMenu)}
-            className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-            aria-label="Recipe menu"
-          >
-            <svg
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+    <Card>
+      <section id="recipe" className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
+              Recipe
+            </h2>
+            <a
+              href={`${AppRoutes.blog.shotLog.path}#Recipe`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Recipe guide"
+              className="text-stone-400 transition-colors hover:text-amber-600 dark:text-stone-500 dark:hover:text-amber-400"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-              />
-            </svg>
-          </button>
-          {showMenu && (
-            <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowOrderModal(true);
-                  setShowMenu(false);
-                }}
-                className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+              <InformationCircleIcon className="h-5 w-5" />
+            </a>
+          </div>
+          <div className="relative" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setShowMenu(!showMenu)}
+              className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+              aria-label="Recipe menu"
+            >
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
-                Edit Order
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowQRCode(true);
-                  setShowMenu(false);
-                }}
-                className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
-              >
-                Recipe QR Code
-              </button>
-            </div>
-          )}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                />
+              </svg>
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOrderModal(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                >
+                  Edit Inputs
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQRCode(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                >
+                  Recipe QR Code
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {previousShotId && (
-        <PreviousShotRow shotId={previousShotId} onViewShot={onViewShot} />
-      )}
-
-      <div className="space-y-7">
-        {orderedSteps.map((step) => renderStep(step.id))}
-      </div>
+        <div className="space-y-7">
+          {orderedSteps.map((step) => renderStep(step.id))}
+        </div>
 
       {/* QR Code Modal */}
       <Modal
@@ -668,7 +677,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
       <EditOrderModal
         open={showOrderModal}
         onClose={() => setShowOrderModal(false)}
-        title="Change Recipe Order"
+        title="Change Recipe Inputs"
         items={DEFAULT_STEPS}
         order={recipeOrder}
         visibility={recipeVisibility}
@@ -688,6 +697,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
           handleOrderChange(defaultOrder, defaultVisibility);
         }}
       />
-    </section>
+      </section>
+    </Card>
   );
 }
