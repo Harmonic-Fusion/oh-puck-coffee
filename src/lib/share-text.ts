@@ -70,6 +70,7 @@ const TASTING_SECTION = `\
 
 const TEMPLATE = `\
 Journey before Destination!
+{url}
 
 {beanSection}
 
