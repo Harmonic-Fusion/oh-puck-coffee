@@ -43,7 +43,7 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
       brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : undefined,
       estimateMaxPressure: shot.estimateMaxPressure ? parseFloat(shot.estimateMaxPressure) : undefined,
       shotQuality: shot.shotQuality,
-      rating: shot.rating ? parseFloat(shot.rating) : 1,
+      rating: shot.rating ?? 1,
       flavors: shot.flavors || undefined,
       bodyTexture: shot.bodyTexture || undefined,
       adjectives: shot.adjectives || undefined,
