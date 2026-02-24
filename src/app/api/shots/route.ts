@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
       .values({
         userId: session.user.id,
         beanId: data.beanId,
-        grinderId: data.grinderId,
+        grinderId: data.grinderId || null,
         machineId: data.machineId || null,
         doseGrams: String(data.doseGrams),
         yieldGrams: String(data.yieldGrams),

@@ -146,7 +146,7 @@ export async function PATCH(
     .update(shots)
     .set({
       beanId: data.beanId,
-      grinderId: data.grinderId,
+      grinderId: data.grinderId || null,
       machineId: data.machineId || null,
       doseGrams: String(data.doseGrams),
       yieldGrams: String(data.yieldGrams),

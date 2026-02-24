@@ -22,12 +22,12 @@ export const createShotSchema = z.object({
     const normalized = Math.round(val / step) * step;
     return Math.abs(val - normalized) < 0.01;
   }, { message: "Quality must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }).optional(),
-  rating: z.coerce.number({ invalid_type_error: "Required" }).min(1, "Required").max(5).refine((val) => {
+  rating: z.coerce.number().min(1).max(5).refine((val) => {
     // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
     const step = 0.5;
     const normalized = Math.round(val / step) * step;
     return Math.abs(val - normalized) < 0.01;
-  }, { message: "Rating must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }),
+  }, { message: "Rating must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }).optional(),
   toolsUsed: z.array(z.string()).optional(),
   notes: z.string().optional(),
   // Flavor data (optional) - separate fields
