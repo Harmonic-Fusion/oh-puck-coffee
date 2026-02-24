@@ -81,7 +81,7 @@ Journey before Destination!
 
 {notes}
 
-{url}`;
+`;
 
 
 export function buildShotShareText(shot: ShotShareData, tempUnit: TempUnit = "F"): string {
