@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createShotSchema, type CreateShot } from "@/shared/shots/schema";
@@ -61,6 +61,34 @@ export function ShotForm() {
 
   // Pre-populate form from URL params, sessionStorage, or last shot
   const { previousShotId, resetPrePopulation } = useShotPrePopulation(methods);
+
+  // Warn before leaving when the user has entered results data
+  const resultsFields = methods.watch([
+    "yieldActualGrams",
+    "brewTimeSecs",
+    "estimateMaxPressure",
+    "shotQuality",
+    "rating",
+    "notes",
+    "flavors",
+    "bodyTexture",
+    "adjectives",
+  ]);
+
+  const hasResultsData = resultsFields.some((v) =>
+    Array.isArray(v) ? v.length > 0 : v !== undefined && v !== "" && v !== null,
+  );
+
+  useEffect(() => {
+    if (!hasResultsData) return;
+
+    function handleBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasResultsData]);
 
   const onSubmit = async (data: CreateShot) => {
     try {
