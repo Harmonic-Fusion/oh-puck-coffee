@@ -45,6 +45,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Install tsx globally for running TypeScript migration scripts (before switching user)
 RUN npm install -g tsx
 
+# Copy static JSON data assets for /api/assets/data/[id] route
+COPY --from=builder --chown=nextjs:nodejs /app/src/data ./src/data
+
 # Copy migration scripts and drizzle migrations for runtime migrations
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle ./drizzle

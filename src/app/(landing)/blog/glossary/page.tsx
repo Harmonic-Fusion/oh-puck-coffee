@@ -1,6 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import { AppRoutes } from "@/app/routes";
-import glossaryData from "./glossary.json";
 
 interface GlossaryTerm {
   term: string;
@@ -8,8 +10,6 @@ interface GlossaryTerm {
   common: string;
   slug: string;
 }
-
-const GLOSSARY_TERMS = glossaryData as GlossaryTerm[];
 
 function getCommonRatingDescription(rating: string): string {
   switch (rating) {
@@ -28,7 +28,9 @@ function getCommonRatingDescription(rating: string): string {
   }
 }
 
-function groupTermsByLetter(terms: GlossaryTerm[]): Map<string, GlossaryTerm[]> {
+function groupTermsByLetter(
+  terms: GlossaryTerm[]
+): Map<string, GlossaryTerm[]> {
   const grouped = new Map<string, GlossaryTerm[]>();
   for (const term of terms) {
     const firstLetter = term.term.charAt(0).toLowerCase();
@@ -44,12 +46,23 @@ function getAllLetters(): string[] {
   return Array.from({ length: 26 }, (_, i) => String.fromCharCode(97 + i));
 }
 
+function useGlossary() {
+  return useQuery<GlossaryTerm[]>({
+    queryKey: ["assets", "glossary"],
+    queryFn: async () => {
+      const res = await fetch("/assets/data/glossary.json");
+      if (!res.ok) throw new Error("Failed to fetch glossary data");
+      return res.json();
+    },
+  });
+}
+
 export default function GlossaryPage() {
-  const groupedTerms = groupTermsByLetter(GLOSSARY_TERMS);
+  const { data: terms, isLoading, error } = useGlossary();
   const allLetters = getAllLetters();
-  const lettersWithTerms = allLetters.filter((letter) =>
-    groupedTerms.has(letter)
-  );
+  const groupedTerms = terms
+    ? groupTermsByLetter(terms)
+    : new Map<string, GlossaryTerm[]>();
 
   return (
     <div className="min-h-screen bg-white dark:bg-stone-950">
@@ -119,58 +132,72 @@ export default function GlossaryPage() {
             </div>
           </div>
 
-          {/* Glossary Terms by Letter */}
-          <div className="mt-12 space-y-12">
-            {allLetters.map((letter) => {
-              const terms = groupedTerms.get(letter);
-              if (!terms) return null;
+          {/* Loading State */}
+          {isLoading && (
+            <div className="mt-12 flex justify-center">
+              <div className="text-stone-500 dark:text-stone-400">
+                Loading glossary…
+              </div>
+            </div>
+          )}
 
-              return (
-                <section
-                  key={letter}
-                  id={letter}
-                  className="scroll-mt-36"
-                >
-                  <h2 className="mb-6 border-b-2 border-stone-200 pb-3 text-3xl font-bold text-stone-900 dark:border-stone-700 dark:text-stone-100">
-                    {letter.toUpperCase()}
-                  </h2>
-                  <div className="space-y-6">
-                    {terms.map((item) => (
-                      <div
-                        key={item.term}
-                        id={item.slug}
-                        className="scroll-mt-36 rounded-lg border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <h3 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
-                              <a
-                                href={`#${item.slug}`}
-                                className="transition-colors hover:text-amber-600 dark:hover:text-amber-400"
-                              >
-                                {item.term}
-                              </a>
-                            </h3>
-                            <p className="mt-2 text-stone-600 dark:text-stone-400">
-                              {item.definition}
-                            </p>
-                          </div>
-                          <div className="shrink-0 text-right">
-                            <div className="font-mono text-sm text-stone-500 dark:text-stone-400">
-                              {item.common}
+          {/* Error State */}
+          {error && (
+            <div className="mt-12 rounded-lg border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-400">
+              Failed to load glossary data. Please try refreshing.
+            </div>
+          )}
+
+          {/* Glossary Terms by Letter */}
+          {terms && (
+            <div className="mt-12 space-y-12">
+              {allLetters.map((letter) => {
+                const letterTerms = groupedTerms.get(letter);
+                if (!letterTerms) return null;
+
+                return (
+                  <section key={letter} id={letter} className="scroll-mt-36">
+                    <h2 className="mb-6 border-b-2 border-stone-200 pb-3 text-3xl font-bold text-stone-900 dark:border-stone-700 dark:text-stone-100">
+                      {letter.toUpperCase()}
+                    </h2>
+                    <div className="space-y-6">
+                      {letterTerms.map((item) => (
+                        <div
+                          key={item.term}
+                          id={item.slug}
+                          className="scroll-mt-36 rounded-lg border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900"
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <h3 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
+                                <a
+                                  href={`#${item.slug}`}
+                                  className="transition-colors hover:text-amber-600 dark:hover:text-amber-400"
+                                >
+                                  {item.term}
+                                </a>
+                              </h3>
+                              <p className="mt-2 text-stone-600 dark:text-stone-400">
+                                {item.definition}
+                              </p>
                             </div>
-                            <div className="mt-1 text-xs text-stone-400 dark:text-stone-500">
-                              {getCommonRatingDescription(item.common)}
+                            <div className="shrink-0 text-right">
+                              <div className="font-mono text-sm text-stone-500 dark:text-stone-400">
+                                {item.common}
+                              </div>
+                              <div className="mt-1 text-xs text-stone-400 dark:text-stone-500">
+                                {getCommonRatingDescription(item.common)}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          )}
 
           {/* Rating Legend */}
           <div className="mt-16 rounded-xl border border-stone-200 bg-stone-50 p-5 dark:border-stone-700 dark:bg-stone-900">
