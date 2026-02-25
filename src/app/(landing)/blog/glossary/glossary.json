@@ -1,0 +1,596 @@
+[
+  {
+    "term": "Acidity",
+    "definition": "A bright, lively quality in espresso flavor, often described as tartness or sharpness. Comes from organic acids in coffee. Distinct from bitterness.",
+    "common": "★★★☆☆",
+    "slug": "acidity"
+  },
+  {
+    "term": "Aeropress",
+    "definition": "A brewing device that uses air pressure to push water through coffee. Not technically espresso but sometimes used to approximate it.",
+    "common": "★★★☆☆",
+    "slug": "aeropress"
+  },
+  {
+    "term": "Basket",
+    "definition": "The portafilter insert that holds the coffee puck. Available in single, double, and triple configurations, and in standard or precision/ridgeless variants.",
+    "common": "★★★★★",
+    "slug": "basket"
+  },
+  {
+    "term": "Bloom",
+    "definition": "The initial wetting of coffee grounds that causes CO2 to release, creating a bubbly 'bloom'. In espresso context, often called pre-infusion.",
+    "common": "★★★☆☆",
+    "slug": "bloom"
+  },
+  {
+    "term": "Body",
+    "definition": "The physical weight and texture of the espresso on the palate — thin, medium, or full. Influenced by extraction, roast level, and emulsified oils.",
+    "common": "★★★★☆",
+    "slug": "body"
+  },
+  {
+    "term": "Bottomless portafilter",
+    "definition": "A portafilter with the bottom removed, exposing the basket underside. Used to diagnose channeling and uneven extraction visually.",
+    "common": "★★★★☆",
+    "slug": "bottomless-portafilter"
+  },
+  {
+    "term": "Brew ratio",
+    "definition": "The ratio of dry coffee dose to liquid espresso output by weight (e.g., 1:2 means 18g in / 36g out). The single most important variable in espresso recipes.",
+    "common": "★★★★★",
+    "slug": "brew-ratio"
+  },
+  {
+    "term": "Brew temperature",
+    "definition": "The water temperature at the group head during extraction, typically 90–96°C (194–205°F). Higher temperatures extract more; lower temperatures extract less.",
+    "common": "★★★★★",
+    "slug": "brew-temperature"
+  },
+  {
+    "term": "Burr",
+    "definition": "The grinding element in a grinder. Flat burrs and conical burrs produce different particle size distributions and flavor profiles.",
+    "common": "★★★★★",
+    "slug": "burr"
+  },
+  {
+    "term": "Burr alignment",
+    "definition": "The parallelism of the two burrs in a grinder. Misaligned burrs produce uneven particle sizes, hurting shot consistency.",
+    "common": "★★★☆☆",
+    "slug": "burr-alignment"
+  },
+  {
+    "term": "Café crema",
+    "definition": "A longer, less concentrated espresso drink (similar to lungo) popular in northern Europe. Also a term for crema itself in older literature.",
+    "common": "★★☆☆☆",
+    "slug": "cafe-crema"
+  },
+  {
+    "term": "Caffeine",
+    "definition": "The primary stimulant alkaloid in coffee. Espresso has less caffeine per volume than drip coffee but more per sip due to concentration.",
+    "common": "★★★★☆",
+    "slug": "caffeine"
+  },
+  {
+    "term": "Calibration",
+    "definition": "The process of dialing in grind size, dose, and yield to hit a target recipe. Requires tasting and iteration.",
+    "common": "★★★★☆",
+    "slug": "calibration"
+  },
+  {
+    "term": "Cappuccino",
+    "definition": "An espresso drink with equal parts espresso, steamed milk, and milk foam, traditionally 150–180ml total.",
+    "common": "★★★★★",
+    "slug": "cappuccino"
+  },
+  {
+    "term": "Channeling",
+    "definition": "When water finds a path of least resistance through the coffee puck rather than flowing evenly, resulting in over-extracted channels and under-extracted surrounding coffee.",
+    "common": "★★★★★",
+    "slug": "channeling"
+  },
+  {
+    "term": "Cortado",
+    "definition": "A short espresso drink with an equal or near-equal ratio of espresso to steamed milk, typically 60–90ml total.",
+    "common": "★★★★☆",
+    "slug": "cortado"
+  },
+  {
+    "term": "Crema",
+    "definition": "The reddish-brown foam on top of a freshly pulled espresso shot, formed by CO2 emulsified with oils. A marker of freshness and pressure, though not a reliable quality indicator.",
+    "common": "★★★★★",
+    "slug": "crema"
+  },
+  {
+    "term": "Dead zone",
+    "definition": "The range of grind settings that produce similar results — fine adjustments within the dead zone don't meaningfully change extraction.",
+    "common": "★★☆☆☆",
+    "slug": "dead-zone"
+  },
+  {
+    "term": "Degassing",
+    "definition": "The process of CO2 escaping from roasted coffee over time. Fresh coffee degasses rapidly; too much CO2 causes inconsistent extraction.",
+    "common": "★★★☆☆",
+    "slug": "degassing"
+  },
+  {
+    "term": "Dial in / Dialing in",
+    "definition": "The iterative process of adjusting variables (grind, dose, yield, time) to achieve a target shot. Every new bag of coffee requires dialing in.",
+    "common": "★★★★★",
+    "slug": "dial-in"
+  },
+  {
+    "term": "Distribution",
+    "definition": "How evenly coffee grounds are spread in the portafilter basket before tamping. Poor distribution leads to channeling.",
+    "common": "★★★★★",
+    "slug": "distribution"
+  },
+  {
+    "term": "Dose",
+    "definition": "The amount of dry ground coffee placed in the portafilter, measured by weight in grams. Typical espresso doses range from 14g to 22g.",
+    "common": "★★★★★",
+    "slug": "dose"
+  },
+  {
+    "term": "Double espresso",
+    "definition": "Two shots of espresso, typically pulled from an 18–20g dose into ~36–40g output. The de facto standard in most specialty cafés.",
+    "common": "★★★★★",
+    "slug": "double-espresso"
+  },
+  {
+    "term": "Dry puck",
+    "definition": "A spent coffee puck that holds its shape and falls cleanly from the basket after extraction — sign of good dose and tamping.",
+    "common": "★★★☆☆",
+    "slug": "dry-puck"
+  },
+  {
+    "term": "EK43",
+    "definition": "A commercial grinder by Mahlkönig, widely regarded as producing exceptionally uniform particle size. Popularized in specialty espresso by Matt Perger.",
+    "common": "★★★☆☆",
+    "slug": "ek43"
+  },
+  {
+    "term": "Espresso",
+    "definition": "A concentrated coffee beverage brewed by forcing pressurized hot water through finely ground coffee. Defined by high pressure (9 bar), fine grind, and short brew time.",
+    "common": "★★★★★",
+    "slug": "espresso"
+  },
+  {
+    "term": "Extraction",
+    "definition": "The process of dissolving soluble compounds from coffee into water. Over-extraction tastes bitter/harsh; under-extraction tastes sour/weak.",
+    "common": "★★★★★",
+    "slug": "extraction"
+  },
+  {
+    "term": "Extraction yield",
+    "definition": "The percentage of the dry coffee mass that dissolves into the brewed liquid. Specialty coffee targets ~18–22% for espresso.",
+    "common": "★★★★☆",
+    "slug": "extraction-yield"
+  },
+  {
+    "term": "Fines",
+    "definition": "Very small particles produced during grinding. Fines extract quickly and can clog channels, contributing to high resistance and channeling.",
+    "common": "★★★★☆",
+    "slug": "fines"
+  },
+  {
+    "term": "First crack",
+    "definition": "An audible cracking sound during coffee roasting when beans expand and internal pressure releases steam. Marks the beginning of light roast territory.",
+    "common": "★★★☆☆",
+    "slug": "first-crack"
+  },
+  {
+    "term": "Flat burrs",
+    "definition": "Disc-shaped grinding elements that grind coffee between two parallel flat surfaces. Known for clarity and brightness in flavor.",
+    "common": "★★★★☆",
+    "slug": "flat-burrs"
+  },
+  {
+    "term": "Flow rate",
+    "definition": "The speed at which water passes through the coffee puck, measured in ml/s. Controlled by grind size, dose, and pressure.",
+    "common": "★★★★☆",
+    "slug": "flow-rate"
+  },
+  {
+    "term": "Flush",
+    "definition": "Running water through the group head briefly before pulling a shot to purge old water and stabilize temperature.",
+    "common": "★★★★☆",
+    "slug": "flush"
+  },
+  {
+    "term": "Gooseneck kettle",
+    "definition": "A kettle with a long curved spout for precision pouring. Primarily for pour-over but used by some for manual espresso devices.",
+    "common": "★★☆☆☆",
+    "slug": "gooseneck-kettle"
+  },
+  {
+    "term": "Grind size",
+    "definition": "The coarseness or fineness of ground coffee particles. Finer grind = more resistance = slower flow = more extraction. The primary adjustment variable.",
+    "common": "★★★★★",
+    "slug": "grind-size"
+  },
+  {
+    "term": "Group head",
+    "definition": "The component on an espresso machine where the portafilter locks in and through which hot water is delivered to the coffee puck.",
+    "common": "★★★★★",
+    "slug": "group-head"
+  },
+  {
+    "term": "Head space",
+    "definition": "The gap between the top of the coffee puck and the shower screen in the group head. Affects pre-infusion behavior.",
+    "common": "★★★☆☆",
+    "slug": "head-space"
+  },
+  {
+    "term": "HX machine",
+    "definition": "Heat exchanger espresso machine. Uses a single boiler with a heat exchanger tube for brew water, allowing simultaneous steam and brewing at different temperatures.",
+    "common": "★★★☆☆",
+    "slug": "hx-machine"
+  },
+  {
+    "term": "Honey process",
+    "definition": "A coffee processing method where some or all fruit mucilage is left on the bean during drying. Produces fruity, syrupy characteristics.",
+    "common": "★★★☆☆",
+    "slug": "honey-process"
+  },
+  {
+    "term": "Intensity",
+    "definition": "The perceived strength or concentration of flavors in espresso. Not the same as extraction yield — a ristretto is intense but not necessarily well-extracted.",
+    "common": "★★★☆☆",
+    "slug": "intensity"
+  },
+  {
+    "term": "Lactart",
+    "definition": "Lactic acid, found in some fermented/natural processed coffees. Contributes creamy, yogurt-like acidity.",
+    "common": "★★☆☆☆",
+    "slug": "lactart"
+  },
+  {
+    "term": "Latte",
+    "definition": "An espresso drink with steamed milk and a thin layer of foam, typically 240–360ml. The most popular milk-based espresso drink.",
+    "common": "★★★★★",
+    "slug": "latte"
+  },
+  {
+    "term": "Latte art",
+    "definition": "Patterns created in the foam of steamed milk poured into espresso. Requires well-textured microfoam and a steady pour.",
+    "common": "★★★★☆",
+    "slug": "latte-art"
+  },
+  {
+    "term": "Lever machine",
+    "definition": "An espresso machine where the barista manually pulls a lever to generate extraction pressure, either directly or via a spring-loaded piston.",
+    "common": "★★★☆☆",
+    "slug": "lever-machine"
+  },
+  {
+    "term": "Lungo",
+    "definition": "A long espresso shot with more water than a standard espresso, typically a 1:3–1:4 ratio. Tastes thinner but can reveal different flavor notes.",
+    "common": "★★★★☆",
+    "slug": "lungo"
+  },
+  {
+    "term": "Maillard reaction",
+    "definition": "A chemical reaction between amino acids and sugars during roasting that creates hundreds of flavor compounds. Key to espresso's complexity.",
+    "common": "★★★☆☆",
+    "slug": "maillard-reaction"
+  },
+  {
+    "term": "Macchiato",
+    "definition": "Espresso 'stained' with a small amount of steamed milk or foam. Latte macchiato is the inverse — milk stained with espresso.",
+    "common": "★★★★☆",
+    "slug": "macchiato"
+  },
+  {
+    "term": "Microfoam",
+    "definition": "Silky, velvety steamed milk with tiny, uniform bubbles integrated throughout. Required for latte art and smooth milk-based drinks.",
+    "common": "★★★★★",
+    "slug": "microfoam"
+  },
+  {
+    "term": "Mouthfeel",
+    "definition": "The tactile sensation of espresso in the mouth — viscosity, creaminess, dryness, or coating quality. Affected by oils, proteins, and brew ratio.",
+    "common": "★★★★☆",
+    "slug": "mouthfeel"
+  },
+  {
+    "term": "Naked portafilter",
+    "definition": "See 'bottomless portafilter.' The terms are interchangeable.",
+    "common": "★★★★☆",
+    "slug": "naked-portafilter"
+  },
+  {
+    "term": "Natural process",
+    "definition": "Coffee dried with the full fruit intact, imparting fruity, wine-like, or fermented flavors. Often challenging for espresso consistency.",
+    "common": "★★★☆☆",
+    "slug": "natural-process"
+  },
+  {
+    "term": "Nutation",
+    "definition": "A WDT technique where the needle moves in a circular or figure-8 pattern to break up clumps without over-aerating the grounds.",
+    "common": "★★☆☆☆",
+    "slug": "nutation"
+  },
+  {
+    "term": "OPV",
+    "definition": "Over-Pressure Valve. A safety and calibration valve that limits maximum brew pressure. Often adjusted to 9 bar (or lower for 'low pressure profiling').",
+    "common": "★★★☆☆",
+    "slug": "opv"
+  },
+  {
+    "term": "Origin",
+    "definition": "Where the coffee was grown. Single-origin espresso comes from one country or region; blends combine multiple origins for consistency.",
+    "common": "★★★★☆",
+    "slug": "origin"
+  },
+  {
+    "term": "Over-extraction",
+    "definition": "When too many compounds are dissolved from the coffee, producing bitter, harsh, astringent, or empty flavors.",
+    "common": "★★★★★",
+    "slug": "over-extraction"
+  },
+  {
+    "term": "Packing",
+    "definition": "How densely coffee is compressed in the basket. Over-packing (too much tamp pressure) and under-packing can both cause problems.",
+    "common": "★★★☆☆",
+    "slug": "packing"
+  },
+  {
+    "term": "Particle size distribution (PSD)",
+    "definition": "The spread of different grind sizes produced by a grinder. Narrower PSD = more uniform extraction. Burr quality heavily influences PSD.",
+    "common": "★★★★☆",
+    "slug": "psd"
+  },
+  {
+    "term": "Patio",
+    "definition": "Slang for the flat raised ring on some portafilter baskets that prevents the puck from sticking. Also called a 'lip' or 'ridge'.",
+    "common": "★★☆☆☆",
+    "slug": "patio"
+  },
+  {
+    "term": "Percolation",
+    "definition": "Water passing through a bed of coffee grounds. Espresso is a form of pressurized percolation.",
+    "common": "★★★☆☆",
+    "slug": "percolation"
+  },
+  {
+    "term": "Piston",
+    "definition": "The cylinder component in lever machines that applies force to generate brew pressure.",
+    "common": "★★★☆☆",
+    "slug": "piston"
+  },
+  {
+    "term": "Portafilter",
+    "definition": "The handle-and-basket assembly that clips into the group head. Holds the coffee puck during extraction.",
+    "common": "★★★★★",
+    "slug": "portafilter"
+  },
+  {
+    "term": "Pre-infusion",
+    "definition": "A low-pressure or no-pressure initial wetting of the puck before full pressure is applied. Reduces channeling and improves even extraction.",
+    "common": "★★★★★",
+    "slug": "pre-infusion"
+  },
+  {
+    "term": "Pressure",
+    "definition": "The force applied to water during extraction, measured in bar. Standard espresso uses ~9 bar; some modern approaches use lower pressure.",
+    "common": "★★★★★",
+    "slug": "pressure"
+  },
+  {
+    "term": "Pressure profiling",
+    "definition": "Dynamically changing brew pressure during extraction to influence flavor. Enabled by machines with programmable pressure curves.",
+    "common": "★★★★☆",
+    "slug": "pressure-profiling"
+  },
+  {
+    "term": "Puck",
+    "definition": "The compressed disc of spent coffee grounds after extraction. Should be firm, dry, and hold its shape.",
+    "common": "★★★★★",
+    "slug": "puck"
+  },
+  {
+    "term": "Pull",
+    "definition": "Colloquial term for brewing a shot of espresso (from the lever-pulling motion of early machines).",
+    "common": "★★★★★",
+    "slug": "pull"
+  },
+  {
+    "term": "Purge",
+    "definition": "Running steam or water through the machine to clear old coffee residue or stabilize temperature.",
+    "common": "★★★★☆",
+    "slug": "purge"
+  },
+  {
+    "term": "Ristretto",
+    "definition": "A 'restricted' espresso shot using less water than a standard double, typically a 1:1 ratio. Syrupy, intense, and often sweeter.",
+    "common": "★★★★☆",
+    "slug": "ristretto"
+  },
+  {
+    "term": "Roast date",
+    "definition": "The date the coffee was roasted. Espresso typically performs best 7–21 days post-roast, after initial CO2 degassing.",
+    "common": "★★★★★",
+    "slug": "roast-date"
+  },
+  {
+    "term": "Roast level",
+    "definition": "How darkly the coffee was roasted: light, medium, or dark. Light roasts favor acidity and origin character; dark roasts favor bitterness and body.",
+    "common": "★★★★★",
+    "slug": "roast-level"
+  },
+  {
+    "term": "Scales",
+    "definition": "A digital scale used to measure dose and yield precisely. Essential for recipe consistency. Espresso-specific scales measure in 0.1g increments.",
+    "common": "★★★★★",
+    "slug": "scales"
+  },
+  {
+    "term": "Scace device",
+    "definition": "A portafilter-mounted thermocouple tool for measuring actual brew temperature at the group head. Used for machine calibration.",
+    "common": "★★★☆☆",
+    "slug": "scace-device"
+  },
+  {
+    "term": "Shot time",
+    "definition": "The duration of the espresso extraction from first drop to target yield. Typically 25–35 seconds for a standard double.",
+    "common": "★★★★★",
+    "slug": "shot-time"
+  },
+  {
+    "term": "Single boiler",
+    "definition": "An espresso machine with one boiler used for both brewing and steaming. Requires temperature surfing or waiting between tasks.",
+    "common": "★★★☆☆",
+    "slug": "single-boiler"
+  },
+  {
+    "term": "Single origin",
+    "definition": "Coffee from one specific country, region, farm, or lot. Often used to highlight unique terroir flavors rather than blend consistency.",
+    "common": "★★★★☆",
+    "slug": "single-origin"
+  },
+  {
+    "term": "Slayer profiling",
+    "definition": "A pre-infusion technique that uses slow, low-flow pre-infusion for an extended period before ramping to full pressure. Named after Slayer espresso machines.",
+    "common": "★★★☆☆",
+    "slug": "slayer-profiling"
+  },
+  {
+    "term": "Solenoid valve",
+    "definition": "An electrically controlled valve in the group head that releases back-pressure when the shot ends, allowing the puck to depressurize.",
+    "common": "★★★☆☆",
+    "slug": "solenoid-valve"
+  },
+  {
+    "term": "Specific gravity",
+    "definition": "The density of brewed espresso relative to water. Can be used to estimate TDS without a refractometer.",
+    "common": "★★☆☆☆",
+    "slug": "specific-gravity"
+  },
+  {
+    "term": "Spro",
+    "definition": "Barista slang for espresso.",
+    "common": "★★★☆☆",
+    "slug": "spro"
+  },
+  {
+    "term": "Stale coffee",
+    "definition": "Coffee that has lost its aromatic volatile compounds, typically from oxygen exposure or being too far past roast date. Produces flat, papery espresso.",
+    "common": "★★★★☆",
+    "slug": "stale-coffee"
+  },
+  {
+    "term": "Steam wand",
+    "definition": "The metal tube on an espresso machine that delivers high-pressure steam for frothing and heating milk.",
+    "common": "★★★★★",
+    "slug": "steam-wand"
+  },
+  {
+    "term": "Stretching",
+    "definition": "The initial phase of milk steaming where air is incorporated to increase volume. Done by keeping the wand tip near the milk surface.",
+    "common": "★★★★☆",
+    "slug": "stretching"
+  },
+  {
+    "term": "Surfing (temperature surfing)",
+    "definition": "A technique on single-boiler machines where the barista times the shot to hit a stable brew temperature window.",
+    "common": "★★★☆☆",
+    "slug": "surfing-temperature-surfing"
+  },
+  {
+    "term": "Tamper",
+    "definition": "A flat-bottomed tool used to compress coffee grounds in the portafilter basket. Typically 58mm for standard group heads.",
+    "common": "★★★★★",
+    "slug": "tamper"
+  },
+  {
+    "term": "Tamping",
+    "definition": "Applying even, downward pressure to the coffee grounds in the portafilter using a tamper. Creates uniform resistance for water flow.",
+    "common": "★★★★★",
+    "slug": "tamping"
+  },
+  {
+    "term": "TDS (Total Dissolved Solids)",
+    "definition": "A measurement of dissolved material in brewed coffee, expressed as a percentage. Used with extraction yield to calibrate espresso strength.",
+    "common": "★★★★☆",
+    "slug": "tds-total-dissolved-solids"
+  },
+  {
+    "term": "Third wave",
+    "definition": "A coffee movement emphasizing quality, traceability, and brewing science. Associated with light roasts, single origins, and espresso precision.",
+    "common": "★★★★☆",
+    "slug": "third-wave"
+  },
+  {
+    "term": "Tipping",
+    "definition": "Scorching of coffee bean tips during roasting, caused by too-high drum temperature. Can contribute to harsh flavors.",
+    "common": "★★☆☆☆",
+    "slug": "tipping"
+  },
+  {
+    "term": "Turbo shot",
+    "definition": "A high-yield, fast espresso shot (often 1:3.5–1:5 ratio in under 15 seconds) achieved with a coarser grind. Developed by researchers including Jonathan Gagné.",
+    "common": "★★★☆☆",
+    "slug": "turbo-shot"
+  },
+  {
+    "term": "Under-extraction",
+    "definition": "When too few compounds are dissolved from the coffee, producing sour, grassy, salty, or watery flavors.",
+    "common": "★★★★★",
+    "slug": "under-extraction"
+  },
+  {
+    "term": "Updosing",
+    "definition": "Using more coffee than a basket's rated capacity to increase resistance and body. Common workaround for coarser grind limitations.",
+    "common": "★★★☆☆",
+    "slug": "updosing"
+  },
+  {
+    "term": "Vacuum pressure",
+    "definition": "Negative pressure in the group head after the solenoid releases, which helps pull back water from the puck.",
+    "common": "★★★☆☆",
+    "slug": "vacuum-pressure"
+  },
+  {
+    "term": "Velveting",
+    "definition": "The silky texture of well-steamed microfoam milk. Well-velveted milk pours cleanly and integrates smoothly with espresso.",
+    "common": "★★★☆☆",
+    "slug": "velveting"
+  },
+  {
+    "term": "Volumetric dosing",
+    "definition": "Measuring espresso output by volume (ml) rather than weight. Less precise than gravimetric dosing due to crema variability.",
+    "common": "★★★★☆",
+    "slug": "volumetric-dosing"
+  },
+  {
+    "term": "VST basket",
+    "definition": "Precision portafilter baskets made by VST (Vince Fedele's company) with tightly controlled hole geometry for more even extraction.",
+    "common": "★★★★☆",
+    "slug": "vst-basket"
+  },
+  {
+    "term": "Water hardness",
+    "definition": "The mineral content of water, measured in ppm or °dH. Affects scale buildup in machines and can influence extraction and flavor.",
+    "common": "★★★★☆",
+    "slug": "water-hardness"
+  },
+  {
+    "term": "WDT (Weiss Distribution Technique)",
+    "definition": "A method of stirring coffee grounds in the basket with a thin needle tool to break up clumps and improve distribution before tamping.",
+    "common": "★★★★★",
+    "slug": "wdt"
+  },
+  {
+    "term": "Wet process",
+    "definition": "Washed coffee processing method. Produces cleaner, brighter flavors with more consistent extractions.",
+    "common": "★★★☆☆",
+    "slug": "wet-process"
+  },
+  {
+    "term": "Yield",
+    "definition": "The weight of liquid espresso in the cup, measured in grams. Along with dose, defines the brew ratio.",
+    "common": "★★★★★",
+    "slug": "yield"
+  }
+]
