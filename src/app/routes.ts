@@ -26,6 +26,7 @@ export const AppRoutes = routesBuilder({
     path: "/blog",
     _is_public: true,
     shotLog: { path: "/shot-log", _is_public: true },
+    glossary: { path: "/glossary", _is_public: true },
   },
   share: {
     path: "/share",
@@ -107,6 +108,14 @@ export const ApiRoutes = routesBuilder({
       path: "/:id",
     },
     validate: "/validate",
+  },
+  // Assets (static JSON data served by ID)
+  assets: {
+    path: "/api/assets",
+    data: {
+      path: "/data",
+      id: "/:id",
+    },
   },
   // Contact
   contact: {

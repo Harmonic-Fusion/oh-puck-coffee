@@ -19,6 +19,14 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_COMMIT_SHA: getCommitSha(),
     NEXT_PUBLIC_ENABLE_DEBUGGING: process.env.ENABLE_DEBUGGING ?? "false",
   },
+  async rewrites() {
+    return [
+      {
+        source: "/assets/data/:id.json",
+        destination: "/api/assets/data/:id",
+      },
+    ];
+  },
   headers: async () => [
     {
       source: "/sw.js",

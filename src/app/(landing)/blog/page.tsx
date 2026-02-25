@@ -10,6 +10,14 @@ const BLOG_POSTS = [
     emoji: "📖",
     tags: ["Getting Started", "Guide"],
   },
+  {
+    title: "Espresso Glossary",
+    description:
+      "100 essential terms for espresso making, from basic concepts like brew ratio and extraction to advanced techniques like pressure profiling and WDT.",
+    href: AppRoutes.blog.glossary.path,
+    emoji: "📚",
+    tags: ["Reference", "Glossary"],
+  },
 ] as const;
 
 export default function BlogPage() {
