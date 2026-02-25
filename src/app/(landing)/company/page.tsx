@@ -3,25 +3,7 @@ import { AppRoutes } from "@/app/routes";
 
 export default function CompanyPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-stone-950">
-      {/* Navigation */}
-      <nav className="border-b border-stone-200 bg-white/80 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-950/80">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <Link href={AppRoutes.home.path} className="flex items-center gap-2">
-              <img
-                src="/logos/logo_complex.png"
-                alt="Coffee Tracker Logo"
-                className="h-8 w-8"
-              />
-              <span className="text-xl font-bold text-stone-900 dark:text-stone-100">
-                Coffee Tracker
-              </span>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
+    <>
       {/* Content */}
       <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
         <h1 className="text-4xl font-bold tracking-tight text-stone-900 dark:text-stone-100 sm:text-5xl">
@@ -69,6 +51,6 @@ export default function CompanyPage() {
           </section>
         </div>
       </div>
-    </div>
+    </>
   );
 }

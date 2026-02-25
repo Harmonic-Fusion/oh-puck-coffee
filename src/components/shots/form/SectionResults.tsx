@@ -505,7 +505,7 @@ export function SectionResults() {
                 Results
               </h2>
               <a
-                href={`${AppRoutes.blog.shotLog.path}#Results`}
+                href={`${AppRoutes.resources.shotLog.path}#Results`}
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Results guide"
@@ -567,7 +567,7 @@ export function SectionResults() {
                 Tasting Notes
               </h2>
               <a
-                href={`${AppRoutes.blog.shotLog.path}#Tasting-Notes`}
+                href={`${AppRoutes.resources.shotLog.path}#Tasting-Notes`}
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Tasting notes guide"

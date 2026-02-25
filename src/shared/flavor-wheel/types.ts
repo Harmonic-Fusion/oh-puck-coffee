@@ -2,12 +2,20 @@
  * TypeScript types for nested flavor wheel structure
  */
 
-export interface FlavorNode {
+/**
+ * Color info embedded in data nodes
+ */
+export interface FlavorColor {
+  color: string; // e.g. "rgba(233, 30, 99, 0.25)"
+  colorName: string; // e.g. "Muted Pink/Red"
+}
+
+export interface FlavorNode extends FlavorColor {
   name: string;
   children?: FlavorNode[];
 }
 
-export interface FlavorWheelData {
+export interface FlavorWheelData extends FlavorColor {
   name: string;
   children: FlavorNode[];
 }
@@ -15,18 +23,26 @@ export interface FlavorWheelData {
 /**
  * Body selector structure
  */
+export interface BodyCategoryData extends FlavorColor {
+  descriptors: string[];
+}
+
 export interface BodySelectorData {
-  light: string[];
-  medium: string[];
-  heavy: string[];
+  light: BodyCategoryData;
+  medium: BodyCategoryData;
+  heavy: BodyCategoryData;
 }
 
 /**
  * Adjectives and intensifiers structure
  */
+export interface AdjectivesSide extends FlavorColor {
+  items: string[];
+}
+
 export interface AdjectivesRow {
-  left: string[];
-  right: string[];
+  left: AdjectivesSide;
+  right: AdjectivesSide;
 }
 
 export interface AdjectivesIntensifiersData {

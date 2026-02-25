@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { AppRoutes } from "@/app/routes";
 
-const BLOG_POSTS = [
+const RESOURCE_POSTS = [
   {
     title: "Shot Log Guide",
     description:
       "Everything you need to know about logging espresso shots — from choosing beans and dialing in your grinder to capturing results and tasting notes.",
-    href: AppRoutes.blog.shotLog.path,
+    href: AppRoutes.resources.shotLog.path,
     emoji: "📖",
     tags: ["Getting Started", "Guide"],
   },
@@ -14,41 +14,20 @@ const BLOG_POSTS = [
     title: "Espresso Glossary",
     description:
       "100 essential terms for espresso making, from basic concepts like brew ratio and extraction to advanced techniques like pressure profiling and WDT.",
-    href: AppRoutes.blog.glossary.path,
+    href: AppRoutes.resources.glossary.path,
     emoji: "📚",
     tags: ["Reference", "Glossary"],
   },
 ] as const;
 
-export default function BlogPage() {
+export default function ResourcesPage() {
   return (
-    <div className="min-h-screen bg-white dark:bg-stone-950">
-      {/* Navigation */}
-      <nav className="border-b border-stone-200 bg-white/80 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-950/80">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <Link
-              href={AppRoutes.home.path}
-              className="flex items-center gap-2"
-            >
-              <img
-                src="/logos/logo_complex.png"
-                alt="Coffee Tracker Logo"
-                className="h-8 w-8"
-              />
-              <span className="text-xl font-bold text-stone-900 dark:text-stone-100">
-                Coffee Tracker
-              </span>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
+    <>
       {/* Hero */}
       <div className="bg-gradient-to-b from-amber-50 to-white py-16 dark:from-stone-900 dark:to-stone-950">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <h1 className="text-4xl font-bold tracking-tight text-stone-900 dark:text-stone-100 sm:text-5xl">
-            Blog
+            Resources
           </h1>
           <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
             Guides, tips, and everything you need to get the most out of Coffee
@@ -60,7 +39,7 @@ export default function BlogPage() {
       {/* Posts Grid */}
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-6 sm:grid-cols-2">
-          {BLOG_POSTS.map((post) => (
+          {RESOURCE_POSTS.map((post) => (
             <Link
               key={post.href}
               href={post.href}
@@ -87,6 +66,6 @@ export default function BlogPage() {
           ))}
         </div>
       </div>
-    </div>
+    </>
   );
 }

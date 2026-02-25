@@ -47,11 +47,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const data = loadDataAsset(id);
+  // Strip .json extension if present (supports both /api/assets/data/flavor-wheel and /api/assets/data/flavor-wheel.json)
+  const idWithoutExtension = id.endsWith(".json") ? id.slice(0, -5) : id;
+  const data = loadDataAsset(idWithoutExtension);
 
   if (!data) {
     return NextResponse.json(
-      { error: `Unknown data asset: ${id}` },
+      { error: `Unknown data asset: ${idWithoutExtension}` },
       { status: 404 }
     );
   }

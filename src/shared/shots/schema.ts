@@ -1,5 +1,4 @@
 import * as z from "zod";
-import { BODY_ADJECTIVES } from "../flavor-wheel/constants";
 
 export const createShotSchema = z.object({
   beanId: z.string().uuid(),

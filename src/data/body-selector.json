@@ -1,0 +1,35 @@
+{
+  "light": {
+    "color": "rgba(224, 224, 224, 0.4)",
+    "colorName": "Muted Light Gray",
+    "descriptors": [
+      "Watery",
+      "Tea-like",
+      "Silky",
+      "Slick",
+      "Juicy"
+    ]
+  },
+  "medium": {
+    "color": "rgba(158, 158, 158, 0.4)",
+    "colorName": "Muted Gray",
+    "descriptors": [
+      "Smooth",
+      "2% Milk",
+      "Syrupy",
+      "Round",
+      "Creamy"
+    ]
+  },
+  "heavy": {
+    "color": "rgba(66, 66, 66, 0.4)",
+    "colorName": "Muted Dark Gray",
+    "descriptors": [
+      "Full",
+      "Velvety",
+      "Big",
+      "Chewy",
+      "Coating"
+    ]
+  }
+}

@@ -65,35 +65,40 @@ export default function GlossaryPage() {
     : new Map<string, GlossaryTerm[]>();
 
   return (
-    <div className="min-h-screen bg-white dark:bg-stone-950">
-      {/* Navigation */}
-      <nav className="sticky top-0 z-10 border-b border-stone-200 bg-white/80 backdrop-blur-sm dark:border-stone-800 dark:bg-stone-950/80">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <Link
-              href={AppRoutes.home.path}
-              className="flex items-center gap-2"
-            >
-              <img
-                src="/logos/logo_complex.png"
-                alt="Coffee Tracker Logo"
-                className="h-8 w-8"
-              />
-              <span className="text-xl font-bold text-stone-900 dark:text-stone-100">
-                Coffee Tracker
-              </span>
-            </Link>
-            <Link
-              href={AppRoutes.blog.path}
-              className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
-            >
-              ← Blog
-            </Link>
+    <div className="relative">
+      {/* Fixed vertical navigation bar on the left */}
+      <div className="fixed left-0 top-16 z-10 h-[calc(100vh-4rem)] w-14 border-r border-stone-200 bg-white/95 backdrop-blur-sm dark:border-stone-700 dark:bg-stone-950/95">
+        <div className="flex h-full flex-col items-center justify-center overflow-x-hidden px-2">
+          <div className="flex h-full flex-col items-center justify-between overflow-y-auto overflow-x-hidden py-4 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            {allLetters.map((letter) => {
+              const hasTerms = groupedTerms.has(letter);
+              return (
+                <a
+                  key={letter}
+                  href={`#${letter}`}
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-sm font-medium transition-all duration-200 ${
+                    hasTerms
+                      ? "bg-stone-100 text-stone-900 hover:scale-110 hover:bg-amber-100 hover:text-amber-900 active:scale-95 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-amber-900/30 dark:hover:text-amber-400"
+                      : "text-stone-300 dark:text-stone-700"
+                  }`}
+                >
+                  {letter.toUpperCase()}
+                </a>
+              );
+            })}
           </div>
         </div>
-      </nav>
+      </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="absolute top-4 right-4 sm:right-6 lg:right-8">
+        <Link
+          href={AppRoutes.resources.path}
+          className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+        >
+          ← Resources
+        </Link>
+      </div>
+      <div className="mx-auto max-w-7xl pl-16 pr-8 py-12 sm:pr-12 lg:pr-16">
         {/* Main content */}
         <main className="min-w-0 flex-1">
           <h1 className="text-4xl font-bold tracking-tight text-stone-900 dark:text-stone-100 sm:text-5xl">
@@ -102,35 +107,6 @@ export default function GlossaryPage() {
           <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
             100 essential terms for espresso making, listed alphabetically.
           </p>
-
-          {/* Alphabetical Navigation - Sticky */}
-          <div className="sticky top-16 z-10 -mx-4 -mt-8 border-b border-stone-200 bg-white/95 px-4 py-4 backdrop-blur-sm dark:border-stone-700 dark:bg-stone-950/95 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-            <div className="mx-auto max-w-7xl">
-              <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-stone-600 dark:text-stone-400">
-                Jump to Letter
-              </p>
-              <div className="overflow-x-auto">
-                <div className="flex min-w-max gap-2 pb-2">
-                  {allLetters.map((letter) => {
-                    const hasTerms = groupedTerms.has(letter);
-                    return (
-                      <a
-                        key={letter}
-                        href={`#${letter}`}
-                        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm font-medium transition-colors ${
-                          hasTerms
-                            ? "bg-stone-100 text-stone-900 hover:bg-amber-100 hover:text-amber-900 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-amber-900/30 dark:hover:text-amber-400"
-                            : "text-stone-400 dark:text-stone-600"
-                        }`}
-                      >
-                        {letter.toUpperCase()}
-                      </a>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </div>
 
           {/* Loading State */}
           {isLoading && (
@@ -156,7 +132,7 @@ export default function GlossaryPage() {
                 if (!letterTerms) return null;
 
                 return (
-                  <section key={letter} id={letter} className="scroll-mt-36">
+                  <section key={letter} id={letter} className="scroll-mt-24">
                     <h2 className="mb-6 border-b-2 border-stone-200 pb-3 text-3xl font-bold text-stone-900 dark:border-stone-700 dark:text-stone-100">
                       {letter.toUpperCase()}
                     </h2>

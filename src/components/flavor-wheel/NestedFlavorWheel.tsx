@@ -3,8 +3,7 @@
 import { useState, useMemo } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
-import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel/flavor-wheel-data";
-import { getFlavorColor, increaseOpacity } from "@/shared/flavor-wheel/colors";
+import { FLAVOR_WHEEL_DATA, getFlavorColor, increaseOpacity } from "@/shared/flavor-wheel";
 import { SelectedBadges } from "./SelectedBadges";
 import { InfoTooltip } from "@/components/common/InfoTooltip";
 
@@ -101,7 +100,7 @@ function FlavorTreeNode({
   const isExpanded = expandedNodes.has(pathKey);
   const hasChildren = node.children && node.children.length > 0;
   const isSelected = selectedNodes.has(pathKey);
-  const color = getFlavorColor(currentNodePath);
+  const color = node.color;
   const selectedCount = countSelectedDescendants(node, nodePath, selectedNodes);
 
   const handleRowClick = () => {

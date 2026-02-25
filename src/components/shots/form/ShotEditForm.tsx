@@ -12,8 +12,6 @@ import { SectionResults } from "./SectionResults";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { useToast } from "@/components/common/Toast";
 import { ValidationBanner } from "@/components/common/ValidationBanner";
-import { BODY_ADJECTIVES } from "@/shared/flavor-wheel/constants";
-import type { BodyAdjective } from "@/shared/flavor-wheel/constants";
 
 interface ShotEditFormProps {
   shot: ShotWithJoins;

@@ -596,7 +596,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
               Recipe
             </h2>
             <a
-              href={`${AppRoutes.blog.shotLog.path}#Recipe`}
+              href={`${AppRoutes.resources.shotLog.path}#Recipe`}
               target="_blank"
               rel="noreferrer"
               aria-label="Recipe guide"

@@ -1,0 +1,101 @@
+{
+  "rows": [
+    {
+      "left": {
+        "items": [
+          "Crisp",
+          "Bright",
+          "Vibrant",
+          "Tart"
+        ],
+        "color": "rgba(129, 212, 250, 0.3)",
+        "colorName": "Muted Light Blue"
+      },
+      "right": {
+        "items": [
+          "Muted",
+          "Dull",
+          "Mild"
+        ],
+        "color": "rgba(224, 224, 224, 0.4)",
+        "colorName": "Muted Light Gray"
+      }
+    },
+    {
+      "left": {
+        "items": [
+          "Wild",
+          "Unbalanced",
+          "Sharp",
+          "Pointed"
+        ],
+        "color": "rgba(206, 147, 216, 0.3)",
+        "colorName": "Muted Light Purple"
+      },
+      "right": {
+        "items": [
+          "Structured",
+          "Balanced",
+          "Rounded"
+        ],
+        "color": "rgba(165, 214, 167, 0.3)",
+        "colorName": "Muted Light Green"
+      }
+    },
+    {
+      "left": {
+        "items": [
+          "Dense",
+          "Deep",
+          "Complex"
+        ],
+        "color": "rgba(123, 31, 162, 0.25)",
+        "colorName": "Muted Dark Purple"
+      },
+      "right": {
+        "items": [
+          "Soft",
+          "Faint",
+          "Delicate"
+        ],
+        "color": "rgba(248, 187, 208, 0.3)",
+        "colorName": "Muted Light Pink"
+      }
+    },
+    {
+      "left": {
+        "items": [
+          "Juicy"
+        ],
+        "color": "rgba(255, 183, 77, 0.3)",
+        "colorName": "Muted Light Orange"
+      },
+      "right": {
+        "items": [
+          "Dry",
+          "Astringent"
+        ],
+        "color": "rgba(215, 204, 200, 0.3)",
+        "colorName": "Muted Light Brown"
+      }
+    },
+    {
+      "left": {
+        "items": [
+          "Lingering",
+          "Dirty"
+        ],
+        "color": "rgba(66, 66, 66, 0.3)",
+        "colorName": "Muted Dark Gray"
+      },
+      "right": {
+        "items": [
+          "Quick",
+          "Clean"
+        ],
+        "color": "rgba(129, 212, 250, 0.3)",
+        "colorName": "Muted Light Blue"
+      }
+    }
+  ]
+}

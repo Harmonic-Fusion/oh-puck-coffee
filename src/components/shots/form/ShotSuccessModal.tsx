@@ -7,9 +7,11 @@ import { AppRoutes, resolvePath } from "@/app/routes";
 import { useCreateShareLink } from "@/components/shots/hooks";
 import { buildShotShareText, type ShotShareData } from "@/lib/share-text";
 import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
-import { getFlavorColor, getBodyColor } from "@/shared/flavor-wheel/colors";
-import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel/flavor-wheel-data";
-import { BODY_SELECTOR_DATA } from "@/shared/flavor-wheel/body-data";
+import {
+  FLAVOR_WHEEL_DATA,
+  getFlavorColor,
+  getBodyColor,
+} from "@/shared/flavor-wheel";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
 import { formatRating } from "@/lib/format-rating";
 import { formatTemp, roundToOneDecimal } from "@/lib/format-numbers";
@@ -215,20 +217,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
                       ? [
                           {
                             label: `${summary.bodyTexture[summary.bodyTexture.length - 1]} body`,
-                            color: (() => {
-                              const bodyValue = summary.bodyTexture[summary.bodyTexture.length - 1];
-                              // Find which category this body descriptor belongs to
-                              for (const [category, descriptors] of Object.entries(BODY_SELECTOR_DATA)) {
-                                if (descriptors.some((d: string) => d.toLowerCase() === bodyValue.toLowerCase())) {
-                                  return getBodyColor(category as "light" | "medium" | "heavy");
-                                }
-                              }
-                              // If it's just the category name
-                              if (["light", "medium", "heavy"].includes(bodyValue.toLowerCase())) {
-                                return getBodyColor(bodyValue.toLowerCase() as "light" | "medium" | "heavy");
-                              }
-                              return getBodyColor("light"); // Default
-                            })(),
+                            color: getBodyColor(summary.bodyTexture[summary.bodyTexture.length - 1]),
                             key: `body-${summary.bodyTexture[summary.bodyTexture.length - 1]}`,
                           },
                         ]

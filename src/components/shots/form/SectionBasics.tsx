@@ -27,7 +27,7 @@ export function SectionBasics() {
               Setup
             </h2>
             <Link
-              href={`${AppRoutes.blog.shotLog.path}#Setup`}
+              href={`${AppRoutes.resources.shotLog.path}#Setup`}
               target="_blank"
               aria-label="Setup guide"
               className="text-stone-400 transition-colors hover:text-amber-600 dark:text-stone-500 dark:hover:text-amber-400"

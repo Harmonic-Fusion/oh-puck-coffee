@@ -12,8 +12,7 @@ import {
 import { useState } from "react";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { ShotRow } from "./ShotRow";
-import { getFlavorColor } from "@/shared/flavor-wheel/colors";
-import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel/flavor-wheel-data";
+import { FLAVOR_WHEEL_DATA, getFlavorColor } from "@/shared/flavor-wheel";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
 import { formatRating } from "@/lib/format-rating";
 

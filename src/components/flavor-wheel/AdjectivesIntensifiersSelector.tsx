@@ -1,7 +1,6 @@
 "use client";
 
-import { ADJECTIVES_INTENSIFIERS_DATA } from "@/shared/flavor-wheel";
-import { getAdjectiveColor } from "@/shared/flavor-wheel/colors";
+import { ADJECTIVES_INTENSIFIERS_DATA, getAdjectiveColor } from "@/shared/flavor-wheel";
 import { SelectedBadges } from "./SelectedBadges";
 import { InfoTooltip } from "@/components/common/InfoTooltip";
 
@@ -53,8 +52,8 @@ export function AdjectivesIntensifiersSelector({
       </div>
       <div className="space-y-3">
         {ADJECTIVES_INTENSIFIERS_DATA.rows.map((row, rowIndex) => {
-          const leftColor = getAdjectiveColor(rowIndex, "left");
-          const rightColor = getAdjectiveColor(rowIndex, "right");
+          const leftColor = row.left.color;
+          const rightColor = row.right.color;
 
           return (
             <div
@@ -67,10 +66,10 @@ export function AdjectivesIntensifiersSelector({
                 style={{
                   backgroundColor: leftColor,
                 }}
-                onClick={() => handleToggleBox(row.left)}
+                onClick={() => handleToggleBox(row.left.items)}
               >
                 <div className="flex flex-wrap gap-1.5">
-                  {row.left.map((adjective) => {
+                  {row.left.items.map((adjective) => {
                     const isSelected = selectedSet.has(adjective);
                     return (
                       <button
@@ -104,10 +103,10 @@ export function AdjectivesIntensifiersSelector({
                 style={{
                   backgroundColor: rightColor,
                 }}
-                onClick={() => handleToggleBox(row.right)}
+                onClick={() => handleToggleBox(row.right.items)}
               >
                 <div className="flex flex-wrap gap-1.5 justify-end">
-                  {row.right.map((adjective) => {
+                  {row.right.items.map((adjective) => {
                     const isSelected = selectedSet.has(adjective);
                     return (
                       <button
@@ -140,27 +139,11 @@ export function AdjectivesIntensifiersSelector({
       </div>
       <SelectedBadges
         title="Selected Adjectives"
-        items={value.map((adjective) => {
-          // Find which row and side this adjective belongs to
-          let color = "rgba(158, 158, 158, 0.3)"; // Default color
-          for (let rowIndex = 0; rowIndex < ADJECTIVES_INTENSIFIERS_DATA.rows.length; rowIndex++) {
-            const row = ADJECTIVES_INTENSIFIERS_DATA.rows[rowIndex];
-            if (row.left.some((adj: string) => adj.toLowerCase() === adjective.toLowerCase())) {
-              color = getAdjectiveColor(rowIndex, "left");
-              break;
-            }
-            if (row.right.some((adj: string) => adj.toLowerCase() === adjective.toLowerCase())) {
-              color = getAdjectiveColor(rowIndex, "right");
-              break;
-            }
-          }
-
-          return {
-            label: adjective,
-            color,
-            key: adjective,
-          };
-        })}
+        items={value.map((adjective) => ({
+          label: adjective,
+          color: getAdjectiveColor(adjective),
+          key: adjective,
+        }))}
         onClear={() => onChange([])}
         onReorder={(reorderedItems) => {
           // Map reordered badge items back to adjective names

@@ -2,8 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
-import { BODY_SELECTOR_DATA } from "@/shared/flavor-wheel";
-import { getBodyColor, increaseOpacity } from "@/shared/flavor-wheel/colors";
+import { BODY_SELECTOR_DATA, increaseOpacity } from "@/shared/flavor-wheel";
 import { SelectedBadges } from "./SelectedBadges";
 import { InfoTooltip } from "@/components/common/InfoTooltip";
 
@@ -41,8 +40,8 @@ export function NestedBodySelector({
   const selectedDescriptorCategory = selectedDescriptor && !selectedCategory
     ? (() => {
         // Find which category this descriptor belongs to
-        for (const [cat, descriptors] of Object.entries(BODY_SELECTOR_DATA)) {
-          if (descriptors.some((d: string) => d.toLowerCase() === selectedDescriptor.toLowerCase())) {
+        for (const [cat, catData] of Object.entries(BODY_SELECTOR_DATA)) {
+          if (catData.descriptors.some((d: string) => d.toLowerCase() === selectedDescriptor.toLowerCase())) {
             return cat as BodyCategory;
           }
         }
@@ -115,8 +114,8 @@ export function NestedBodySelector({
       <div className="space-y-3 flex flex-col items-end w-full">
         {(["light", "medium", "heavy"] as BodyCategory[]).map((category) => {
           const isCategorySelected = selectedCategory === category;
-          const descriptors = BODY_SELECTOR_DATA[category];
-          const color = getBodyColor(category);
+          const categoryData = BODY_SELECTOR_DATA[category];
+          const color = categoryData.color;
           // Check if any descriptor from this category is selected
           const isDescriptorInCategory = selectedDescriptor && selectedDescriptorCategory === category;
           const hasSelectedDescriptor = isDescriptorInCategory;
@@ -164,7 +163,7 @@ export function NestedBodySelector({
               {expandedCategories.has(category) && (
                 <div className="border-t-2 px-4 py-3" style={{ borderColor: "rgba(255, 255, 255, 0.3)" }}>
                   <div className="flex flex-col gap-2">
-                    {descriptors.map((descriptor) => {
+                    {categoryData.descriptors.map((descriptor) => {
                       // Check if this descriptor is selected
                       const isDescriptorSelected = selectedDescriptor && 
                         descriptor.toLowerCase() === selectedDescriptor.toLowerCase();
@@ -202,9 +201,9 @@ export function NestedBodySelector({
           items={[
             {
               label: selectedDescriptor || selectedCategory || "",
-              color: getBodyColor(
+              color: BODY_SELECTOR_DATA[
                 selectedCategory || selectedDescriptorCategory || "light"
-              ),
+              ].color,
               key: selectedName,
               className: "capitalize",
             },

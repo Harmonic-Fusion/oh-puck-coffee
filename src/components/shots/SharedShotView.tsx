@@ -4,10 +4,12 @@ import { useSession } from "next-auth/react";
 import { AppRoutes } from "@/app/routes";
 import Link from "next/link";
 import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
-import { getFlavorColor, getBodyColor, getAdjectiveColor } from "@/shared/flavor-wheel/colors";
-import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel/flavor-wheel-data";
-import { BODY_SELECTOR_DATA } from "@/shared/flavor-wheel/body-data";
-import { ADJECTIVES_INTENSIFIERS_DATA } from "@/shared/flavor-wheel/adjectives-data";
+import {
+  FLAVOR_WHEEL_DATA,
+  getFlavorColor,
+  getBodyColor,
+  getAdjectiveColor,
+} from "@/shared/flavor-wheel";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
 import { formatRating } from "@/lib/format-rating";
 import { formatTemp, roundToOneDecimal } from "@/lib/format-numbers";
@@ -246,20 +248,7 @@ export function SharedShotView({ shot }: SharedShotViewProps) {
                     items={[
                       {
                         label: shot.bodyTexture[shot.bodyTexture.length - 1],
-                        color: (() => {
-                          const bodyValue = shot.bodyTexture[shot.bodyTexture.length - 1];
-                          // Find which category this body descriptor belongs to
-                          for (const [category, descriptors] of Object.entries(BODY_SELECTOR_DATA)) {
-                            if (descriptors.some((d: string) => d.toLowerCase() === bodyValue.toLowerCase())) {
-                              return getBodyColor(category as "light" | "medium" | "heavy");
-                            }
-                          }
-                          // If it's just the category name
-                          if (["light", "medium", "heavy"].includes(bodyValue.toLowerCase())) {
-                            return getBodyColor(bodyValue.toLowerCase() as "light" | "medium" | "heavy");
-                          }
-                          return getBodyColor("light"); // Default
-                        })(),
+                        color: getBodyColor(shot.bodyTexture[shot.bodyTexture.length - 1]),
                         key: shot.bodyTexture[shot.bodyTexture.length - 1],
                         className: "capitalize",
                       },
@@ -332,27 +321,11 @@ export function SharedShotView({ shot }: SharedShotViewProps) {
             </p>
             <SelectedBadges
               title=""
-              items={shot.adjectives.map((adjective) => {
-                // Find which row and side this adjective belongs to
-                let color = "rgba(158, 158, 158, 0.3)"; // Default color
-                for (let rowIndex = 0; rowIndex < ADJECTIVES_INTENSIFIERS_DATA.rows.length; rowIndex++) {
-                  const row = ADJECTIVES_INTENSIFIERS_DATA.rows[rowIndex];
-                  if (row.left.some((adj: string) => adj.toLowerCase() === adjective.toLowerCase())) {
-                    color = getAdjectiveColor(rowIndex, "left");
-                    break;
-                  }
-                  if (row.right.some((adj: string) => adj.toLowerCase() === adjective.toLowerCase())) {
-                    color = getAdjectiveColor(rowIndex, "right");
-                    break;
-                  }
-                }
-
-                return {
-                  label: adjective,
-                  color,
-                  key: adjective,
-                };
-              })}
+              items={shot.adjectives.map((adjective) => ({
+                label: adjective,
+                color: getAdjectiveColor(adjective),
+                key: adjective,
+              }))}
             />
           </div>
         )}

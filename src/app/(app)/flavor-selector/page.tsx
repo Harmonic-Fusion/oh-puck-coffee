@@ -5,9 +5,12 @@ import { NestedFlavorWheel } from "@/components/flavor-wheel/NestedFlavorWheel";
 import { NestedBodySelector } from "@/components/flavor-wheel/NestedBodySelector";
 import { AdjectivesIntensifiersSelector } from "@/components/flavor-wheel/AdjectivesIntensifiersSelector";
 import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
-import { FLAVOR_WHEEL_DATA, BODY_SELECTOR_DATA } from "@/shared/flavor-wheel";
-import { ADJECTIVES_INTENSIFIERS_DATA } from "@/shared/flavor-wheel";
-import { getFlavorColor, getBodyColor, getAdjectiveColor } from "@/shared/flavor-wheel/colors";
+import {
+  FLAVOR_WHEEL_DATA,
+  getFlavorColor,
+  getBodyColor,
+  getAdjectiveColor,
+} from "@/shared/flavor-wheel";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
 
 export default function FlavorSelectorPage() {
@@ -221,23 +224,10 @@ export default function FlavorSelectorPage() {
   const bodyBadgeData = useMemo(() => {
     if (body.length === 0) return null;
     const selectedName = body[0];
-    // Check if it's a category name
-    const isCategory = ["light", "medium", "heavy"].includes(selectedName.toLowerCase());
-    const categoryForColor = isCategory
-      ? (selectedName.toLowerCase() as "light" | "medium" | "heavy")
-      : (() => {
-          // Find which category this descriptor belongs to
-          for (const [cat, descriptors] of Object.entries(BODY_SELECTOR_DATA)) {
-            if (descriptors.some((d: string) => d.toLowerCase() === selectedName.toLowerCase())) {
-              return cat.toLowerCase() as "light" | "medium" | "heavy";
-            }
-          }
-          return "light" as const;
-        })();
 
     return {
       label: selectedName,
-      color: getBodyColor(categoryForColor),
+      color: getBodyColor(selectedName),
       key: selectedName,
       className: "capitalize",
     };
@@ -245,26 +235,11 @@ export default function FlavorSelectorPage() {
 
   // Compute adjectives badge data
   const adjectivesBadgeData = useMemo(() => {
-    return adjectives.map((adjective) => {
-      let color = "rgba(158, 158, 158, 0.3)";
-      for (let rowIndex = 0; rowIndex < ADJECTIVES_INTENSIFIERS_DATA.rows.length; rowIndex++) {
-        const row = ADJECTIVES_INTENSIFIERS_DATA.rows[rowIndex];
-        if (row.left.some((adj: string) => adj.toLowerCase() === adjective.toLowerCase())) {
-          color = getAdjectiveColor(rowIndex, "left");
-          break;
-        }
-        if (row.right.some((adj: string) => adj.toLowerCase() === adjective.toLowerCase())) {
-          color = getAdjectiveColor(rowIndex, "right");
-          break;
-        }
-      }
-
-      return {
-        label: adjective,
-        color,
-        key: adjective,
-      };
-    });
+    return adjectives.map((adjective) => ({
+      label: adjective,
+      color: getAdjectiveColor(adjective),
+      key: adjective,
+    }));
   }, [adjectives]);
 
   return (
