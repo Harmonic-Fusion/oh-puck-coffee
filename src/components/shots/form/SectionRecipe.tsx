@@ -634,7 +634,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                     setShowOrderModal(true);
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                  className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
                 >
                   Edit Inputs
                 </button>
@@ -644,7 +644,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
                     setShowQRCode(true);
                     setShowMenu(false);
                   }}
-                  className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                  className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
                 >
                   Recipe QR Code
                 </button>

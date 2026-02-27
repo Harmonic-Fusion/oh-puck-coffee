@@ -17,6 +17,8 @@ export interface ShotShareData {
   beanProcessingMethod?: string | null;
   shotQuality?: number | null;
   rating?: number | null;
+  bitter?: number | null;
+  sour?: number | null;
   doseGrams: number;
   yieldGrams: number;
   yieldActualGrams?: number | null;
@@ -64,6 +66,8 @@ const RESULTS_SECTION = `\
 const TASTING_SECTION = `\
 ☕ Tasting Notes
 {rating}
+{bitter}
+{sour}
 {body}
 {flavors}
 {adjectives}`;
@@ -94,7 +98,7 @@ export function buildShotShareText(shot: ShotShareData, tempUnit: TempUnit = "F"
   const resultsSection = (v.actualResult || v.quality)
     ? renderTemplate(RESULTS_SECTION, v)
     : "";
-  const tastingSection = (v.rating || v.body || v.flavors || v.adjectives)
+  const tastingSection = (v.rating || v.bitter || v.sour || v.body || v.flavors || v.adjectives)
     ? renderTemplate(TASTING_SECTION, v)
     : "";
 
@@ -130,6 +134,8 @@ interface TemplateVars {
   quality: string;
   // Tasting fields (each on its own line)
   rating: string;
+  bitter: string;
+  sour: string;
   body: string;
   flavors: string;
   adjectives: string;
@@ -185,6 +191,14 @@ function buildVars(shot: ShotShareData, tempUnit: TempUnit): TemplateVars {
     ? `Rating ${formatRating(shot.rating)}`
     : "";
 
+  const bitter = shot.bitter != null
+    ? `Bitter ${shot.bitter}/5`
+    : "";
+
+  const sour = shot.sour != null
+    ? `Sour ${shot.sour}/5`
+    : "";
+
   const bodyDisplay = shot.bodyTexture && shot.bodyTexture.length > 0
     ? shot.bodyTexture[shot.bodyTexture.length - 1]
     : null;
@@ -206,7 +220,7 @@ function buildVars(shot: ShotShareData, tempUnit: TempUnit): TemplateVars {
   return {
     beanName, beanOrigin, beanRoaster, roastLevel, processingMethod, roastDate,
     targetRecipe, grindLevel, brewTemp, brewPressure, grinderName, machineName,
-    actualResult, quality, rating, body, flavors, adjectives,
+    actualResult, quality, rating, bitter, sour, body, flavors, adjectives,
     notes, url,
   };
 }

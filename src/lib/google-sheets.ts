@@ -86,6 +86,8 @@ const HEADER_ROW = [
   "Flow Rate (g/s)",
   "Shot Quality",
   "Rating",
+  "Bitter",
+  "Sour",
   "Flavor Wheel",
   "Body",
   "Tools Used",
@@ -159,6 +161,8 @@ export async function appendShotRow(
     flowRate?: string | null;
     shotQuality: number | null;
     rating?: number | null;
+    bitter?: number | null;
+    sour?: number | null;
     flavors?: string[] | null;
     bodyTexture?: string[] | null;
     adjectives?: string[] | null;
@@ -194,6 +198,8 @@ export async function appendShotRow(
     shot.flowRate ?? "",
     shot.shotQuality ?? "",
     shot.rating ?? "",
+    shot.bitter ?? "",
+    shot.sour ?? "",
     flavorWheelStr,
     shot.bodyTexture && shot.bodyTexture.length > 0
       ? shot.bodyTexture[shot.bodyTexture.length - 1]
@@ -206,7 +212,7 @@ export async function appendShotRow(
 
   await sheets.spreadsheets.values.append({
     spreadsheetId,
-    range: "Sheet1!A:U",
+    range: "Sheet1!A:W",
     valueInputOption: "RAW",
     requestBody: {
       values: [row],

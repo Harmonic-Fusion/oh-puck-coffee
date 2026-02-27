@@ -15,6 +15,36 @@ import { formatRating } from "@/lib/format-rating";
 import { formatTemp, roundToOneDecimal } from "@/lib/format-numbers";
 import { useTempUnit } from "@/lib/use-temp-unit";
 
+// Color interpolation functions for bitter and sour display
+function interpolateColor(
+  value: number,
+  min: number = 1,
+  max: number = 5,
+  startColor: string,
+  endColor: string
+): string {
+  const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  const parseRGB = (rgb: string): [number, number, number] => {
+    const match = rgb.match(/\d+/g);
+    if (!match || match.length !== 3) return [156, 163, 175];
+    return [parseInt(match[0]), parseInt(match[1]), parseInt(match[2])];
+  };
+  const [r1, g1, b1] = parseRGB(startColor);
+  const [r2, g2, b2] = parseRGB(endColor);
+  const r = Math.round(r1 + (r2 - r1) * ratio);
+  const g = Math.round(g1 + (g2 - g1) * ratio);
+  const b = Math.round(b1 + (b2 - b1) * ratio);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function getBitterColor(value: number): string {
+  return interpolateColor(value, 1, 5, "rgb(156, 163, 175)", "rgb(69, 26, 3)");
+}
+
+function getSourColor(value: number): string {
+  return interpolateColor(value, 1, 5, "rgb(156, 163, 175)", "rgb(234, 179, 8)");
+}
+
 interface SharedShot {
   id: string;
   userName: string | null;
@@ -36,6 +66,8 @@ interface SharedShot {
   flowRate: string | null;
   shotQuality: string | null;
   rating: string | null;
+  bitter: string | null;
+  sour: string | null;
   notes: string | null;
   flavors: string[] | null;
   bodyTexture: string[] | null;
@@ -166,6 +198,48 @@ export function SharedShotView({ shot }: SharedShotViewProps) {
               </span>
               <span className="text-lg">{formatRating(shot.rating ? parseFloat(shot.rating) : null)}</span>
             </div>
+          </div>
+        )}
+
+        {/* Bitter */}
+        {shot.bitter != null && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-stone-50 px-4 py-3 dark:bg-stone-800">
+            <span className="text-sm text-stone-500 dark:text-stone-400">
+              Bitter
+            </span>
+            <span className="ml-auto flex items-center gap-2">
+              <div
+                className="h-4 w-4 rounded-full"
+                style={{ backgroundColor: getBitterColor(parseFloat(shot.bitter)) }}
+              />
+              <span className="text-2xl font-bold" style={{ color: getBitterColor(parseFloat(shot.bitter)) }}>
+                {shot.bitter}
+              </span>
+              <span className="text-sm text-stone-400 dark:text-stone-500">
+                / 5
+              </span>
+            </span>
+          </div>
+        )}
+
+        {/* Sour */}
+        {shot.sour != null && (
+          <div className="mb-4 flex items-center gap-2 rounded-lg bg-stone-50 px-4 py-3 dark:bg-stone-800">
+            <span className="text-sm text-stone-500 dark:text-stone-400">
+              Sour
+            </span>
+            <span className="ml-auto flex items-center gap-2">
+              <div
+                className="h-4 w-4 rounded-full"
+                style={{ backgroundColor: getSourColor(parseFloat(shot.sour)) }}
+              />
+              <span className="text-2xl font-bold" style={{ color: getSourColor(parseFloat(shot.sour)) }}>
+                {shot.sour}
+              </span>
+              <span className="text-sm text-stone-400 dark:text-stone-500">
+                / 5
+              </span>
+            </span>
           </div>
         )}
 

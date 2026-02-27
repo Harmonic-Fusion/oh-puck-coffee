@@ -47,6 +47,8 @@ export async function GET(
       flowRate: shots.flowRate,
       shotQuality: shots.shotQuality,
       rating: shots.rating,
+      bitter: shots.bitter,
+      sour: shots.sour,
       notes: shots.notes,
       flavors: shots.flavors,
       bodyTexture: shots.bodyTexture,

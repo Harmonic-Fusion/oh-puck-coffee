@@ -152,6 +152,8 @@ export const shots = pgTable("shots", {
   // Subjective
   shotQuality: numeric("shot_quality", { precision: 3, scale: 1 }), // 1-5 with 0.5 steps (optional)
   rating: numeric("rating", { precision: 3, scale: 1 }), // 1-5 with 0.5 steps (optional)
+  bitter: numeric("bitter", { precision: 3, scale: 1 }), // 1-5 with 0.5 steps (optional)
+  sour: numeric("sour", { precision: 3, scale: 1 }), // 1-5 with 0.5 steps (optional)
   toolsUsed: jsonb("tools_used").$type<string[]>(),
   notes: text("notes"),
   // Flavor data (all optional) - separate columns

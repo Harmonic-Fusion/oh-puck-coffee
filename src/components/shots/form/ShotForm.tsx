@@ -112,6 +112,8 @@ export function ShotForm() {
         brewTimeSecs: data.brewTimeSecs,
         shotQuality: data.shotQuality,
         rating: data.rating,
+        bitter: data.bitter,
+        sour: data.sour,
         notes: data.notes,
         beanName: bean?.name ?? null,
         beanRoastLevel: bean?.roastLevel ?? null,
@@ -149,14 +151,6 @@ export function ShotForm() {
         <SectionResults />
 
         <div className="mt-8 flex flex-col items-center gap-3">
-          <Button
-            type="submit"
-            loading={createShot.isPending}
-            size="lg"
-            className="w-full py-4 text-lg"
-          >
-            Log Shot
-          </Button>
           {methods.formState.isSubmitted && (
             <ValidationBanner errors={methods.formState.errors} />
           )}
@@ -170,6 +164,14 @@ export function ShotForm() {
               {methods.formState.errors.root.message}
             </p>
           )}
+          <Button
+            type="submit"
+            loading={createShot.isPending}
+            size="lg"
+            className="w-full py-4 text-lg"
+          >
+            Log Shot
+          </Button>
         </div>
       </form>
 

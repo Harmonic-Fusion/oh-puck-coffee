@@ -487,6 +487,35 @@ export default function ShotLogResourcePage() {
 
               <div className="mt-8 space-y-8">
                 <div>
+                  <h3 id="rating" className="scroll-mt-24 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Rating
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Rate your overall enjoyment of the shot from 1–5 (Undrinkable, Didn't Enjoy, Enjoyed, Really Enjoyed, Loved It). This is
+                    your subjective rating of how much you liked it, separate
+                    from technical quality. The rating helps you quickly
+                    spot your best shots in the history.
+                  </p>
+                </div>
+                <div>
+                  <h3 id="bitter" className="scroll-mt-24 flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Bitter
+                    <HiddenFieldLink />
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Rate the bitterness of the shot on a 1–5 scale. The slider uses a colored dot that transitions from neutral gray (1) to dark brown (5), providing visual feedback that matches the taste characteristic. Use this to track bitterness levels across different shots and recipes.
+                  </p>
+                </div>
+                <div>
+                  <h3 id="sour" className="scroll-mt-24 flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Sour
+                    <HiddenFieldLink />
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Rate the sourness (acidity) of the shot on a 1–5 scale. The slider uses a colored dot that transitions from neutral gray (1) to bright yellow (5), providing visual feedback that matches the taste characteristic. Use this to track acidity levels and understand how different recipes affect sourness.
+                  </p>
+                </div>
+                <div>
                   <h3 id="flavors" className="scroll-mt-24 flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
                     Flavors
                     <HiddenFieldLink />
@@ -517,17 +546,6 @@ export default function ShotLogResourcePage() {
                     Describe intensifiers like &ldquo;bright,&rdquo;
                     &ldquo;heavy,&rdquo; &ldquo;balanced,&rdquo; or
                     &ldquo;complex.&rdquo;
-                  </p>
-                </div>
-                <div>
-                  <h3 id="rating" className="scroll-mt-24 text-xl font-semibold text-stone-800 dark:text-stone-200">
-                    Rating
-                  </h3>
-                  <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    Rate your overall enjoyment of the shot from 1–5. This is
-                    your subjective rating of how much you liked it, separate
-                    from technical quality. The star rating helps you quickly
-                    spot your best shots in the history.
                   </p>
                 </div>
                 <div>

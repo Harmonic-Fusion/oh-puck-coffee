@@ -33,6 +33,8 @@ const mockShot: ShotWithJoins = {
   flowRate: null,
   shotQuality: 4,
   rating: 5,
+  bitter: null,
+  sour: null,
   flavors: [],
   bodyTexture: ["Medium"],
   adjectives: [],

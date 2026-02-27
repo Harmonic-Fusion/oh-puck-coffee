@@ -50,7 +50,7 @@ export function AdjectivesIntensifiersSelector({
           ariaLabel="Adjectives & Intensifiers help"
         />
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2">
         {ADJECTIVES_INTENSIFIERS_DATA.rows.map((row, rowIndex) => {
           const leftColor = row.left.color;
           const rightColor = row.right.color;
@@ -58,7 +58,7 @@ export function AdjectivesIntensifiersSelector({
           return (
             <div
               key={rowIndex}
-              className="grid grid-cols-2 gap-2 rounded-lg p-3"
+              className="grid grid-cols-2 gap-2 rounded-lg"
             >
               {/* Left Side */}
               <div 
@@ -68,7 +68,7 @@ export function AdjectivesIntensifiersSelector({
                 }}
                 onClick={() => handleToggleBox(row.left.items)}
               >
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   {row.left.items.map((adjective) => {
                     const isSelected = selectedSet.has(adjective);
                     return (

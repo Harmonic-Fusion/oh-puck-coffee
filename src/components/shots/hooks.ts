@@ -31,6 +31,8 @@ export interface ShotWithJoins {
   daysPostRoast: number | null;
   shotQuality: number;
   rating: number | null;
+  bitter: number | null;
+  sour: number | null;
   toolsUsed: string[] | null;
   notes: string | null;
   flavors: string[] | null;

@@ -42,6 +42,8 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
       estimateMaxPressure: shot.estimateMaxPressure ? parseFloat(shot.estimateMaxPressure) : undefined,
       shotQuality: shot.shotQuality,
       rating: shot.rating ?? 1,
+      bitter: shot.bitter ?? undefined,
+      sour: shot.sour ?? undefined,
       flavors: shot.flavors || undefined,
       bodyTexture: shot.bodyTexture || undefined,
       adjectives: shot.adjectives || undefined,

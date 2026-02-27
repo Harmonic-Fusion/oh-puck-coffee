@@ -14,6 +14,7 @@ interface SliderProps {
   showValue?: boolean;
   labels?: Record<number, string>; // Map of integer values to label text
   id?: string;
+  thumbColor?: string; // Optional color for thumb dot (replaces logo)
 }
 
 export function Slider({
@@ -28,10 +29,12 @@ export function Slider({
   showValue = true,
   labels,
   id,
+  thumbColor,
 }: SliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [hasInteracted, setHasInteracted] = useState(false);
   const percentage = ((value - min) / (max - min)) * 100;
+  const trackColor = thumbColor || "rgb(245 158 11)"; // amber-500 default
 
   // Build all step positions
   const steps = useMemo(() => {
@@ -126,25 +129,32 @@ export function Slider({
           {/* Filled portion */}
           {hasInteracted && (
             <div
-              className="absolute inset-y-0 left-0 rounded-full bg-amber-500 transition-[width] duration-75"
-              style={{ width: `${percentage}%` }}
+              className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-75"
+              style={{ width: `${percentage}%`, backgroundColor: trackColor }}
             />
           )}
         </div>
 
-        {/* Thumb — logo icon (hidden until first interaction) */}
+        {/* Thumb — logo icon or colored dot (hidden until first interaction) */}
         {hasInteracted && (
           <div
             className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-75"
             style={{ left: `${percentage}%` }}
           >
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg dark:bg-stone-800">
-              <img
-                src="/logos/logo_complex.png"
-                alt=""
-                className="h-16 w-16"
+            {thumbColor ? (
+              <div
+                className="h-16 w-16 rounded-full shadow-lg border-4 border-white dark:border-stone-800"
+                style={{ backgroundColor: thumbColor }}
               />
-            </div>
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg dark:bg-stone-800">
+                <img
+                  src="/logos/logo_complex.png"
+                  alt=""
+                  className="h-16 w-16"
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -173,9 +183,14 @@ export function Slider({
                   isWhole ? "h-2 w-2" : "h-1 w-1"
                 } ${
                   hasInteracted && stepValue <= value + 0.01
-                    ? "bg-amber-500"
+                    ? ""
                     : "bg-stone-300 dark:bg-stone-600"
                 }`}
+                style={
+                  hasInteracted && stepValue <= value + 0.01
+                    ? { backgroundColor: trackColor }
+                    : undefined
+                }
               />
 
               {/* Number + label for whole numbers */}
