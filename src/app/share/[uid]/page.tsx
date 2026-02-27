@@ -42,6 +42,8 @@ async function getSharedShot(uid: string) {
       flowRate: shots.flowRate,
       shotQuality: shots.shotQuality,
       rating: shots.rating,
+      bitter: shots.bitter,
+      sour: shots.sour,
       notes: shots.notes,
       flavors: shots.flavors,
       bodyTexture: shots.bodyTexture,
@@ -75,6 +77,8 @@ async function getSharedShot(uid: string) {
 
   return {
     ...result,
+    bitter: result.bitter ?? null,
+    sour: result.sour ?? null,
     brewRatio,
     daysPostRoast,
   };

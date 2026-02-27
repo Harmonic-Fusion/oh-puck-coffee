@@ -64,9 +64,10 @@ describe("routesBuilder", () => {
       },
     });
     expect(routes.api.path).toBe("/api");
-    expect(routes.api.stats.path).toBe("/api/stats");
-    expect(routes.api.stats.byBean.path).toBe("/api/stats/by-bean");
-    expect(routes.api.stats.byBean.beanId.path).toBe(
+    const stats = routes.api.stats as { path: string; byBean: { path: string; beanId: { path: string } } };
+    expect(stats.path).toBe("/api/stats");
+    expect(stats.byBean.path).toBe("/api/stats/by-bean");
+    expect(stats.byBean.beanId.path).toBe(
       "/api/stats/by-bean/:beanId"
     );
   });
