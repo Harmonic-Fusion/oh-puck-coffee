@@ -661,7 +661,7 @@ export function SectionResults() {
                       setShowResultsOrderModal(true);
                       setShowResultsMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                    className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
                   >
                     Edit Inputs
                   </button>
@@ -723,7 +723,7 @@ export function SectionResults() {
                       setShowTastingOrderModal(true);
                       setShowTastingMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                    className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
                   >
                     Edit Inputs
                   </button>

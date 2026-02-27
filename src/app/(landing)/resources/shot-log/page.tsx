@@ -531,6 +531,48 @@ export default function ShotLogResourcePage() {
                   </p>
                 </div>
                 <div>
+                  <h3 id="bitter" className="scroll-mt-24 flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Bitter
+                    <HiddenFieldLink />
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Rate the bitterness of the shot on a 1–5 scale. The slider uses a colored dot that transitions from neutral gray (1) to dark brown (5), providing visual feedback that matches the taste characteristic. Use this to track bitterness levels across different shots and recipes.
+                  </p>
+                  <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
+                    <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
+                      📊 Scale Guide
+                    </p>
+                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-stone-600 dark:text-stone-400">
+                      <li><strong>1:</strong> Not bitter</li>
+                      <li><strong>2:</strong> Slightly bitter</li>
+                      <li><strong>3:</strong> Moderately bitter</li>
+                      <li><strong>4:</strong> Very bitter</li>
+                      <li><strong>5:</strong> Extremely bitter</li>
+                    </ul>
+                  </div>
+                </div>
+                <div>
+                  <h3 id="sour" className="scroll-mt-24 flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Sour
+                    <HiddenFieldLink />
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Rate the sourness (acidity) of the shot on a 1–5 scale. The slider uses a colored dot that transitions from neutral gray (1) to bright yellow (5), providing visual feedback that matches the taste characteristic. Use this to track acidity levels and understand how different recipes affect sourness.
+                  </p>
+                  <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
+                    <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
+                      📊 Scale Guide
+                    </p>
+                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-stone-600 dark:text-stone-400">
+                      <li><strong>1:</strong> Not sour</li>
+                      <li><strong>2:</strong> Slightly sour</li>
+                      <li><strong>3:</strong> Moderately sour</li>
+                      <li><strong>4:</strong> Very sour</li>
+                      <li><strong>5:</strong> Extremely sour</li>
+                    </ul>
+                  </div>
+                </div>
+                <div>
                   <h3 id="notes" className="scroll-mt-24 text-xl font-semibold text-stone-800 dark:text-stone-200">
                     Notes
                   </h3>
