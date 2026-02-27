@@ -10,7 +10,8 @@ import type { ShotWithJoins } from "@/components/shots/hooks";
 import { AppRoutes, resolvePath } from "@/app/routes";
 import { ShotEditForm } from "@/components/shots/form/ShotEditForm";
 import { useShot, useCreateShareLink } from "@/components/shots/hooks";
-import { buildShotShareText } from "@/lib/share-text";
+import { type ShotShareData } from "@/lib/share-text";
+import { LongPressShareButton } from "@/components/shots/LongPressShareButton";
 import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
 import {
   FLAVOR_WHEEL_DATA,
@@ -136,70 +137,83 @@ export function ShotDetail({
     }
   }, [shot]);
 
-  const handleShare = useCallback(async () => {
-    if (!shot) return;
-    try {
-      const result = createShareLink.data ?? await createShareLink.mutateAsync(shot.id);
-      const shareUrl = `${window.location.origin}${resolvePath(AppRoutes.share.uid, { uid: result.id })}`;
+  const shotShareData = useMemo<ShotShareData | null>(() => {
+    if (!shot) return null;
+    return {
+      beanName: shot.beanName,
+      beanRoastLevel: shot.beanRoastLevel,
+      beanOrigin: null,
+      beanRoaster: null,
+      beanRoastDate: shot.beanRoastDate
+        ? new Date(shot.beanRoastDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        : null,
+      beanProcessingMethod: null,
+      shotQuality: shot.shotQuality,
+      rating: shot.rating,
+      bitter: shot.bitter,
+      sour: shot.sour,
+      doseGrams: parseFloat(shot.doseGrams),
+      yieldGrams: parseFloat(shot.yieldGrams),
+      yieldActualGrams: shot.yieldActualGrams ? parseFloat(shot.yieldActualGrams) : null,
+      brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : null,
+      grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : null,
+      brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : null,
+      brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : null,
+      grinderName: shot.grinderName,
+      machineName: shot.machineName,
+      flavors: shot.flavors,
+      bodyTexture: shot.bodyTexture,
+      adjectives: shot.adjectives,
+      notes: shot.notes,
+    };
+  }, [shot]);
 
-      const shareData = {
-        title: "Journey before Destination!",
-        text: buildShotShareText({
-          beanName: shot.beanName,
-          beanRoastLevel: shot.beanRoastLevel,
-          beanRoastDate: shot.beanRoastDate
-            ? new Date(shot.beanRoastDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-            : null,
-          shotQuality: shot.shotQuality,
-          rating: shot.rating,
-          bitter: shot.bitter,
-          sour: shot.sour,
-          doseGrams: parseFloat(shot.doseGrams),
-          yieldGrams: parseFloat(shot.yieldGrams),
-          yieldActualGrams: shot.yieldActualGrams ? parseFloat(shot.yieldActualGrams) : null,
-          brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : null,
-          grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : null,
-          brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : null,
-          brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : null,
-          grinderName: shot.grinderName,
-          machineName: shot.machineName,
-          flavors: shot.flavors,
-          bodyTexture: shot.bodyTexture,
-          adjectives: shot.adjectives,
-          notes: shot.notes,
-          url: shareUrl,
-        }, tempUnit),
-        url: shareUrl,
-      };
+  const shareUrl = useMemo(() => {
+    if (!createShareLink.data) return "";
+    return `${typeof window !== "undefined" ? window.location.origin : ""}${resolvePath(AppRoutes.share.uid, { uid: createShareLink.data.id })}`;
+  }, [createShareLink.data]);
 
-      // Check if Web Share API is available
-      if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
-        try {
-          if (navigator.canShare(shareData)) {
-            await navigator.share(shareData);
-            return;
-          }
-        } catch (err) {
-          // User cancelled — ignore AbortError, fall through for others
-          if (err instanceof Error && err.name !== "AbortError") {
-            console.error("Error sharing:", err);
-          }
-          // Fall through to clipboard fallback
-        }
-      }
-
-      // Fallback: Copy text to clipboard (URL is already in the text)
-      try {
-        await navigator.clipboard.writeText(shareData.text);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-      } catch (clipboardErr) {
-        console.error("Error copying to clipboard:", clipboardErr);
-      }
-    } catch {
-      // Share link creation failed
+  // Auto-create share link when modal opens
+  useEffect(() => {
+    if (open && shot && !createShareLink.data && !createShareLink.isPending) {
+      createShareLink.mutate(shot.id);
     }
-  }, [shot, createShareLink]);
+  }, [open, shot]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleShare = useCallback(async (text: string) => {
+    if (!shareUrl) return;
+
+    const shareData = {
+      title: "Journey before Destination!",
+      text,
+      url: shareUrl,
+    };
+
+    // Check if Web Share API is available
+    if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
+      try {
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          return;
+        }
+      } catch (err) {
+        // User cancelled — ignore AbortError, fall through for others
+        if (err instanceof Error && err.name !== "AbortError") {
+          console.error("Error sharing:", err);
+        }
+        // Fall through to clipboard fallback
+      }
+    }
+
+    // Fallback: Copy text to clipboard (URL is already in the text)
+    try {
+      await navigator.clipboard.writeText(shareData.text);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch (clipboardErr) {
+      console.error("Error copying to clipboard:", clipboardErr);
+    }
+  }, [shareUrl]);
 
   if (!shot) return null;
 
@@ -368,29 +382,58 @@ export function ShotDetail({
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
         </svg>
       </Button>
-      <Button
-        variant="secondary"
-        size="md"
-        onClick={handleShare}
-        className="flex-1"
-        title={shareCopied ? "Link copied!" : "Share shot"}
-        disabled={createShareLink.isPending}
-      >
-        {shareCopied ? (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M20 6L9 17l-5-5" />
-          </svg>
-        ) : (
+      {shareUrl && shotShareData ? (
+        <LongPressShareButton
+          shotData={shotShareData}
+          tempUnit={tempUnit}
+          shareUrl={shareUrl}
+          onShare={handleShare}
+          className="flex-1"
+          variant="secondary"
+          size="md"
+        >
+          {shareCopied ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20 6L9 17l-5-5" />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
+          )}
+        </LongPressShareButton>
+      ) : (
+        <Button
+          variant="secondary"
+          size="md"
+          className="flex-1"
+          title="Share shot"
+          disabled={createShareLink.isPending}
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="20"
@@ -408,8 +451,8 @@ export function ShotDetail({
             <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
           </svg>
-        )}
-      </Button>
+        </Button>
+      )}
     </div>
   );
 

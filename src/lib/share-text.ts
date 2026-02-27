@@ -35,6 +35,8 @@ export interface ShotShareData {
   url?: string | null;
 }
 
+export type ShareFormat = "short" | "standard" | "ridiculous";
+
 
 
 // ─── Share-text templates ────────────────────────────────────────────
@@ -107,6 +109,229 @@ export function buildShotShareText(shot: ShotShareData, tempUnit: TempUnit = "F"
     beanSection, recipeSection, resultsSection, tastingSection,
     notes: v.notes, url: v.url,
   });
+}
+
+/**
+ * Build a short share text with just bean name, rating, and URL.
+ */
+export function buildShortShareText(shot: ShotShareData, tempUnit: TempUnit = "F"): string {
+  const parts: string[] = [];
+
+  if (shot.beanName) {
+    parts.push(`🫘 ${shot.beanName}`);
+  }
+
+  if (shot.rating != null) {
+    const ratingLabel = formatRating(shot.rating);
+    if (ratingLabel) {
+      parts.push(`Rating: ${ratingLabel}`);
+    }
+  }
+
+  if (shot.url) {
+    parts.push(shot.url);
+  }
+
+  return parts.join("\n");
+}
+
+/**
+ * Build a ridiculously verbose share text with all details, jokes, and dramatic flair.
+ */
+export function buildRidiculousShareText(shot: ShotShareData, tempUnit: TempUnit = "F"): string {
+  const v = buildVars(shot, tempUnit);
+  const parts: string[] = [];
+
+  // Dramatic opening
+  parts.push("🌟 Journey before Destination! 🌟");
+  parts.push("");
+  parts.push("Prepare yourself for the most EXTRAORDINARY espresso shot documentation you've ever witnessed!");
+  parts.push("");
+
+  // Bean section with dramatic flair
+  if (v.beanName) {
+    parts.push("🫘 THE BEANS (The Foundation of Greatness)");
+    parts.push(`✨ ${v.beanName} ✨`);
+    if (v.beanOrigin || v.beanRoaster) {
+      const originRoaster = [v.beanOrigin, v.beanRoaster].filter(Boolean).join(" · ");
+      if (originRoaster) {
+        parts.push(`   Hailing from: ${originRoaster}`);
+      }
+    }
+    if (v.roastLevel || v.processingMethod || v.roastDate) {
+      const meta = [v.roastLevel, v.processingMethod, v.roastDate].filter(Boolean).join(" · ");
+      if (meta) {
+        parts.push(`   Details: ${meta}`);
+      }
+    }
+    parts.push("");
+  }
+
+  // Recipe section with dramatic commentary
+  parts.push("📋 THE RECIPE (Where Magic Begins)");
+  parts.push(`   Target: ${v.targetRecipe}`);
+  if (v.targetRecipe.includes("1:2")) {
+    parts.push("   (Ah, the classic 1:2 ratio — a timeless dance of coffee and water!)");
+  }
+  if (v.grindLevel || v.brewTemp || v.brewPressure) {
+    const details = [v.grindLevel, v.brewTemp, v.brewPressure].filter(Boolean).join(" · ");
+    if (details) {
+      parts.push(`   Settings: ${details}`);
+    }
+  }
+  if (v.grinderName || v.machineName) {
+    const equipment = [v.grinderName, v.machineName].filter(Boolean).join(" · ");
+    if (equipment) {
+      parts.push(`   Equipment: ${equipment}`);
+      parts.push("   (Because great coffee deserves great tools!)");
+    }
+  }
+  parts.push("");
+
+  // Results section with dramatic flair
+  if (v.actualResult || v.quality) {
+    parts.push("📊 THE RESULTS (The Moment of Truth)");
+    if (v.actualResult) {
+      parts.push(`   Actual: ${v.actualResult}`);
+      if (v.actualResult.includes("1:2")) {
+        parts.push("   (Perfectly balanced, as all things should be!)");
+      } else if (v.actualResult.includes("1:1")) {
+        parts.push("   (A ristretto! Bold, intense, not for the faint of heart!)");
+      } else if (v.actualResult.includes("1:3")) {
+        parts.push("   (A lungo! Smooth, mellow, taking the scenic route!)");
+      }
+    }
+    if (v.quality) {
+      parts.push(`   ${v.quality}`);
+      if (v.quality.includes("5/5")) {
+        parts.push("   (FLAWLESS VICTORY! This shot is legendary!)");
+      } else if (v.quality.includes("4/5")) {
+        parts.push("   (Excellence achieved! A shot to remember!)");
+      } else if (v.quality.includes("3/5")) {
+        parts.push("   (Solid work! Room for improvement, but still enjoyable!)");
+      }
+    }
+    parts.push("");
+  }
+
+  // Tasting section with flowery descriptions
+  if (v.rating || v.bitter || v.sour || v.body || v.flavors || v.adjectives) {
+    parts.push("☕ THE TASTING NOTES (Where Poetry Meets Coffee)");
+    if (v.rating) {
+      parts.push(`   ${v.rating}`);
+      if (v.rating.includes("Loved It")) {
+        parts.push("   (This is the shot dreams are made of!)");
+      } else if (v.rating.includes("Really Enjoyed")) {
+        parts.push("   (A truly delightful experience!)");
+      } else if (v.rating.includes("Enjoyed")) {
+        parts.push("   (A pleasant cup, well executed!)");
+      }
+    }
+    if (v.bitter) {
+      parts.push(`   ${v.bitter}`);
+      if (v.bitter.includes("1/5") || v.bitter.includes("2/5")) {
+        parts.push("   (Barely any bitterness — smooth as silk!)");
+      } else if (v.bitter.includes("4/5") || v.bitter.includes("5/5")) {
+        parts.push("   (Bold bitterness — for those who like it strong!)");
+      }
+    }
+    if (v.sour) {
+      parts.push(`   ${v.sour}`);
+      if (v.sour.includes("1/5") || v.sour.includes("2/5")) {
+        parts.push("   (Minimal acidity — mellow and gentle!)");
+      } else if (v.sour.includes("4/5") || v.sour.includes("5/5")) {
+        parts.push("   (Bright acidity — zingy and vibrant!)");
+      }
+    }
+    if (v.body) {
+      parts.push(`   ${v.body}`);
+      parts.push("   (The texture tells a story of extraction mastery!)");
+    }
+    if (v.flavors) {
+      parts.push(`   Flavors: ${v.flavors}`);
+      parts.push("   (A symphony of taste notes dancing on the palate!)");
+    }
+    if (v.adjectives) {
+      parts.push(`   Descriptors: ${v.adjectives}`);
+      parts.push("   (Words that capture the essence of this brew!)");
+    }
+    parts.push("");
+  }
+
+  // Notes with dramatic flair
+  if (v.notes) {
+    parts.push("💭 THE NOTES (Wisdom from the Brewer)");
+    parts.push(`   ${v.notes}`);
+    parts.push("   (These words capture the soul of this shot!)");
+    parts.push("");
+  }
+
+  // Haiku section
+  const haikus = [
+    "Steam rises gently\nDark liquid flows like honey\nMorning's perfect start",
+    "Grind the beans with care\nWater meets coffee grounds\nMagic in a cup",
+    "First sip of the day\nRich crema swirls in my cup\nLife begins anew",
+    "Espresso machine\nHums with anticipation\nPerfection awaits",
+    "Bitter and complex\nSweet notes dance on my tongue\nCoffee's poetry",
+    "Dark roast, bold flavor\nEach shot tells its own story\nBrewer's art revealed",
+    "Steam curls in the air\nAroma fills the kitchen\nCoffee ritual",
+    "Perfect extraction\nGolden crema crowns the shot\nBarista's triumph",
+    "Morning's first coffee\nWarms the soul and wakes the mind\nSimple perfection",
+    "From bean to cup now\nA journey of transformation\nCoffee's alchemy",
+  ];
+  
+  // Randomly select a haiku for each share
+  const haikuIndex = Math.floor(Math.random() * haikus.length);
+  const selectedHaiku = haikus[haikuIndex];
+  
+  parts.push("🌸 A HAIKU FOR THIS SHOT 🌸");
+  parts.push("");
+  parts.push(selectedHaiku);
+  parts.push("");
+
+  // Dramatic closing
+  parts.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  if (v.url) {
+    parts.push(`🔗 Full details: ${v.url}`);
+  }
+  parts.push("");
+  
+  // Random sign-off
+  const signOffs = [
+    "☕ Puck around and find out ☕",
+    "☕ What the puck did I just pull ☕",
+    "☕ Holy puck ☕",
+    "☕ Puck it, close enough ☕",
+    "☕ No pucks given ☕",
+    "☕ What a time to be a puck ☕",
+    "☕ Puck me that was good ☕",
+    "☕ Straight outta the portafilter ☕",
+    "☕ Pucking nailed it ☕",
+    "☕ To puck and beyond ☕",
+  ];
+  const signOffIndex = Math.floor(Math.random() * signOffs.length);
+  parts.push(signOffs[signOffIndex]);
+
+  return parts.join("\n");
+}
+
+/**
+ * Build share text based on the specified format.
+ */
+export function buildShareText(
+  shot: ShotShareData,
+  tempUnit: TempUnit = "F",
+  format: ShareFormat = "standard",
+): string {
+  switch (format) {
+    case "short":
+      return buildShortShareText(shot, tempUnit);
+    case "ridiculous":
+      return buildRidiculousShareText(shot, tempUnit);
+    case "standard":
+    default:
+      return buildShotShareText(shot, tempUnit);
+  }
 }
 
 // ---------------------------------------------------------------------------

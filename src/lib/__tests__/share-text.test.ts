@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { buildShotShareText, type ShotShareData } from "@/lib/share-text";
+import {
+  buildShotShareText,
+  buildShortShareText,
+  buildRidiculousShareText,
+  buildShareText,
+  type ShotShareData,
+} from "@/lib/share-text";
 
 // ---------------------------------------------------------------------------
 // Test data factory
@@ -433,5 +439,133 @@ describe("buildShotShareText", () => {
       const text = buildShotShareText(makeShot());
       expect(text).toBe(text.trim());
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Short share text
+// ---------------------------------------------------------------------------
+
+describe("buildShortShareText", () => {
+  it("renders bean name, rating, and URL", () => {
+    const text = buildShortShareText(makeShot());
+    expect(text).toBe(
+      [
+        "🫘 Ethiopia Yirgacheffe",
+        "Rating: Loved It",
+        "https://example.com/share/abc123",
+      ].join("\n")
+    );
+  });
+
+  it("renders only bean name when rating and URL are absent", () => {
+    const text = buildShortShareText(makeShot({ rating: null, url: null }));
+    expect(text).toBe("🫘 Ethiopia Yirgacheffe");
+  });
+
+  it("renders only rating when bean name and URL are absent", () => {
+    const text = buildShortShareText(makeShot({ beanName: null, url: null }));
+    expect(text).toBe("Rating: Loved It");
+  });
+
+  it("renders only URL when bean name and rating are absent", () => {
+    const text = buildShortShareText(makeShot({ beanName: null, rating: null }));
+    expect(text).toBe("https://example.com/share/abc123");
+  });
+
+  it("renders empty string when all fields are absent", () => {
+    const text = buildShortShareText({
+      doseGrams: 18,
+      yieldGrams: 36,
+      beanName: null,
+      rating: null,
+      url: null,
+    });
+    expect(text).toBe("");
+  });
+
+  it("handles different rating values", () => {
+    const text = buildShortShareText(makeShot({ rating: 3 }));
+    expect(text).toContain("Rating: Enjoyed");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Ridiculous share text
+// ---------------------------------------------------------------------------
+
+describe("buildRidiculousShareText", () => {
+  it("renders a verbose version with all fields and dramatic flair", () => {
+    const text = buildRidiculousShareText(makeShot());
+    expect(text).toContain("🌟 Journey before Destination! 🌟");
+    expect(text).toContain("EXTRAORDINARY espresso shot documentation");
+    expect(text).toContain("🫘 THE BEANS (The Foundation of Greatness)");
+    expect(text).toContain("📋 THE RECIPE (Where Magic Begins)");
+    expect(text).toContain("📊 THE RESULTS (The Moment of Truth)");
+    expect(text).toContain("☕ THE TASTING NOTES (Where Poetry Meets Coffee)");
+    expect(text).toContain("💭 THE NOTES (Wisdom from the Brewer)");
+    expect(text).toContain("May your next shot be even more extraordinary!");
+  });
+
+  it("includes dramatic commentary for 1:2 ratio", () => {
+    const text = buildRidiculousShareText(makeShot());
+    expect(text).toContain("(Ah, the classic 1:2 ratio — a timeless dance of coffee and water!)");
+  });
+
+  it("includes dramatic commentary for perfect quality", () => {
+    const text = buildRidiculousShareText(makeShot({ shotQuality: 5 }));
+    expect(text).toContain("(FLAWLESS VICTORY! This shot is legendary!)");
+  });
+
+  it("includes dramatic commentary for loved rating", () => {
+    const text = buildRidiculousShareText(makeShot({ rating: 5 }));
+    expect(text).toContain("(This is the shot dreams are made of!)");
+  });
+
+  it("handles minimal shot data gracefully", () => {
+    const text = buildRidiculousShareText({
+      doseGrams: 18,
+      yieldGrams: 36,
+    });
+    expect(text).toContain("🌟 Journey before Destination! 🌟");
+    expect(text).toContain("📋 THE RECIPE (Where Magic Begins)");
+    expect(text).toContain("18g → 36g");
+  });
+
+  it("includes URL at the end", () => {
+    const text = buildRidiculousShareText(makeShot());
+    expect(text).toContain("🔗 Full details: https://example.com/share/abc123");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Share text dispatcher
+// ---------------------------------------------------------------------------
+
+describe("buildShareText", () => {
+  it("routes to short format when specified", () => {
+    const text = buildShareText(makeShot(), "F", "short");
+    expect(text).toContain("🫘 Ethiopia Yirgacheffe");
+    expect(text).toContain("Rating: Loved It");
+    expect(text).not.toContain("📋 Recipe");
+  });
+
+  it("routes to standard format when specified", () => {
+    const text = buildShareText(makeShot(), "F", "standard");
+    expect(text).toContain("📋 Recipe");
+    expect(text).toContain("📊 Results");
+    expect(text).not.toContain("EXTRAORDINARY");
+  });
+
+  it("routes to ridiculous format when specified", () => {
+    const text = buildShareText(makeShot(), "F", "ridiculous");
+    expect(text).toContain("EXTRAORDINARY");
+    expect(text).toContain("THE BEANS (The Foundation of Greatness)");
+  });
+
+  it("defaults to standard format", () => {
+    const text = buildShareText(makeShot());
+    expect(text).toContain("📋 Recipe");
+    expect(text).not.toContain("EXTRAORDINARY");
   });
 });

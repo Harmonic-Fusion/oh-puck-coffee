@@ -130,6 +130,10 @@ async function getAppliedMigrations(db: ReturnType<typeof drizzle>): Promise<Set
       const hashList = appliedMigrations.map(r => r.hash).slice(0, 3);
       const more = appliedMigrations.length > 3 ? ` (+${appliedMigrations.length - 3} more)` : "";
       console.log(`   🔍 Found ${appliedMigrations.length} migration(s) in ${schemaUsed} schema${more}`);
+      // Show all hashes for debugging
+      if (appliedMigrations.length <= 10) {
+        console.log(`   📋 Applied hashes: ${appliedMigrations.map(r => r.hash).join(", ")}`);
+      }
     }
 
     return new Set(appliedMigrations.map((row) => row.hash));
@@ -266,7 +270,21 @@ async function runMigrations() {
     console.log("\n🔄 Running migrations...");
 
     const startTime = Date.now();
-    await migrate(db, { migrationsFolder: "./drizzle/migrations" });
+    try {
+      await migrate(db, { migrationsFolder: "./drizzle/migrations" });
+    } catch (error) {
+      console.error("❌ Drizzle migrate() threw an error:");
+      if (error instanceof Error) {
+        console.error(`   Error name: ${error.name}`);
+        console.error(`   Error message: ${error.message}`);
+        if (error.stack) {
+          console.error(`   Stack trace: ${error.stack}`);
+        }
+      } else {
+        console.error("   Unknown error:", error);
+      }
+      throw error;
+    }
     const duration = Date.now() - startTime;
 
     // Get migration status after running
@@ -275,6 +293,113 @@ async function runMigrations() {
       const hash = getMigrationHash(file);
       return appliedMigrationsAfter.has(hash);
     });
+    
+    // Debug: Show hash comparison for pending migrations
+    if (pendingMigrations.length > 0 && newlyApplied.length === 0) {
+      console.log(`\n⚠️  Warning: ${pendingMigrations.length} migration(s) were not applied:`);
+      pendingMigrations.forEach((file) => {
+        const hash = getMigrationHash(file);
+        console.log(`   - ${file}`);
+        console.log(`     Expected hash: ${hash}`);
+        console.log(`     In applied set: ${appliedMigrationsAfter.has(hash)}`);
+        // Show all applied hashes for comparison
+        if (appliedMigrationsAfter.size > 0 && appliedMigrationsAfter.size <= 10) {
+          const appliedHashes = Array.from(appliedMigrationsAfter);
+          console.log(`     Applied hashes in DB: ${appliedHashes.join(", ")}`);
+        }
+      });
+      
+      // Try to manually apply pending migrations that Drizzle skipped
+      console.log(`\n🔄 Attempting to manually apply skipped migrations...`);
+      for (const file of pendingMigrations) {
+        const hash = getMigrationHash(file);
+        const filePath = join("./drizzle/migrations", file);
+        
+        try {
+          // Read and execute the migration SQL
+          const migrationSQL = readFileSync(filePath, "utf-8");
+          console.log(`   📝 Executing ${file}...`);
+          await db.execute(sql.raw(migrationSQL));
+          
+          // Record the migration in the migrations table
+          // created_at is a bigint (Unix timestamp in milliseconds)
+          const timestamp = BigInt(Date.now());
+          let recorded = false;
+          
+          // Check if already recorded
+          const checkResult = await db.execute(sql`
+            SELECT hash FROM drizzle.__drizzle_migrations WHERE hash = ${hash}
+          `);
+          const alreadyRecorded = Array.isArray(checkResult) && checkResult.length > 0;
+          
+          if (alreadyRecorded) {
+            console.log(`   ✅ Migration already recorded in drizzle schema`);
+            recorded = true;
+          } else {
+            try {
+              await db.execute(sql`
+                INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
+                VALUES (${hash}, ${timestamp})
+              `);
+              console.log(`   ✅ Successfully applied and recorded ${file} (in drizzle schema)`);
+              recorded = true;
+            } catch (recordError) {
+              // Try public schema
+              try {
+                const checkPublic = await db.execute(sql`
+                  SELECT hash FROM public.__drizzle_migrations WHERE hash = ${hash}
+                `);
+                const alreadyInPublic = Array.isArray(checkPublic) && checkPublic.length > 0;
+                
+                if (alreadyInPublic) {
+                  console.log(`   ✅ Migration already recorded in public schema`);
+                  recorded = true;
+                } else {
+                  await db.execute(sql`
+                    INSERT INTO public.__drizzle_migrations (hash, created_at)
+                    VALUES (${hash}, ${timestamp})
+                  `);
+                  console.log(`   ✅ Successfully applied and recorded ${file} (in public schema)`);
+                  recorded = true;
+                }
+              } catch (publicError) {
+                console.error(`   ❌ Failed to record ${file} in migrations table`);
+                if (publicError instanceof Error) {
+                  console.error(`      Error name: ${publicError.name}`);
+                  console.error(`      Error message: ${publicError.message}`);
+                  if ('cause' in publicError && publicError.cause instanceof Error) {
+                    console.error(`      Cause: ${publicError.cause.message}`);
+                  }
+                } else {
+                  console.error(`      Error: ${String(publicError)}`);
+                }
+              }
+            }
+          }
+          
+          if (!recorded) {
+            console.log(`   ⚠️  Migration SQL executed but not recorded. You may need to manually insert the hash.`);
+          }
+        } catch (error) {
+          console.error(`   ❌ Failed to apply ${file}:`);
+          console.error(`      Error: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      }
+      
+      // Re-check applied migrations after manual application
+      const appliedMigrationsFinal = await getAppliedMigrations(db);
+      const finalNewlyApplied = pendingMigrations.filter((file) => {
+        const hash = getMigrationHash(file);
+        return appliedMigrationsFinal.has(hash);
+      });
+      
+      if (finalNewlyApplied.length > 0) {
+        console.log(`\n   ✨ Successfully manually applied ${finalNewlyApplied.length} migration(s):`);
+        finalNewlyApplied.forEach((file, idx) => {
+          console.log(`      ${idx + 1}. ${file}`);
+        });
+      }
+    }
     
     console.log(`\n✅ Migrations completed successfully in ${duration}ms`);
     

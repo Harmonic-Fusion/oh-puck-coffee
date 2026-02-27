@@ -80,21 +80,17 @@ interface NumberStepperProps {
   min?: number;
   max?: number;
   step?: number;
-  precision?: number;
   label?: string;
   suffix?: string;
   /** Secondary suffix shown in smaller text after the main suffix (e.g. converted temperature) */
   secondarySuffix?: string;
   placeholder?: string;
   error?: string;
-  hint?: string;
   disabled?: boolean;
   /** Extra content rendered after the label (e.g. ratio quick-select buttons) */
   labelExtra?: React.ReactNode;
   /** If true, preserves exact values without rounding (useful for precise measurements like time) */
   noRound?: boolean;
-  /** Extra button(s) rendered between the value display and the −/+ buttons */
-  extraButtons?: React.ReactNode;
   /** When value is empty, show a clickable button instead of the placeholder */
   placeholderAction?: { label: string; onClick: () => void };
   /** Always-visible subtitle shown below the label (e.g. computed ratio, flow rate) */
@@ -108,38 +104,28 @@ export function NumberStepper({
   min = 0,
   max = 9999,
   step = 1,
-  precision,
   label,
   suffix,
   secondarySuffix,
   placeholder = "—",
   error,
-  hint,
   disabled = false,
   labelExtra,
   noRound = false,
-  extraButtons,
   placeholderAction,
   subtitle,
   id,
 }: NumberStepperProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState("");
+  const [localValue, setLocalValue] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const sizerRef = useRef<HTMLSpanElement>(null);
+  const [inputWidth, setInputWidth] = useState(24);
 
-  // Track whether the current interaction is a manual keyboard edit (vs stepper +/− button).
-  // When true, pressing Enter commits the edit but does NOT auto-advance to the next field.
-  const isManualInput = useRef(false);
-  
-  // Track if we're currently committing to prevent double-commit from Enter + blur
-  const isCommitting = useRef(false);
-
-  // Derive decimal precision from step if not explicitly provided
-  const decimals =
-    precision ??
-    (step.toString().includes(".")
-      ? step.toString().split(".")[1].length
-      : 0);
+  // Derive decimal precision from step
+  const decimals = step.toString().includes(".")
+    ? step.toString().split(".")[1].length
+    : 0;
 
   const formatValue = useCallback(
     (v: number) => {
@@ -158,11 +144,52 @@ export function NumberStepper({
     [min, max]
   );
 
+  // Sync display value from prop when input is not focused
+  useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(value != null ? formatValue(value) : "");
+    }
+  }, [value, isFocused, formatValue]);
+
+  // The text currently shown in the input (used for auto-sizing)
+  const displayText = isFocused
+    ? localValue
+    : value != null
+      ? formatValue(value)
+      : "";
+
+  // Measure text width so the input auto-sizes to its content
+  useEffect(() => {
+    if (sizerRef.current) {
+      setInputWidth(Math.max(24, sizerRef.current.scrollWidth + 4));
+    }
+  }, [displayText, placeholder]);
+
+  const commitValue = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (trimmed === "") {
+        onChange(undefined);
+      } else {
+        const parsed = parseFloat(trimmed);
+        if (!isNaN(parsed)) {
+          const final = noRound
+            ? parsed
+            : parseFloat(parsed.toFixed(decimals));
+          onChange(clamp(final));
+        }
+      }
+    },
+    [onChange, clamp, decimals, noRound]
+  );
+
   const handleDecrement = useCallback(() => {
     if (disabled) return;
     const current = value ?? min;
     const raw = current - step;
-    const next = noRound ? clamp(raw) : clamp(parseFloat(raw.toFixed(decimals)));
+    const next = noRound
+      ? clamp(raw)
+      : clamp(parseFloat(raw.toFixed(decimals)));
     onChange(next);
   }, [disabled, value, min, step, decimals, clamp, onChange, noRound]);
 
@@ -170,7 +197,9 @@ export function NumberStepper({
     if (disabled) return;
     const current = value ?? min;
     const raw = current + step;
-    const next = noRound ? clamp(raw) : clamp(parseFloat(raw.toFixed(decimals)));
+    const next = noRound
+      ? clamp(raw)
+      : clamp(parseFloat(raw.toFixed(decimals)));
     onChange(next);
   }, [disabled, value, min, step, decimals, clamp, onChange, noRound]);
 
@@ -179,168 +208,83 @@ export function NumberStepper({
   const canIncrement = value == null || value < max;
 
   // Press-and-hold auto-repeat for the −/+ buttons
-  const decrementPress = usePressRepeat(handleDecrement, disabled || !canDecrement);
-  const incrementPress = usePressRepeat(handleIncrement, disabled || !canIncrement);
+  const decrementPress = usePressRepeat(
+    handleDecrement,
+    disabled || !canDecrement
+  );
+  const incrementPress = usePressRepeat(
+    handleIncrement,
+    disabled || !canIncrement
+  );
 
-  // Enter editing mode when value is tapped
-  const startEditing = useCallback(() => {
+  const handleFocus = useCallback(() => {
     if (disabled) return;
-    isManualInput.current = true;
-    setEditValue(value != null ? formatValue(value) : "");
-    setIsEditing(true);
+    setIsFocused(true);
+    setLocalValue(value != null ? formatValue(value) : "");
+    requestAnimationFrame(() => inputRef.current?.select());
   }, [disabled, value, formatValue]);
 
-  // Focus the input once editing starts
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+    commitValue(localValue);
+  }, [localValue, commitValue]);
 
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const commitEdit = useCallback(() => {
-    // Prevent double-commit if already committing
-    if (isCommitting.current) return;
-    isCommitting.current = true;
-    
-    setIsEditing(false);
-    const trimmed = editValue.trim();
-    if (trimmed === "") {
-      onChange(undefined);
-      isManualInput.current = false;
-      isCommitting.current = false;
-      return;
-    }
-    const parsed = parseFloat(trimmed);
-    if (!isNaN(parsed)) {
-      const final = noRound ? parsed : parseFloat(parsed.toFixed(decimals));
-      onChange(clamp(final));
-    }
-    isManualInput.current = false;
-    
-    // Reset the flag after a brief delay to allow blur to complete
-    setTimeout(() => {
-      isCommitting.current = false;
-    }, 0);
-  }, [editValue, onChange, clamp, decimals, noRound]);
-
-  /** Advance focus to the next focusable field in the form */
-  const focusNextField = useCallback(() => {
-    if (!containerRef.current) return;
-    const form = containerRef.current.closest("form");
-    if (!form) return;
-    const focusable = Array.from(
-      form.querySelectorAll<HTMLElement>(
-        '[tabindex="0"], input:not([tabindex="-1"]):not([disabled]), textarea:not([tabindex="-1"]):not([disabled]), select:not([tabindex="-1"]):not([disabled]), [role="slider"]:not([aria-disabled="true"])'
-      )
-    ).filter((el) => el.offsetParent !== null); // visible only
-    const currentIdx = focusable.findIndex(
-      (el) => containerRef.current?.contains(el)
-    );
-    if (currentIdx !== -1 && currentIdx < focusable.length - 1) {
-      focusable[currentIdx + 1].focus();
-    }
-  }, []);
-
-  const handleEditKeyDown = useCallback(
+  const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        // Capture before commitEdit resets the flag
-        const wasManual = isManualInput.current;
-        // Commit the edit - this will update the form value
-        commitEdit();
-        // Blur the input to ensure it loses focus
-        if (inputRef.current) {
-          inputRef.current.blur();
-        }
-        // Only auto-advance to the next field for stepper-driven changes,
-        // not when the user is manually typing a value.
-        if (!wasManual) {
-          requestAnimationFrame(() => focusNextField());
-        } else {
-          // When manually editing, keep focus on the current field
-          requestAnimationFrame(() => {
-            const valueDisplay = containerRef.current?.querySelector<HTMLElement>('[role="textbox"]');
-            if (valueDisplay) {
-              valueDisplay.focus();
-            }
-          });
-        }
+        commitValue(localValue);
+        inputRef.current?.blur();
       } else if (e.key === "Escape") {
-        setIsEditing(false);
-        isCommitting.current = false;
+        setLocalValue(value != null ? formatValue(value) : "");
+        inputRef.current?.blur();
       }
     },
-    [commitEdit, focusNextField]
+    [localValue, commitValue, formatValue, value]
   );
 
-  const handleValueDisplayKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        startEditing();
-      }
-    },
-    [startEditing]
-  );
+  // Show placeholder action button when empty and not focused
+  const showPlaceholderAction =
+    !isFocused && value == null && placeholderAction != null;
 
   return (
-    <div ref={containerRef} className="w-full">
+    <div className="w-full">
       {/* Label row */}
       {(label || labelExtra) && (
         <div className="mb-2.5">
           <div className="flex items-center justify-between">
             {label && (
-              <span className="text-base font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
+              <span
+                className="text-base font-semibold text-stone-800 dark:text-stone-200"
+                tabIndex={-1}
+              >
                 {label}
               </span>
             )}
             {labelExtra}
           </div>
-          {hint && !error && (
-            <p className="mt-0.5 text-xs text-stone-500">{hint}</p>
-          )}
           {subtitle && (
-            <p className="mt-0.5 text-sm font-medium text-stone-500 dark:text-stone-400">{subtitle}</p>
+            <p className="mt-0.5 text-sm font-medium text-stone-500 dark:text-stone-400">
+              {subtitle}
+            </p>
           )}
         </div>
       )}
 
       {/* Stepper controls */}
       <div className="flex items-center gap-2">
-        {/* Value display / editable input */}
+        {/* Value input */}
         <div
           id={id}
-          onClick={startEditing}
-          onKeyDown={handleValueDisplayKeyDown}
-          tabIndex={disabled ? -1 : 0}
-          role="textbox"
-          aria-label={label ?? "Value"}
-          className={`flex h-16 min-w-0 flex-1 cursor-text items-center justify-center rounded-xl border-2 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
-            isEditing
+          className={`flex h-16 min-w-0 flex-1 items-center justify-center rounded-xl border-2 transition-colors ${
+            isFocused
               ? "border-amber-500 bg-white ring-2 ring-amber-500/20 dark:bg-stone-900"
               : error
                 ? "border-red-400 bg-red-50 dark:bg-red-900/10"
                 : "border-stone-200 bg-white dark:border-stone-600 dark:bg-stone-800"
           }`}
         >
-          {isEditing ? (
-            <input
-              ref={inputRef}
-              type="number"
-              inputMode="decimal"
-              tabIndex={-1}
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onBlur={commitEdit}
-              onKeyDown={handleEditKeyDown}
-              className="h-full w-full bg-transparent text-center text-lg font-semibold text-stone-900 outline-none dark:text-stone-100 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-              style={{ MozAppearance: "textfield" }}
-            />
-          ) : value == null && placeholderAction ? (
+          {showPlaceholderAction ? (
             <button
               type="button"
               onClick={(e) => {
@@ -352,30 +296,47 @@ export function NumberStepper({
               {placeholderAction.label}
             </button>
           ) : (
-            <span
-              className={`text-lg font-semibold ${
-                value != null
-                  ? "text-stone-900 dark:text-stone-100"
-                  : "text-stone-400 dark:text-stone-500"
-              }`}
-            >
-              {value != null ? formatValue(value) : placeholder}
-              {value != null && suffix && (
-                <span className="ml-1 text-sm font-normal text-stone-400 dark:text-stone-500">
-                  {suffix}
+            <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
+              {/* Hidden sizer span — mirrors input text to measure its rendered width */}
+              <span
+                ref={sizerRef}
+                className="pointer-events-none invisible absolute left-0 top-0 whitespace-pre text-lg font-semibold"
+                aria-hidden="true"
+              >
+                {displayText || placeholder}
+              </span>
+              <input
+                ref={inputRef}
+                type="text"
+                inputMode="decimal"
+                value={displayText}
+                onChange={(e) => setLocalValue(e.target.value)}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                onKeyDown={handleKeyDown}
+                placeholder={placeholder}
+                disabled={disabled}
+                aria-label={label ?? "Value"}
+                style={{ width: `${inputWidth}px` }}
+                className="h-full min-w-0 bg-transparent text-right text-lg font-semibold text-stone-900 outline-none placeholder:text-center placeholder:text-stone-400 dark:text-stone-100 dark:placeholder:text-stone-500"
+              />
+              {(suffix || secondarySuffix) && (displayText.length > 0) && (
+                <span className="pointer-events-none flex-shrink-0 pl-1">
+                  {suffix && (
+                    <span className="text-sm font-normal text-stone-400 dark:text-stone-500">
+                      {suffix}
+                    </span>
+                  )}
+                  {secondarySuffix && (
+                    <small className="ml-1 text-xs font-normal text-stone-400 dark:text-stone-500">
+                      {secondarySuffix}
+                    </small>
+                  )}
                 </span>
               )}
-              {value != null && secondarySuffix && (
-                <small className="ml-1 text-xs font-normal text-stone-400 dark:text-stone-500">
-                  {secondarySuffix}
-                </small>
-              )}
-            </span>
+            </div>
           )}
         </div>
-
-        {/* Extra buttons (e.g. play/pause timer) */}
-        {extraButtons}
 
         {/* Decrement & Increment buttons side-by-side */}
         <div className="flex gap-1">

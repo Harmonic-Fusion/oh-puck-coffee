@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/common/Button";
 import { AppRoutes, resolvePath } from "@/app/routes";
 import { useCreateShareLink } from "@/components/shots/hooks";
-import { buildShotShareText, type ShotShareData } from "@/lib/share-text";
+import { type ShotShareData } from "@/lib/share-text";
+import { LongPressShareButton } from "@/components/shots/LongPressShareButton";
 import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
 import {
   FLAVOR_WHEEL_DATA,
@@ -43,12 +44,12 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
     ? `${typeof window !== "undefined" ? window.location.origin : ""}${resolvePath(AppRoutes.share.uid, { uid: createShareLink.data.id })}`
     : "";
 
-  const handleShare = useCallback(async () => {
+  const handleShare = useCallback(async (text: string) => {
     if (!shareUrl) return;
 
     const shareData = {
       title: "Journey before Destination!",
-      text: summary ? buildShotShareText({ ...summary, url: shareUrl }, tempUnit) : "Check out my espresso shot",
+      text,
       url: shareUrl,
     };
 
@@ -74,7 +75,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
     } catch (clipboardErr) {
       console.error("Error copying to clipboard:", clipboardErr);
     }
-  }, [shareUrl, summary]);
+  }, [shareUrl]);
 
   if (!open || !summary) return null;
 
@@ -258,15 +259,27 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
           >
             Log Another
           </Button>
-          <Button
-            type="button"
-            variant="primary"
-            size="md"
-            className="flex-1"
-            onClick={handleShare}
-          >
-            Share
-          </Button>
+          {shareUrl && summary ? (
+            <LongPressShareButton
+              shotData={summary}
+              tempUnit={tempUnit}
+              shareUrl={shareUrl}
+              onShare={handleShare}
+              className="flex-1"
+              variant="primary"
+              size="md"
+            />
+          ) : (
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              className="flex-1"
+              disabled
+            >
+              Share
+            </Button>
+          )}
         </div>
       </div>
     </div>
