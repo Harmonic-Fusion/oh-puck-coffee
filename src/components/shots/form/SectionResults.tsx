@@ -23,7 +23,7 @@ const TASTING_ORDER_KEY = "coffee-tasting-order";
 const TASTING_VISIBILITY_KEY = "coffee-tasting-visibility";
 
 type ResultsStepId = "yieldActual" | "brewTime" | "estimateMaxPressure" | "shotQuality";
-type TastingStepId = "flavors" | "body" | "adjectives" | "rating" | "notes";
+type TastingStepId = "flavors" | "body" | "adjectives" | "rating" | "bitter" | "sour" | "notes";
 
 interface ResultsStepConfig {
   id: ResultsStepId;
@@ -45,14 +45,79 @@ const DEFAULT_RESULTS_STEPS: ResultsStepConfig[] = [
 ];
 
 const DEFAULT_TASTING_STEPS: TastingStepConfig[] = [
+  { id: "rating", label: "Rating", visible: true },
+  { id: "bitter", label: "Bitter", visible: false },
+  { id: "sour", label: "Sour", visible: false },
   { id: "flavors", label: "Flavors", visible: false },
   { id: "body", label: "Body / Texture", visible: false },
   { id: "adjectives", label: "Adjectives & Intensifiers", visible: false },
-  { id: "rating", label: "Rating", visible: true },
   { id: "notes", label: "Notes", visible: true },
 ];
 
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
+
+// ── Color interpolation functions for bitter and sour ──
+
+/**
+ * Interpolate between two colors based on a value (1-5)
+ * @param value - Value between min and max
+ * @param min - Minimum value (default 1)
+ * @param max - Maximum value (default 5)
+ * @param startColor - RGB color at min (e.g., "rgb(156, 163, 175)" for neutral gray)
+ * @param endColor - RGB color at max (e.g., "rgb(234, 179, 8)" for bright yellow)
+ * @returns RGB color string
+ */
+function interpolateColor(
+  value: number,
+  min: number = 1,
+  max: number = 5,
+  startColor: string,
+  endColor: string
+): string {
+  const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  
+  // Parse RGB values
+  const parseRGB = (rgb: string): [number, number, number] => {
+    const match = rgb.match(/\d+/g);
+    if (!match || match.length !== 3) return [156, 163, 175]; // fallback to neutral gray
+    return [parseInt(match[0]), parseInt(match[1]), parseInt(match[2])];
+  };
+  
+  const [r1, g1, b1] = parseRGB(startColor);
+  const [r2, g2, b2] = parseRGB(endColor);
+  
+  const r = Math.round(r1 + (r2 - r1) * ratio);
+  const g = Math.round(g1 + (g2 - g1) * ratio);
+  const b = Math.round(b1 + (b2 - b1) * ratio);
+  
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+/**
+ * Get color for sour scale (neutral gray → bright yellow)
+ */
+function getSourColor(value: number): string {
+  return interpolateColor(
+    value,
+    1,
+    5,
+    "rgb(156, 163, 175)", // stone-400 (neutral gray)
+    "rgb(234, 179, 8)" // amber-500 (bright yellow)
+  );
+}
+
+/**
+ * Get color for bitter scale (neutral gray → dark brown)
+ */
+function getBitterColor(value: number): string {
+  return interpolateColor(
+    value,
+    1,
+    5,
+    "rgb(156, 163, 175)", // stone-400 (neutral gray)
+    "rgb(69, 26, 3)" // brown-950 (dark brown/black)
+  );
+}
 
 // ── LocalStorage helpers for Results ──
 
@@ -470,6 +535,64 @@ export function SectionResults() {
                   3: "Enjoyed",
                   4: "Really enjoyed",
                   5: "Loved it",
+                }}
+              />
+            )}
+          />
+        );
+
+      case "bitter":
+        return (
+          <Controller
+            key="bitter"
+            name="bitter"
+            control={control}
+            render={({ field }) => (
+              <Slider
+                label="Bitter"
+                value={field.value || 1}
+                onChange={field.onChange}
+                min={1}
+                max={5}
+                step={0.5}
+                error={errors.bitter?.message}
+                id="bitter"
+                thumbColor={field.value ? getBitterColor(field.value) : undefined}
+                labels={{
+                  1: "Not bitter",
+                  2: "Slightly bitter",
+                  3: "Moderately bitter",
+                  4: "Very bitter",
+                  5: "Extremely bitter",
+                }}
+              />
+            )}
+          />
+        );
+
+      case "sour":
+        return (
+          <Controller
+            key="sour"
+            name="sour"
+            control={control}
+            render={({ field }) => (
+              <Slider
+                label="Sour"
+                value={field.value || 1}
+                onChange={field.onChange}
+                min={1}
+                max={5}
+                step={0.5}
+                error={errors.sour?.message}
+                id="sour"
+                thumbColor={field.value ? getSourColor(field.value) : undefined}
+                labels={{
+                  1: "Not sour",
+                  2: "Slightly sour",
+                  3: "Moderately sour",
+                  4: "Very sour",
+                  5: "Extremely sour",
                 }}
               />
             )}

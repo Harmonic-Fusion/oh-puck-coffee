@@ -112,6 +112,8 @@ export function ShotForm() {
         brewTimeSecs: data.brewTimeSecs,
         shotQuality: data.shotQuality,
         rating: data.rating,
+        bitter: data.bitter,
+        sour: data.sour,
         notes: data.notes,
         beanName: bean?.name ?? null,
         beanRoastLevel: bean?.roastLevel ?? null,

@@ -27,6 +27,18 @@ export const createShotSchema = z.object({
     const normalized = Math.round(val / step) * step;
     return Math.abs(val - normalized) < 0.01;
   }, { message: "Rating must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }),
+  bitter: z.coerce.number().min(1).max(5).refine((val) => {
+    // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
+    const step = 0.5;
+    const normalized = Math.round(val / step) * step;
+    return Math.abs(val - normalized) < 0.01;
+  }, { message: "Bitter must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }).optional(),
+  sour: z.coerce.number().min(1).max(5).refine((val) => {
+    // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
+    const step = 0.5;
+    const normalized = Math.round(val / step) * step;
+    return Math.abs(val - normalized) < 0.01;
+  }, { message: "Sour must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }).optional(),
   toolsUsed: z.array(z.string()).optional(),
   notes: z.string().optional(),
   // Flavor data (optional) - separate fields
@@ -55,6 +67,8 @@ export const shotSchema = z.object({
   flowRate: z.coerce.number().nullable(),
   shotQuality: z.number().nullable(),
   rating: z.number().nullable(),
+  bitter: z.number().nullable(),
+  sour: z.number().nullable(),
   toolsUsed: z.array(z.string()).nullable(),
   notes: z.string().nullable(),
   flavors: z.array(z.string()).nullable(),

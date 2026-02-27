@@ -43,6 +43,13 @@
       "when": 1771700000000,
       "tag": "0005_update_shot_requirements",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1735689600000,
+      "tag": "0006_add_bitter_and_sour",
+      "breakpoints": true
     }
   ]
 }

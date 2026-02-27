@@ -21,6 +21,8 @@ export function exportShotsToCSV(shots: ShotWithJoins[]): string {
     "Flow Rate (g/s)",
     "Shot Quality",
     "Rating",
+    "Bitter",
+    "Sour",
     "Flavor Wheel",
     "Body",
     "Tools Used",
@@ -65,6 +67,8 @@ export function exportShotsToCSV(shots: ShotWithJoins[]): string {
       shot.flowRate || "",
       shot.shotQuality.toString(),
       shot.rating?.toString() || "",
+      shot.bitter?.toString() || "",
+      shot.sour?.toString() || "",
       flavorWheelStr,
       shot.bodyTexture && shot.bodyTexture.length > 0
         ? shot.bodyTexture[shot.bodyTexture.length - 1]
