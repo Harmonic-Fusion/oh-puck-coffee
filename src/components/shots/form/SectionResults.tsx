@@ -14,6 +14,7 @@ import { AdjectivesIntensifiersSelector } from "@/components/flavor-wheel/Adject
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
+import { RATING_LABELS } from "@/lib/format-rating";
 
 // ── Results step types and configuration ──
 
@@ -529,13 +530,7 @@ export function SectionResults() {
                 step={0.5}
                 error={errors.rating?.message}
                 id="rating"
-                labels={{
-                  1: "Didn't enjoy",
-                  2: "Somewhat enjoyed",
-                  3: "Enjoyed",
-                  4: "Really enjoyed",
-                  5: "Loved it",
-                }}
+                labels={RATING_LABELS}
               />
             )}
           />

@@ -169,7 +169,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
                 <ScoreBadge label="Quality" value={summary.shotQuality} />
               )}
               {summary.rating != null && (
-                <ScoreBadge label="Rating" value={summary.rating} showStars={true} />
+                <ScoreBadge label="Rating" value={summary.rating} />
               )}
               {summary.brewTimeSecs != null && (
                 <SummaryBadge label="Time" value={`${roundToOneDecimal(summary.brewTimeSecs)}s`} />
@@ -314,12 +314,13 @@ function SummaryBadge({ label, value }: { label: string; value: string }) {
 }
 
 /** Color-coded badge for 1–5 score values (red → yellow → green) */
-function ScoreBadge({ label, value, showStars }: { label: string; value: number; showStars?: boolean }) {
+function ScoreBadge({ label, value }: { label: string; value: number }) {
   const colors = getScoreColors(value);
+  const displayValue = label === "Rating" ? formatRating(value) : `${value}/5`;
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${colors.bg} ${colors.text}`}>
       <span className={colors.label}>{label}</span>
-      {showStars ? formatRating(value) : `${value}/5`}
+      {displayValue}
     </span>
   );
 }

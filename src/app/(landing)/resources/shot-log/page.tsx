@@ -524,9 +524,9 @@ export default function ShotLogResourcePage() {
                     Rating
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    Rate your overall enjoyment of the shot from 1–5. This is
+                    Rate your overall enjoyment of the shot from 1–5 (Undrinkable, Didn't Enjoy, Enjoyed, Really Enjoyed, Loved It). This is
                     your subjective rating of how much you liked it, separate
-                    from technical quality. The star rating helps you quickly
+                    from technical quality. The rating helps you quickly
                     spot your best shots in the history.
                   </p>
                 </div>
