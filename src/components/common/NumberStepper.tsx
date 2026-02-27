@@ -130,6 +130,9 @@ export function NumberStepper({
   // Track whether the current interaction is a manual keyboard edit (vs stepper +/− button).
   // When true, pressing Enter commits the edit but does NOT auto-advance to the next field.
   const isManualInput = useRef(false);
+  
+  // Track if we're currently committing to prevent double-commit from Enter + blur
+  const isCommitting = useRef(false);
 
   // Derive decimal precision from step if not explicitly provided
   const decimals =
@@ -198,11 +201,16 @@ export function NumberStepper({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const commitEdit = useCallback(() => {
+    // Prevent double-commit if already committing
+    if (isCommitting.current) return;
+    isCommitting.current = true;
+    
     setIsEditing(false);
     const trimmed = editValue.trim();
     if (trimmed === "") {
       onChange(undefined);
       isManualInput.current = false;
+      isCommitting.current = false;
       return;
     }
     const parsed = parseFloat(trimmed);
@@ -211,6 +219,11 @@ export function NumberStepper({
       onChange(clamp(final));
     }
     isManualInput.current = false;
+    
+    // Reset the flag after a brief delay to allow blur to complete
+    setTimeout(() => {
+      isCommitting.current = false;
+    }, 0);
   }, [editValue, onChange, clamp, decimals, noRound]);
 
   /** Advance focus to the next focusable field in the form */
@@ -237,7 +250,12 @@ export function NumberStepper({
         e.preventDefault();
         // Capture before commitEdit resets the flag
         const wasManual = isManualInput.current;
+        // Commit the edit - this will update the form value
         commitEdit();
+        // Blur the input to ensure it loses focus
+        if (inputRef.current) {
+          inputRef.current.blur();
+        }
         // Only auto-advance to the next field for stepper-driven changes,
         // not when the user is manually typing a value.
         if (!wasManual) {
@@ -253,6 +271,7 @@ export function NumberStepper({
         }
       } else if (e.key === "Escape") {
         setIsEditing(false);
+        isCommitting.current = false;
       }
     },
     [commitEdit, focusNextField]
