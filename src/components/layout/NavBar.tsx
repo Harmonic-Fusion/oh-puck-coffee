@@ -10,10 +10,10 @@ import {
 } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 
-// Mobile bottom bar: Profile, History, Dashboard, Log
+// Mobile bottom bar: Profile, Shots, Dashboard, Log
 const mobileNavItems = [
   { label: "Profile", href: AppRoutes.settings.path, icon: UserIcon },
-  { label: "History", href: AppRoutes.history.path, icon: ClipboardDocumentListIcon },
+  { label: "Shots", href: AppRoutes.shots.path, icon: ClipboardDocumentListIcon },
   { label: "Dashboard", href: AppRoutes.dashboard.path, icon: ChartBarIcon },
   { label: "Log", href: AppRoutes.log.path, icon: BeakerIcon },
 ];

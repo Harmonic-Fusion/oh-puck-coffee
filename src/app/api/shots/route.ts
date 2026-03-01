@@ -3,7 +3,7 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots, beans, users, grinders, machines, tools, integrations } from "@/db/schema";
 import { createShotSchema } from "@/shared/shots/schema";
-import { eq, desc, asc, and, gte, lte, inArray, SQL } from "drizzle-orm";
+import { eq, desc, asc, and, gte, lte, inArray, SQL, sql, or } from "drizzle-orm";
 import { appendShotRow } from "@/lib/google-sheets";
 
 export async function GET(request: NextRequest) {
@@ -22,6 +22,27 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get("limit") || "50", 10);
   const offset = parseInt(searchParams.get("offset") || "0", 10);
 
+  // New filter params
+  const beanIds = searchParams.get("beanIds")?.split(",").filter(Boolean) || [];
+  const isHidden = searchParams.get("isHidden");
+  const isReferenceShot = searchParams.get("isReferenceShot");
+  const grinderIds = searchParams.get("grinderIds")?.split(",").filter(Boolean) || [];
+  const machineIds = searchParams.get("machineIds")?.split(",").filter(Boolean) || [];
+  const ratingMin = searchParams.get("ratingMin");
+  const ratingMax = searchParams.get("ratingMax");
+  const bitterMin = searchParams.get("bitterMin");
+  const bitterMax = searchParams.get("bitterMax");
+  const sourMin = searchParams.get("sourMin");
+  const sourMax = searchParams.get("sourMax");
+  const shotQualityMin = searchParams.get("shotQualityMin");
+  const shotQualityMax = searchParams.get("shotQualityMax");
+  const flavors = searchParams.get("flavors")?.split(",").filter(Boolean) || [];
+  const bodyTexture = searchParams.get("bodyTexture")?.split(",").filter(Boolean) || [];
+  const adjectives = searchParams.get("adjectives")?.split(",").filter(Boolean) || [];
+  const toolsUsed = searchParams.get("toolsUsed")?.split(",").filter(Boolean) || [];
+  const ratioMin = searchParams.get("ratioMin");
+  const ratioMax = searchParams.get("ratioMax");
+
   const conditions: SQL[] = [];
   
   // Members can only see their own shots
@@ -32,7 +53,15 @@ export async function GET(request: NextRequest) {
     conditions.push(eq(shots.userId, userId));
   }
   
-  if (beanId) conditions.push(eq(shots.beanId, beanId));
+  // Legacy beanId support (single)
+  if (beanId) {
+    conditions.push(eq(shots.beanId, beanId));
+  }
+  // New beanIds support (multi-select)
+  if (beanIds.length > 0) {
+    conditions.push(inArray(shots.beanId, beanIds));
+  }
+  
   if (dateFrom) conditions.push(gte(shots.createdAt, new Date(dateFrom)));
   if (dateTo) {
     // End of the day
@@ -40,6 +69,58 @@ export async function GET(request: NextRequest) {
     end.setHours(23, 59, 59, 999);
     conditions.push(lte(shots.createdAt, end));
   }
+
+  // Hidden filter
+  if (isHidden === "yes") {
+    conditions.push(eq(shots.isHidden, true));
+  } else if (isHidden === "no") {
+    conditions.push(eq(shots.isHidden, false));
+  }
+  // If isHidden is "all" or not provided, no filter applied
+
+  // Reference shot filter
+  if (isReferenceShot === "true") {
+    conditions.push(eq(shots.isReferenceShot, true));
+  } else if (isReferenceShot === "false") {
+    conditions.push(eq(shots.isReferenceShot, false));
+  }
+
+  // Grinder filter
+  if (grinderIds.length > 0) {
+    conditions.push(inArray(shots.grinderId, grinderIds));
+  }
+
+  // Machine filter
+  if (machineIds.length > 0) {
+    conditions.push(inArray(shots.machineId, machineIds));
+  }
+
+  // Rating filter (range: ratingMin to ratingMax, where e.g. "2" means 1.5-2.4)
+  // Note: This is handled post-query since we need to check multiple ranges
+
+  // Bitter filter
+  if (bitterMin) {
+    conditions.push(gte(shots.bitter, sql`${bitterMin}`));
+  }
+  if (bitterMax) {
+    conditions.push(lte(shots.bitter, sql`${bitterMax}`));
+  }
+
+  // Sour filter
+  if (sourMin) {
+    conditions.push(gte(shots.sour, sql`${sourMin}`));
+  }
+  if (sourMax) {
+    conditions.push(lte(shots.sour, sql`${sourMax}`));
+  }
+
+  // Shot quality filter (range: shotQualityMin to shotQualityMax)
+  // Note: This is handled post-query since we need to check multiple ranges
+
+  // Flavors filter (JSONB array overlap) - handled post-query for safety
+  // Body texture filter (JSONB array overlap) - handled post-query for safety
+  // Adjectives filter (JSONB array overlap) - handled post-query for safety
+  // Tools used filter (JSONB array overlap) - handled post-query for safety
 
   const whereClause =
     conditions.length > 0 ? and(...conditions) : undefined;
@@ -103,7 +184,7 @@ export async function GET(request: NextRequest) {
     .offset(offset);
 
   // Compute derived fields on read
-  const enriched = results.map((row) => {
+  let enriched = results.map((row) => {
     const dose = parseFloat(row.doseGrams);
     const yieldG = parseFloat(row.yieldGrams);
     const brewRatio = dose > 0 ? parseFloat((yieldG / dose).toFixed(2)) : null;
@@ -123,6 +204,71 @@ export async function GET(request: NextRequest) {
       daysPostRoast,
     };
   });
+
+  // Apply post-query filters (for computed fields, JSONB arrays, and multi-range filters)
+  const needsPostFilter = ratingMin || ratingMax || shotQualityMin || shotQualityMax || 
+    ratioMin || ratioMax || flavors.length > 0 || bodyTexture.length > 0 || 
+    adjectives.length > 0 || toolsUsed.length > 0;
+  
+  if (needsPostFilter) {
+    enriched = enriched.filter((row) => {
+      // Rating filter (check if rating falls within any selected range)
+      if (ratingMin || ratingMax) {
+        if (row.rating === null) return false;
+        const rating = parseFloat(row.rating);
+        const min = ratingMin ? parseFloat(ratingMin) - 0.5 : 0;
+        const max = ratingMax ? parseFloat(ratingMax) + 0.4 : 10;
+        if (rating < min || rating > max) return false;
+      }
+
+      // Shot quality filter (check if quality falls within any selected range)
+      if (shotQualityMin || shotQualityMax) {
+        if (row.shotQuality === null) return false;
+        const quality = parseFloat(row.shotQuality);
+        const min = shotQualityMin ? parseFloat(shotQualityMin) - 0.5 : 0;
+        const max = shotQualityMax ? parseFloat(shotQualityMax) + 0.4 : 10;
+        if (quality < min || quality > max) return false;
+      }
+
+      // Ratio filter (since brewRatio is computed)
+      if (ratioMin || ratioMax) {
+        if (row.brewRatio === null) return false;
+        const ratio = row.brewRatio;
+        if (ratioMin && ratio < parseFloat(ratioMin)) return false;
+        if (ratioMax && ratio > parseFloat(ratioMax)) return false;
+      }
+
+      // Flavors filter (JSONB array overlap)
+      if (flavors.length > 0) {
+        const rowFlavors = (row.flavors as string[] | null) || [];
+        const hasMatch = flavors.some((f) => rowFlavors.includes(f));
+        if (!hasMatch) return false;
+      }
+
+      // Body texture filter (JSONB array overlap)
+      if (bodyTexture.length > 0) {
+        const rowBody = (row.bodyTexture as string[] | null) || [];
+        const hasMatch = bodyTexture.some((b) => rowBody.includes(b));
+        if (!hasMatch) return false;
+      }
+
+      // Adjectives filter (JSONB array overlap)
+      if (adjectives.length > 0) {
+        const rowAdjectives = (row.adjectives as string[] | null) || [];
+        const hasMatch = adjectives.some((a) => rowAdjectives.includes(a));
+        if (!hasMatch) return false;
+      }
+
+      // Tools used filter (JSONB array overlap)
+      if (toolsUsed.length > 0) {
+        const rowTools = (row.toolsUsed as string[] | null) || [];
+        const hasMatch = toolsUsed.some((t) => rowTools.includes(t));
+        if (!hasMatch) return false;
+      }
+
+      return true;
+    });
+  }
 
   return NextResponse.json(enriched);
 }

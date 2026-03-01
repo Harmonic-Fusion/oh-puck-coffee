@@ -106,7 +106,7 @@ vi.mock("../ShotSuccessModal", () => ({
   ShotSuccessModal: () => null,
 }));
 
-vi.mock("@/components/shots/log/ShotDetail", () => ({
+vi.mock("@/components/shots/ShotDetail", () => ({
   ShotDetail: () => null,
 }));
 

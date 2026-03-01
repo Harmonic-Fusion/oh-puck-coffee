@@ -64,11 +64,11 @@ export function UserDropdown({ userName, userImage }: UserDropdownProps) {
             Log Shot
           </Link>
           <Link
-            href={AppRoutes.history.path}
+            href={AppRoutes.shots.path}
             onClick={() => setOpen(false)}
             className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
           >
-            History
+            Shots
           </Link>
           <Link
             href={AppRoutes.dashboard.path}

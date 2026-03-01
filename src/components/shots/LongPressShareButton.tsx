@@ -8,8 +8,9 @@ import type { TempUnit } from "@/lib/format-numbers";
 interface LongPressShareButtonProps {
   shotData: ShotShareData;
   tempUnit: TempUnit;
-  shareUrl: string;
-  onShare: (text: string) => Promise<void>;
+  shareUrl?: string;
+  getShareUrl?: () => Promise<string>;
+  onShare: (text: string, shareUrl: string) => Promise<void>;
   className?: string;
   variant?: "primary" | "secondary" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
@@ -21,7 +22,8 @@ const LONG_PRESS_DURATION = 500; // milliseconds
 export function LongPressShareButton({
   shotData,
   tempUnit,
-  shareUrl,
+  shareUrl = "",
+  getShareUrl,
   onShare,
   className = "",
   variant = "primary",
@@ -140,12 +142,14 @@ export function LongPressShareButton({
     // Short click: trigger default "standard" share
     setIsSharing(true);
     try {
-      const text = buildShareText({ ...shotData, url: shareUrl }, tempUnit, "standard");
-      await onShare(text);
+      const resolvedShareUrl = shareUrl || (getShareUrl ? await getShareUrl() : "");
+      if (!resolvedShareUrl) return;
+      const text = buildShareText({ ...shotData, url: resolvedShareUrl }, tempUnit, "standard");
+      await onShare(text, resolvedShareUrl);
     } finally {
       setIsSharing(false);
     }
-  }, [shotData, shareUrl, tempUnit, onShare, isMenuOpen, isSharing]);
+  }, [shotData, shareUrl, getShareUrl, tempUnit, onShare, isMenuOpen, isSharing]);
 
   const handleFormatSelect = useCallback(
     async (format: ShareFormat, e: React.MouseEvent) => {
@@ -158,13 +162,15 @@ export function LongPressShareButton({
       setIsMenuOpen(false);
       setIsSharing(true);
       try {
-        const text = buildShareText({ ...shotData, url: shareUrl }, tempUnit, format);
-        await onShare(text);
+        const resolvedShareUrl = shareUrl || (getShareUrl ? await getShareUrl() : "");
+        if (!resolvedShareUrl) return;
+        const text = buildShareText({ ...shotData, url: resolvedShareUrl }, tempUnit, format);
+        await onShare(text, resolvedShareUrl);
       } finally {
         setIsSharing(false);
       }
     },
-    [shotData, shareUrl, tempUnit, onShare, isSharing]
+    [shotData, shareUrl, getShareUrl, tempUnit, onShare, isSharing]
   );
 
   const handleCopy = useCallback(
@@ -176,7 +182,9 @@ export function LongPressShareButton({
       
       setIsSharing(true);
       try {
-        const text = buildShareText({ ...shotData, url: shareUrl }, tempUnit, format);
+        const resolvedShareUrl = shareUrl || (getShareUrl ? await getShareUrl() : "");
+        if (!resolvedShareUrl) return;
+        const text = buildShareText({ ...shotData, url: resolvedShareUrl }, tempUnit, format);
         await navigator.clipboard.writeText(text);
       } catch (err) {
         console.error("Error copying to clipboard:", err);
@@ -184,7 +192,7 @@ export function LongPressShareButton({
         setIsSharing(false);
       }
     },
-    [shotData, shareUrl, tempUnit, isSharing]
+    [shotData, shareUrl, getShareUrl, tempUnit, isSharing]
   );
 
   return (
@@ -194,7 +202,7 @@ export function LongPressShareButton({
         type="button"
         variant={variant}
         size={size}
-        className="w-full"
+        className="h-full w-full p-0 flex items-center justify-center rounded-lg transition-colors hover:bg-stone-100 dark:hover:bg-stone-800"
         disabled={isSharing}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}

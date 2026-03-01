@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/db";
 import { shotShares, shots, beans, users, grinders, machines } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { SharedShotView } from "@/components/shots/SharedShotView";
+import { SharedShotDetail } from "@/components/shots/SharedShotDetail";
 
 interface SharePageProps {
   params: Promise<{ uid: string }>;
@@ -32,6 +32,7 @@ async function getSharedShot(uid: string) {
       machineName: machines.name,
       doseGrams: shots.doseGrams,
       yieldGrams: shots.yieldGrams,
+      yieldActualGrams: shots.yieldActualGrams,
       grindLevel: shots.grindLevel,
       brewTimeSecs: shots.brewTimeSecs,
       brewTempC: shots.brewTempC,
@@ -48,6 +49,7 @@ async function getSharedShot(uid: string) {
       flavors: shots.flavors,
       bodyTexture: shots.bodyTexture,
       adjectives: shots.adjectives,
+      toolsUsed: shots.toolsUsed,
       isReferenceShot: shots.isReferenceShot,
       createdAt: shots.createdAt,
     })
@@ -117,5 +119,5 @@ export default async function SharePage({ params }: SharePageProps) {
     notFound();
   }
 
-  return <SharedShotView shot={shot} />;
+  return <SharedShotDetail shot={shot} />;
 }

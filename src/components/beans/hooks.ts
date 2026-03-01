@@ -59,3 +59,27 @@ export function useUpdateBean() {
     },
   });
 }
+
+interface BeanSearchResult {
+  id: string;
+  name: string;
+}
+
+export function useBeansSearch(search?: string, limit?: number) {
+  return useQuery<BeanSearchResult[]>({
+    queryKey: ["beans", "search", search, limit],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      if (search) searchParams.set("search", search);
+      if (limit) searchParams.set("limit", String(limit));
+      
+      const url = searchParams.toString()
+        ? `${ApiRoutes.beans.search.path}?${searchParams.toString()}`
+        : ApiRoutes.beans.search.path;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to search beans");
+      return res.json();
+    },
+    enabled: true, // Always enabled for filter prepopulation
+  });
+}

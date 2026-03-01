@@ -10,7 +10,7 @@ export { resolvePath };
 export const AppRoutes = routesBuilder({
   home: { path: "/", _is_public: true },
   log: "/log",
-  history: "/history",
+  shots: "/shots",
   dashboard: "/dashboard",
   settings: {
     path: "/settings",
@@ -57,6 +57,7 @@ export const ApiRoutes = routesBuilder({
   // Beans
   beans: {
     path: "/api/beans",
+    search: "/search",
     beanId: {
       path: "/:id",
     },
@@ -81,6 +82,7 @@ export const ApiRoutes = routesBuilder({
   stats: {
     path: "/api/stats",
     overview: "/overview",
+    shotMetrics: "/shot-metrics",
     byBean: {
       path: "/by-bean",
       beanId: {

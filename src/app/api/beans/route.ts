@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, shots } from "@/db/schema";
+import { beans, shots, shotShares } from "@/db/schema";
 import { createBeanSchema } from "@/shared/beans/schema";
-import { ilike, desc, eq, and, max, sql } from "drizzle-orm";
+import { ilike, desc, eq, and, max, sql, inArray } from "drizzle-orm";
+import { generateShortUid } from "@/lib/short-uid";
+
+interface ShareSideLoadItem {
+  id: string;
+  shotId: string;
+  userId: string;
+  createdAt: Date;
+}
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -14,6 +22,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search");
   const orderBy = searchParams.get("orderBy");
+  const shareShotIds = parseShareShotIds(searchParams);
 
   // Members can only see beans they created, admins can see all
   const beanConditions = [];
@@ -74,7 +83,11 @@ export async function GET(request: NextRequest) {
       )
       .orderBy(desc(sql`max(${shots.createdAt})`), desc(beans.createdAt));
 
-    return NextResponse.json(results);
+    const share = await getShareSideLoad(shareShotIds, session.user.id);
+    if (!share) {
+      return NextResponse.json(results);
+    }
+    return NextResponse.json({ data: results, share });
   }
 
   // Default: order by createdAt desc
@@ -84,7 +97,11 @@ export async function GET(request: NextRequest) {
     .where(beanWhereClause)
     .orderBy(desc(beans.createdAt));
 
-  return NextResponse.json(results);
+  const share = await getShareSideLoad(shareShotIds, session.user.id);
+  if (!share) {
+    return NextResponse.json(results);
+  }
+  return NextResponse.json({ data: results, share });
 }
 
 export async function POST(request: NextRequest) {
@@ -112,4 +129,85 @@ export async function POST(request: NextRequest) {
     .returning();
 
   return NextResponse.json(bean, { status: 201 });
+}
+
+function parseShareShotIds(searchParams: URLSearchParams): string[] {
+  const rawShareParams = searchParams.getAll("share");
+  if (rawShareParams.length === 0) {
+    return [];
+  }
+
+  const ids = new Set<string>();
+  for (const rawValue of rawShareParams) {
+    const parts = rawValue
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    for (const id of parts) {
+      ids.add(id);
+    }
+  }
+  return Array.from(ids);
+}
+
+async function getShareSideLoad(
+  shareShotIds: string[],
+  userId: string
+): Promise<ShareSideLoadItem[] | null> {
+  if (shareShotIds.length === 0) {
+    return null;
+  }
+
+  const userShots = await db
+    .select({ id: shots.id })
+    .from(shots)
+    .where(and(inArray(shots.id, shareShotIds), eq(shots.userId, userId)));
+
+  const allowedShotIds = userShots.map((shot) => shot.id);
+  if (allowedShotIds.length === 0) {
+    return [];
+  }
+
+  const existingShares = await db
+    .select({
+      id: shotShares.id,
+      shotId: shotShares.shotId,
+      userId: shotShares.userId,
+      createdAt: shotShares.createdAt,
+    })
+    .from(shotShares)
+    .where(
+      and(
+        inArray(shotShares.shotId, allowedShotIds),
+        eq(shotShares.userId, userId)
+      )
+    );
+
+  const existingByShotId = new Map(
+    existingShares.map((share) => [share.shotId, share])
+  );
+  const missingShotIds = allowedShotIds.filter(
+    (shotId) => !existingByShotId.has(shotId)
+  );
+
+  let createdShares: ShareSideLoadItem[] = [];
+  if (missingShotIds.length > 0) {
+    createdShares = await db
+      .insert(shotShares)
+      .values(
+        missingShotIds.map((shotId) => ({
+          id: generateShortUid(),
+          shotId,
+          userId,
+        }))
+      )
+      .returning({
+        id: shotShares.id,
+        shotId: shotShares.shotId,
+        userId: shotShares.userId,
+        createdAt: shotShares.createdAt,
+      });
+  }
+
+  return [...existingShares, ...createdShares];
 }

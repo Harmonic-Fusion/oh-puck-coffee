@@ -20,6 +20,7 @@ import { FeedbackModal } from "@/components/common/FeedbackModal";
 
 const navItems = [
   { label: "Dashboard", href: AppRoutes.dashboard.path, icon: ChartBarIcon },
+  { label: "Shots", href: AppRoutes.shots.path, icon: ClipboardDocumentListIcon },
   { label: "Log Shot", href: AppRoutes.log.path, icon: BeakerIcon },
 ];
 
@@ -59,9 +60,8 @@ export function Sidebar() {
   const userName = session?.user?.name || "User";
   const userEmail = session?.user?.email;
   const userImage = session?.user?.image;
-  const isHistoryActive = pathname.startsWith(AppRoutes.history.path);
   const isSettingsActive = pathname.startsWith(AppRoutes.settings.path);
-  const isUserMenuActive = isHistoryActive || isSettingsActive;
+  const isUserMenuActive = isSettingsActive;
 
   return (
     <aside className={`hidden sm:fixed sm:inset-y-0 sm:left-0 sm:z-40 sm:flex sm:flex-col transition-all duration-300 ${collapsed ? "sm:w-20" : "sm:w-64"}`}>
@@ -172,18 +172,6 @@ export function Sidebar() {
             {/* Popup menu — opens upward */}
             {menuOpen && (
               <div className={`absolute bottom-full mb-2 w-56 rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900 ${collapsed ? "left-0" : "left-2"}`}>
-                <Link
-                  href={AppRoutes.history.path}
-                  onClick={() => setMenuOpen(false)}
-                  className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
-                    isHistoryActive
-                      ? "bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400"
-                      : "text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
-                  }`}
-                >
-                  <ClipboardDocumentListIcon className="h-4 w-4 text-stone-400 dark:text-stone-500" />
-                  History
-                </Link>
                 <Link
                   href={AppRoutes.settings.path}
                   onClick={() => setMenuOpen(false)}

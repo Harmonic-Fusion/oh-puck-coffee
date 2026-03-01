@@ -53,6 +53,26 @@ interface ShotsQueryParams {
   offset?: number;
   dateFrom?: string;
   dateTo?: string;
+  // New filter params
+  beanIds?: string[];
+  isHidden?: "all" | "yes" | "no";
+  isReferenceShot?: boolean | null;
+  grinderIds?: string[];
+  machineIds?: string[];
+  ratingMin?: number;
+  ratingMax?: number;
+  bitterMin?: number;
+  bitterMax?: number;
+  sourMin?: number;
+  sourMax?: number;
+  shotQualityMin?: number;
+  shotQualityMax?: number;
+  flavors?: string[];
+  bodyTexture?: string[];
+  adjectives?: string[];
+  toolsUsed?: string[];
+  ratioMin?: number;
+  ratioMax?: number;
 }
 
 export function useShots(params?: ShotsQueryParams) {
@@ -68,6 +88,65 @@ export function useShots(params?: ShotsQueryParams) {
       if (params?.offset) searchParams.set("offset", String(params.offset));
       if (params?.dateFrom) searchParams.set("dateFrom", params.dateFrom);
       if (params?.dateTo) searchParams.set("dateTo", params.dateTo);
+      
+      // New filter params
+      if (params?.beanIds && params.beanIds.length > 0) {
+        searchParams.set("beanIds", params.beanIds.join(","));
+      }
+      if (params?.isHidden && params.isHidden !== "all") {
+        searchParams.set("isHidden", params.isHidden);
+      }
+      if (params?.isReferenceShot !== undefined && params.isReferenceShot !== null) {
+        searchParams.set("isReferenceShot", String(params.isReferenceShot));
+      }
+      if (params?.grinderIds && params.grinderIds.length > 0) {
+        searchParams.set("grinderIds", params.grinderIds.join(","));
+      }
+      if (params?.machineIds && params.machineIds.length > 0) {
+        searchParams.set("machineIds", params.machineIds.join(","));
+      }
+      if (params?.ratingMin !== undefined) {
+        searchParams.set("ratingMin", String(params.ratingMin));
+      }
+      if (params?.ratingMax !== undefined) {
+        searchParams.set("ratingMax", String(params.ratingMax));
+      }
+      if (params?.bitterMin !== undefined) {
+        searchParams.set("bitterMin", String(params.bitterMin));
+      }
+      if (params?.bitterMax !== undefined) {
+        searchParams.set("bitterMax", String(params.bitterMax));
+      }
+      if (params?.sourMin !== undefined) {
+        searchParams.set("sourMin", String(params.sourMin));
+      }
+      if (params?.sourMax !== undefined) {
+        searchParams.set("sourMax", String(params.sourMax));
+      }
+      if (params?.shotQualityMin !== undefined) {
+        searchParams.set("shotQualityMin", String(params.shotQualityMin));
+      }
+      if (params?.shotQualityMax !== undefined) {
+        searchParams.set("shotQualityMax", String(params.shotQualityMax));
+      }
+      if (params?.flavors && params.flavors.length > 0) {
+        searchParams.set("flavors", params.flavors.join(","));
+      }
+      if (params?.bodyTexture && params.bodyTexture.length > 0) {
+        searchParams.set("bodyTexture", params.bodyTexture.join(","));
+      }
+      if (params?.adjectives && params.adjectives.length > 0) {
+        searchParams.set("adjectives", params.adjectives.join(","));
+      }
+      if (params?.toolsUsed && params.toolsUsed.length > 0) {
+        searchParams.set("toolsUsed", params.toolsUsed.join(","));
+      }
+      if (params?.ratioMin !== undefined) {
+        searchParams.set("ratioMin", String(params.ratioMin));
+      }
+      if (params?.ratioMax !== undefined) {
+        searchParams.set("ratioMax", String(params.ratioMax));
+      }
 
       const query = searchParams.toString();
       const url = query
@@ -229,19 +308,102 @@ interface ShareLink {
   createdAt: string;
 }
 
+interface BeanShareSideLoadResponse {
+  data: unknown;
+  share: ShareLink[];
+}
+
 export function useCreateShareLink() {
   return useMutation<ShareLink, Error, string>({
     mutationFn: async (shotId: string) => {
-      const res = await fetch(ApiRoutes.shares.path, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shotId }),
-      });
+      const params = new URLSearchParams();
+      params.set("share", shotId);
+      const res = await fetch(`${ApiRoutes.beans.path}?${params.toString()}`);
+      if (!res.ok) {
+        let errorMessage = "Failed to fetch share link";
+        try {
+          const text = await res.text();
+          if (text) {
+            const error = JSON.parse(text);
+            errorMessage = error.error || errorMessage;
+          } else {
+            errorMessage = res.statusText || errorMessage;
+          }
+        } catch {
+          // If response is not valid JSON, use status text or default message
+          errorMessage = res.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+      
+      let payload: unknown;
+      try {
+        const text = await res.text();
+        if (!text) {
+          throw new Error("Empty response from server");
+        }
+        payload = JSON.parse(text);
+      } catch (err) {
+        if (err instanceof Error) {
+          throw new Error(`Failed to parse response: ${err.message}`);
+        }
+        throw new Error("Failed to parse response");
+      }
+      
+      const share = getShareFromBeansSideLoad(payload, shotId);
+      if (!share) {
+        throw new Error("Share link not found. The shot may not belong to you.");
+      }
+      return share;
+    },
+  });
+}
+
+function getShareFromBeansSideLoad(
+  payload: unknown,
+  shotId: string
+): ShareLink | null {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const response = payload as Partial<BeanShareSideLoadResponse>;
+  if (!Array.isArray(response.share)) {
+    return null;
+  }
+
+  const matchingShare = response.share.find(
+    (item) =>
+      item &&
+      typeof item.id === "string" &&
+      typeof item.shotId === "string" &&
+      item.shotId === shotId &&
+      typeof item.userId === "string" &&
+      typeof item.createdAt === "string"
+  );
+
+  return matchingShare ?? null;
+}
+
+interface ShotMetrics {
+  yieldAccuracyPct: number | null;
+  ratingDistribution: { rating: number; count: number }[];
+  currentShotRating: number | null;
+}
+
+export function useShotMetrics(shotId: string | null) {
+  return useQuery<ShotMetrics>({
+    queryKey: ["shot-metrics", shotId],
+    queryFn: async () => {
+      if (!shotId) throw new Error("Shot ID is required");
+      const url = resolvePath(ApiRoutes.stats.shotMetrics, {}, { shotId });
+      const res = await fetch(url);
       if (!res.ok) {
         const error = await res.json();
-        throw new Error(error.error || "Failed to create share link");
+        throw new Error(error.error || "Failed to fetch shot metrics");
       }
       return res.json();
     },
+    enabled: !!shotId,
   });
 }

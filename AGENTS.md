@@ -29,7 +29,7 @@ src/
 ├── lib/                  # Utility functions
 │   ├── api-auth.ts       # API authentication helpers
 │   ├── google-sheets.ts  # Google Sheets integration
-│   └── csv-export.ts      # CSV export functionality
+│   └── export-csv.ts     # Generic CSV export utility
 ├── shared/               # Shared schemas and constants
 │   ├── config.ts         # ⚠️ Environment config — ALL env vars here
 │   └── [domain]/          # Domain-specific schemas (beans, shots, etc.)

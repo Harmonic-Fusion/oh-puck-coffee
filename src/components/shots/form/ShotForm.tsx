@@ -13,7 +13,7 @@ import { ShotSuccessModal } from "./ShotSuccessModal";
 import { useBeans } from "@/components/beans/hooks";
 import { useGrinders, useMachines } from "@/components/equipment/hooks";
 import { useToast } from "@/components/common/Toast";
-import { ShotDetail } from "@/components/shots/log/ShotDetail";
+import { ShotDetail } from "@/components/shots/ShotDetail";
 import { ValidationBanner } from "@/components/common/ValidationBanner";
 import { useShotPrePopulation } from "./hooks";
 import type { ShotSummary } from "./ShotSuccessModal";

@@ -114,3 +114,41 @@ export function getAdjectiveColor(adjective: string): string {
 
   return DEFAULT_COLOR;
 }
+
+/**
+ * Color interpolation function for bitter and sour scales
+ */
+function interpolateColor(
+  value: number,
+  min: number = 1,
+  max: number = 5,
+  startColor: string,
+  endColor: string
+): string {
+  const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
+  const parseRGB = (rgb: string): [number, number, number] => {
+    const match = rgb.match(/\d+/g);
+    if (!match || match.length !== 3) return [156, 163, 175];
+    return [parseInt(match[0]), parseInt(match[1]), parseInt(match[2])];
+  };
+  const [r1, g1, b1] = parseRGB(startColor);
+  const [r2, g2, b2] = parseRGB(endColor);
+  const r = Math.round(r1 + (r2 - r1) * ratio);
+  const g = Math.round(g1 + (g2 - g1) * ratio);
+  const b = Math.round(b1 + (b2 - b1) * ratio);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+/**
+ * Get color for bitter scale (neutral gray → dark brown)
+ */
+export function getBitterColor(value: number): string {
+  return interpolateColor(value, 1, 5, "rgb(156, 163, 175)", "rgb(69, 26, 3)");
+}
+
+/**
+ * Get color for sour scale (neutral gray → yellow)
+ */
+export function getSourColor(value: number): string {
+  return interpolateColor(value, 1, 5, "rgb(156, 163, 175)", "rgb(234, 179, 8)");
+}

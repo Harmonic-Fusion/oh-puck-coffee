@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/common/Button";
 import { AppRoutes, resolvePath } from "@/app/routes";
@@ -33,20 +33,30 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
   const [tempUnit] = useTempUnit();
   const createShareLink = useCreateShareLink();
 
-  // Auto-create share link when modal opens
-  useEffect(() => {
-    if (open && summary && !createShareLink.data && !createShareLink.isPending) {
-      createShareLink.mutate(summary.shotId);
+  const shotIdRef = useRef(summary?.shotId);
+  shotIdRef.current = summary?.shotId;
+
+  const getShareUrl = useCallback(async (): Promise<string> => {
+    const currentShotId = shotIdRef.current;
+    if (!currentShotId) {
+      throw new Error("Shot ID is required");
     }
-  }, [open, summary]); // eslint-disable-line react-hooks/exhaustive-deps
+    
+    // Always create a fresh share link for this shot
+    const shareData = await new Promise<{ id: string }>((resolve, reject) => {
+      createShareLink.mutate(currentShotId, {
+        onSuccess: (data) => resolve(data),
+        onError: reject,
+      });
+    });
+    
+    if (!shareData || !shareData.id) {
+      throw new Error("Failed to create share link");
+    }
+    return `${typeof window !== "undefined" ? window.location.origin : ""}${resolvePath(AppRoutes.share.uid, { uid: shareData.id })}`;
+  }, [createShareLink]);
 
-  const shareUrl = createShareLink.data
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}${resolvePath(AppRoutes.share.uid, { uid: createShareLink.data.id })}`
-    : "";
-
-  const handleShare = useCallback(async (text: string) => {
-    if (!shareUrl) return;
-
+  const handleShare = useCallback(async (text: string, shareUrl: string) => {
     const shareData = {
       title: "Journey before Destination!",
       text,
@@ -75,7 +85,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
     } catch (clipboardErr) {
       console.error("Error copying to clipboard:", clipboardErr);
     }
-  }, [shareUrl]);
+  }, []);
 
   if (!open || !summary) return null;
 
@@ -259,11 +269,11 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
           >
             Log Another
           </Button>
-          {shareUrl && summary ? (
+          {summary ? (
             <LongPressShareButton
               shotData={summary}
               tempUnit={tempUnit}
-              shareUrl={shareUrl}
+              getShareUrl={getShareUrl}
               onShare={handleShare}
               className="flex-1"
               variant="primary"
