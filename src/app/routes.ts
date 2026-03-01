@@ -16,7 +16,7 @@ export const AppRoutes = routesBuilder({
     path: "/settings",
     integrations: "/integrations",
   },
-  flavorSelector: "/flavor-selector",
+  tasting: "/tasting",
   login: { path: "/login", _is_public: true },
   company: { path: "/company", _is_public: true },
   careers: { path: "/careers", _is_public: true },

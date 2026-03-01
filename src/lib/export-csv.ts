@@ -40,7 +40,9 @@ export function exportToCsv<TData>(
         const value = col.accessorFn
           ? col.accessorFn(row)
           : (row as Record<string, unknown>)[col.id];
-        return escapeCSV(value);
+        return escapeCSV(
+          value as string | number | null | undefined
+        );
       })
       .join(",");
   });

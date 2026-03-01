@@ -59,7 +59,7 @@ const PopoverTrigger = React.forwardRef<HTMLButtonElement, PopoverTriggerProps>(
       return React.cloneElement(children, {
         ...props,
         ref,
-        onClick: (e: React.MouseEvent) => {
+        onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
           props.onClick?.(e);
           setOpen(!open);
         },

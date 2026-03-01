@@ -12,8 +12,9 @@ import {
   getAdjectiveColor,
 } from "@/shared/flavor-wheel";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
+import { ShareIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 
-export default function FlavorSelectorPage() {
+export default function TastingPage() {
   const [flavorCategories, setFlavorCategories] = useState<string[]>([]);
   const [body, setBody] = useState<string[]>([]);
   const [adjectives, setAdjectives] = useState<string[]>([]);
@@ -242,15 +243,74 @@ export default function FlavorSelectorPage() {
     }));
   }, [adjectives]);
 
+  // Generate text representation of tasting notes
+  const tastingNotesText = useMemo(() => {
+    const parts: string[] = [];
+    
+    if (selectedFlavorWords.length > 0) {
+      parts.push(`Flavors: ${selectedFlavorWords.map(f => f.name).join(", ")}`);
+    }
+    
+    if (body.length > 0) {
+      parts.push(`Body: ${body[0]}`);
+    }
+    
+    if (adjectives.length > 0) {
+      parts.push(`Adjectives: ${adjectives.join(", ")}`);
+    }
+    
+    return parts.join("\n");
+  }, [selectedFlavorWords, body, adjectives]);
+
+  // Copy to clipboard handler
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(tastingNotesText);
+      // Could add a toast notification here if needed
+    } catch (err) {
+      console.error("Error copying to clipboard:", err);
+    }
+  };
+
+  // Share handler
+  const handleShare = async () => {
+    const shareData = {
+      title: "Tasting Notes",
+      text: tastingNotesText,
+    };
+
+    // Check if Web Share API is available
+    if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
+      try {
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          return;
+        }
+      } catch (err) {
+        // User cancelled — ignore AbortError, fall through for others
+        if (err instanceof Error && err.name !== "AbortError") {
+          console.error("Error sharing:", err);
+        }
+        // Fall through to clipboard fallback
+      }
+    }
+
+    // Fallback: Copy to clipboard
+    try {
+      await navigator.clipboard.writeText(tastingNotesText);
+    } catch (clipboardErr) {
+      console.error("Error copying to clipboard:", clipboardErr);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-stone-900 dark:text-stone-100">
-          Flavor Selector Demo
+          Tasting Notes
         </h1>
         <p className="mt-2 text-stone-600 dark:text-stone-400">
-          Interactive demo of the nested flavors, body selector, and
-          adjectives/intensifiers components.
+          Tool for capturing your tasting notes and improving your palate.
         </p>
       </div>
 
@@ -278,10 +338,10 @@ export default function FlavorSelectorPage() {
 
         {/* Output/Resolution Column */}
         <div className="space-y-6">
-          <div className="sticky top-8 space-y-6">
+          <div className="sticky bottom-8 space-y-6">
             <div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900">
               <h2 className="mb-4 text-xl font-semibold text-stone-900 dark:text-stone-100">
-                Output / Resolution
+                Tasting Notes
               </h2>
 
               {/* Selected Flavors Badges */}
@@ -343,78 +403,26 @@ export default function FlavorSelectorPage() {
                 </div>
               )}
 
-              {/* JSON Output */}
-              <div>
-                <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
-                  JSON Output
-                </h3>
-                <pre className="max-h-96 overflow-auto rounded-lg border border-stone-200 bg-stone-50 p-4 text-xs dark:border-stone-700 dark:bg-stone-800">
-                  {JSON.stringify(
-                    {
-                      flavors: flavorCategories,
-                      bodyTexture: body,
-                      adjectives: adjectives,
-                    },
-                    null,
-                    2
-                  )}
-                </pre>
-              </div>
-            </div>
-
-            {/* Stats */}
-            <div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900">
-              <h3 className="mb-4 text-lg font-semibold text-stone-900 dark:text-stone-100">
-                Statistics
-              </h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-stone-600 dark:text-stone-400">
-                    Total flavor paths:
-                  </span>
-                  <span className="font-medium text-stone-900 dark:text-stone-100">
-                    {flavorCategories.length}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-600 dark:text-stone-400">
-                    Unique categories:
-                  </span>
-                  <span className="font-medium text-stone-900 dark:text-stone-100">
-                    {new Set(flavorCategories.map(f => {
-                      // Find which category this flavor belongs to
-                      for (const category of FLAVOR_WHEEL_DATA.children) {
-                        const findInCategory = (node: FlavorNode): boolean => {
-                          if (node.name === f) return true;
-                          if (node.children) {
-                            return node.children.some(findInCategory);
-                          }
-                          return false;
-                        };
-                        if (findInCategory(category)) {
-                          return category.name;
-                        }
-                      }
-                      return "Unknown";
-                    })).size}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-600 dark:text-stone-400">
-                    Body paths:
-                  </span>
-                  <span className="font-medium text-stone-900 dark:text-stone-100">
-                    {body.length}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-stone-600 dark:text-stone-400">
-                    Adjectives:
-                  </span>
-                  <span className="font-medium text-stone-900 dark:text-stone-100">
-                    {adjectives.length}
-                  </span>
-                </div>
+              {/* Action Buttons */}
+              <div className="mt-6 flex gap-3 border-t border-stone-200 pt-6 dark:border-stone-700">
+                <button
+                  onClick={handleCopy}
+                  disabled={tastingNotesText.length === 0}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-3 text-base font-medium text-stone-700 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-stone-300 dark:hover:bg-stone-800"
+                  title="Copy to clipboard"
+                >
+                  <DocumentDuplicateIcon className="h-5 w-5" />
+                  Copy
+                </button>
+                <button
+                  onClick={handleShare}
+                  disabled={tastingNotesText.length === 0}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-3 text-base font-medium text-stone-700 transition-colors hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-stone-300 dark:hover:bg-stone-800"
+                  title="Share"
+                >
+                  <ShareIcon className="h-5 w-5" />
+                  Share
+                </button>
               </div>
             </div>
           </div>

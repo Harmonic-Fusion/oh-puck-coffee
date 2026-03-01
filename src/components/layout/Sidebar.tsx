@@ -13,15 +13,17 @@ import {
   ArrowRightStartOnRectangleIcon,
   ChatBubbleLeftRightIcon,
   Bars3Icon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 import { useSidebar } from "./SidebarContext";
 import { FeedbackModal } from "@/components/common/FeedbackModal";
 
 const navItems = [
+  { label: "Log Shot", href: AppRoutes.log.path, icon: BeakerIcon },
   { label: "Dashboard", href: AppRoutes.dashboard.path, icon: ChartBarIcon },
   { label: "Shots", href: AppRoutes.shots.path, icon: ClipboardDocumentListIcon },
-  { label: "Log Shot", href: AppRoutes.log.path, icon: BeakerIcon },
+  { label: "Tasting Notes", href: AppRoutes.tasting.path, icon: SparklesIcon },
 ];
 
 export function Sidebar() {
