@@ -5,6 +5,8 @@
  * This file provides a single source of truth for all flavor wheel data.
  */
 import flavorWheelJson from "../../data/flavor-wheel.json";
+import teaWheelJson from "../../data/tea-wheel.json";
+import whiskeyWheelJson from "../../data/whiskey-wheel.json";
 import bodySelectorJson from "../../data/body-selector.json";
 import adjectivesIntensifiersJson from "../../data/adjectives-intensifiers.json";
 import type {
@@ -17,6 +19,23 @@ import type {
 // Load flavor wheel data
 export const FLAVOR_WHEEL_DATA: FlavorWheelData =
   flavorWheelJson as FlavorWheelData;
+
+// Load tea wheel data
+export const TEA_WHEEL_DATA: FlavorWheelData = teaWheelJson as FlavorWheelData;
+
+// Load whiskey wheel data
+export const WHISKEY_WHEEL_DATA: FlavorWheelData =
+  whiskeyWheelJson as FlavorWheelData;
+
+// Flavor wheel type
+export type FlavorWheelType = "coffee" | "tea" | "whiskey";
+
+// Map of flavor wheel types to their data
+export const FLAVOR_WHEELS: Record<FlavorWheelType, FlavorWheelData> = {
+  coffee: FLAVOR_WHEEL_DATA,
+  tea: TEA_WHEEL_DATA,
+  whiskey: WHISKEY_WHEEL_DATA,
+};
 
 // Load body selector data
 export const BODY_SELECTOR_DATA: BodySelectorData =
@@ -36,9 +55,7 @@ export const DEFAULT_COLOR = "rgba(158, 158, 158, 0.3)";
  * Useful for selected states to make colors more vibrant.
  */
 export function increaseOpacity(color: string, newOpacity: number): string {
-  const rgbaMatch = color.match(
-    /rgba?\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/
-  );
+  const rgbaMatch = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
   if (rgbaMatch) {
     return `rgba(${rgbaMatch[1]}, ${rgbaMatch[2]}, ${rgbaMatch[3]}, ${newOpacity})`;
   }
@@ -58,7 +75,7 @@ export function getFlavorColor(path: string[]): string {
 
   for (const segment of path) {
     const found = nodes.find(
-      (n) => n.name.toLowerCase() === segment.toLowerCase()
+      (n) => n.name.toLowerCase() === segment.toLowerCase(),
     );
     if (!found) break;
     color = found.color;
@@ -87,7 +104,7 @@ export function getBodyColor(descriptor: string): string {
   for (const cat of categories) {
     if (
       BODY_SELECTOR_DATA[cat].descriptors.some(
-        (d) => d.toLowerCase() === lowerDescriptor
+        (d) => d.toLowerCase() === lowerDescriptor,
       )
     ) {
       return BODY_SELECTOR_DATA[cat].color;
@@ -123,7 +140,7 @@ function interpolateColor(
   min: number = 1,
   max: number = 5,
   startColor: string,
-  endColor: string
+  endColor: string,
 ): string {
   const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
   const parseRGB = (rgb: string): [number, number, number] => {
@@ -150,5 +167,11 @@ export function getBitterColor(value: number): string {
  * Get color for sour scale (neutral gray → yellow)
  */
 export function getSourColor(value: number): string {
-  return interpolateColor(value, 1, 5, "rgb(156, 163, 175)", "rgb(234, 179, 8)");
+  return interpolateColor(
+    value,
+    1,
+    5,
+    "rgb(156, 163, 175)",
+    "rgb(234, 179, 8)",
+  );
 }

@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  BeakerIcon,
   ClipboardDocumentListIcon,
   ChartBarIcon,
   UserIcon,
   SparklesIcon,
-  EllipsisVerticalIcon,
+  Bars3Icon,
+  PlusCircleIcon,
 } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 import {
@@ -20,9 +20,13 @@ import {
 
 // Mobile bottom bar: Menu, Shots, Dashboard, Log
 const mobileNavItems = [
-  { label: "Shots", href: AppRoutes.shots.path, icon: ClipboardDocumentListIcon },
-  { label: "Dashboard", href: AppRoutes.dashboard.path, icon: ChartBarIcon },
-  { label: "Log", href: AppRoutes.log.path, icon: BeakerIcon },
+  {
+    label: "Shots",
+    href: AppRoutes.shots.path,
+    icon: ClipboardDocumentListIcon,
+  },
+  { label: "Stats", href: AppRoutes.dashboard.path, icon: ChartBarIcon },
+  { label: "Add", href: AppRoutes.log.path, icon: PlusCircleIcon },
 ];
 
 // Menu items for the dropdown
@@ -42,11 +46,15 @@ export function NavBar() {
         {/* Menu button with dropdown */}
         <div className="relative flex flex-1 flex-col items-center justify-center">
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex flex-col items-center justify-center gap-1 py-2 text-xs font-medium transition-colors text-stone-500 dark:text-stone-400 hover:text-amber-700 dark:hover:text-amber-400">
-              <EllipsisVerticalIcon className="h-5 w-5" />
-              <span>Menu</span>
+            <DropdownMenuTrigger className="flex flex-col items-center justify-center py-2 text-xs font-medium transition-colors text-stone-500 dark:text-stone-400 hover:text-amber-700 dark:hover:text-amber-400">
+              <Bars3Icon className="h-6 w-6" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent side="top" align="center" className="mb-2">
+            <DropdownMenuContent
+              side="top"
+              align="center"
+              sideOffset={8}
+              className="min-w-[200px] bg-white/90 backdrop-blur-md border-stone-200 dark:border-stone-700 dark:bg-stone-900/90"
+            >
               {menuNavItems.map((item) => {
                 const isActive =
                   pathname === item.href ||
@@ -56,13 +64,13 @@ export function NavBar() {
                   <DropdownMenuItem
                     key={item.href}
                     onClick={() => router.push(item.href)}
-                    className={`flex items-center gap-2 ${
+                    className={`flex items-center gap-3 px-4 py-3 text-base ${
                       isActive
                         ? "text-amber-700 dark:text-amber-400"
                         : "text-stone-700 dark:text-stone-300"
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-5 w-5" />
                     <span>{item.label}</span>
                   </DropdownMenuItem>
                 );

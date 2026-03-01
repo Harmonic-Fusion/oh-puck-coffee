@@ -9,9 +9,14 @@ import { useTools } from "@/components/equipment/hooks";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { AppRoutes, resolvePath } from "@/app/routes";
 import { ShotEditForm } from "@/components/shots/form/ShotEditForm";
-import { useShot, useCreateShareLink, useShotMetrics } from "@/components/shots/hooks";
+import {
+  useShot,
+  useCreateShareLink,
+  useShotMetrics,
+} from "@/components/shots/hooks";
 import { type ShotShareData } from "@/lib/share-text";
 import { LongPressShareButton } from "@/components/shots/LongPressShareButton";
+import { ActionButtonBar, type ActionConfig } from "./ActionButtonBar";
 import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
 import {
   FLAVOR_WHEEL_DATA,
@@ -25,10 +30,30 @@ import type { FlavorNode } from "@/shared/flavor-wheel/types";
 import { formatRating } from "@/lib/format-rating";
 import { formatTemp, roundToOneDecimal } from "@/lib/format-numbers";
 import { useTempUnit } from "@/lib/use-temp-unit";
-import { ChevronDownIcon, ChevronUpIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  PencilSquareIcon,
+  PlusCircleIcon,
+  EyeSlashIcon,
+  StarIcon,
+} from "@heroicons/react/24/outline";
+import {
+  StarIcon as StarIconSolid,
+  EyeIcon as EyeIconSolid,
+} from "@heroicons/react/24/solid";
 
-const SHOT_DETAIL_EXPANDED_SECTIONS_KEY = "coffee-shot-detail-expanded-sections";
-const DEFAULT_EXPANDED_SECTIONS = ["setup", "recipe", "results", "metrics", "tasting"];
+const SHOT_DETAIL_EXPANDED_SECTIONS_KEY =
+  "coffee-shot-detail-expanded-sections";
+const DEFAULT_EXPANDED_SECTIONS = [
+  "setup",
+  "recipe",
+  "results",
+  "metrics",
+  "tasting",
+];
 
 function getSavedExpandedSections(): Set<string> {
   if (typeof window === "undefined") {
@@ -43,7 +68,9 @@ function getSavedExpandedSections(): Set<string> {
     // Validate that all sections are valid
     const validSections = ["setup", "recipe", "results", "metrics", "tasting"];
     const filtered = parsed.filter((s) => validSections.includes(s));
-    return filtered.length > 0 ? new Set(filtered) : new Set(DEFAULT_EXPANDED_SECTIONS);
+    return filtered.length > 0
+      ? new Set(filtered)
+      : new Set(DEFAULT_EXPANDED_SECTIONS);
   } catch (error: unknown) {
     // Invalid JSON or other error - return defaults
     return new Set(DEFAULT_EXPANDED_SECTIONS);
@@ -52,7 +79,10 @@ function getSavedExpandedSections(): Set<string> {
 
 function saveExpandedSections(sections: Set<string>): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(SHOT_DETAIL_EXPANDED_SECTIONS_KEY, JSON.stringify(Array.from(sections)));
+  localStorage.setItem(
+    SHOT_DETAIL_EXPANDED_SECTIONS_KEY,
+    JSON.stringify(Array.from(sections)),
+  );
 }
 
 interface ShotDetailProps {
@@ -88,17 +118,19 @@ function DetailRow({
           {value}
         </span>
         {subtitle && (
-          <p className="text-xs text-stone-400 dark:text-stone-500">{subtitle}</p>
+          <p className="text-xs text-stone-400 dark:text-stone-500">
+            {subtitle}
+          </p>
         )}
       </div>
     </div>
   );
 }
 
-export function ShotDetail({ 
-  shot, 
-  open, 
-  onClose, 
+export function ShotDetail({
+  shot,
+  open,
+  onClose,
   onDelete,
   onToggleReference,
   onToggleHidden,
@@ -119,16 +151,16 @@ export function ShotDetail({
   const [isEditMode, setIsEditMode] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const createShareLink = useCreateShareLink();
-  
+
   // Touch swipe state
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
-  
+
   // Collapsible section state - lazy init from localStorage (runs once on mount)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    getSavedExpandedSections
+    getSavedExpandedSections,
   );
-  
+
   const toggleSection = (section: string) => {
     const newExpanded = new Set(expandedSections);
     if (newExpanded.has(section)) {
@@ -139,11 +171,13 @@ export function ShotDetail({
     setExpandedSections(newExpanded);
     saveExpandedSections(newExpanded);
   };
-  
+
   // Fetch fresh shot data when in edit mode
-  const { data: freshShot, refetch } = useShot(isEditMode && shot ? shot.id : null);
+  const { data: freshShot, refetch } = useShot(
+    isEditMode && shot ? shot.id : null,
+  );
   const currentShot = isEditMode && freshShot ? freshShot : shot;
-  
+
   // Fetch metrics for the current shot
   const { data: metrics } = useShotMetrics(shot?.id ?? null);
 
@@ -158,7 +192,8 @@ export function ShotDetail({
     if (shot.yieldGrams) params.set("yieldGrams", shot.yieldGrams);
     if (shot.grindLevel) params.set("grindLevel", shot.grindLevel);
     if (shot.brewTempC) params.set("brewTempC", shot.brewTempC);
-    if (shot.preInfusionDuration) params.set("preInfusionDuration", shot.preInfusionDuration);
+    if (shot.preInfusionDuration)
+      params.set("preInfusionDuration", shot.preInfusionDuration);
     if (shot.brewPressure) params.set("brewPressure", shot.brewPressure);
     if (shot.toolsUsed && shot.toolsUsed.length > 0) {
       params.set("toolsUsed", shot.toolsUsed.join(","));
@@ -174,7 +209,11 @@ export function ShotDetail({
       beanOrigin: null,
       beanRoaster: null,
       beanRoastDate: shot.beanRoastDate
-        ? new Date(shot.beanRoastDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+        ? new Date(shot.beanRoastDate).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
         : null,
       beanProcessingMethod: null,
       shotQuality: shot.shotQuality,
@@ -183,7 +222,9 @@ export function ShotDetail({
       sour: shot.sour,
       doseGrams: parseFloat(shot.doseGrams),
       yieldGrams: parseFloat(shot.yieldGrams),
-      yieldActualGrams: shot.yieldActualGrams ? parseFloat(shot.yieldActualGrams) : null,
+      yieldActualGrams: shot.yieldActualGrams
+        ? parseFloat(shot.yieldActualGrams)
+        : null,
       brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : null,
       grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : null,
       brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : null,
@@ -205,7 +246,7 @@ export function ShotDetail({
     if (!currentShotId) {
       throw new Error("Shot ID is required");
     }
-    
+
     // Always create a fresh share link for this shot
     const shareData = await new Promise<{ id: string }>((resolve, reject) => {
       createShareLink.mutate(currentShotId, {
@@ -213,7 +254,7 @@ export function ShotDetail({
         onError: reject,
       });
     });
-    
+
     if (!shareData || !shareData.id) {
       throw new Error("Failed to create share link");
     }
@@ -228,7 +269,11 @@ export function ShotDetail({
     };
 
     // Check if Web Share API is available
-    if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
+    if (
+      typeof navigator !== "undefined" &&
+      navigator.share &&
+      navigator.canShare
+    ) {
       try {
         if (navigator.canShare(shareData)) {
           await navigator.share(shareData);
@@ -255,7 +300,13 @@ export function ShotDetail({
 
   // Navigation handlers
   const handlePrevious = useCallback(() => {
-    if (!shots || currentIndex === undefined || currentIndex <= 0 || !onShotChange) return;
+    if (
+      !shots ||
+      currentIndex === undefined ||
+      currentIndex <= 0 ||
+      !onShotChange
+    )
+      return;
     const prevShot = shots[currentIndex - 1];
     if (prevShot) {
       onShotChange(prevShot);
@@ -263,7 +314,13 @@ export function ShotDetail({
   }, [shots, currentIndex, onShotChange]);
 
   const handleNext = useCallback(() => {
-    if (!shots || currentIndex === undefined || currentIndex >= shots.length - 1 || !onShotChange) return;
+    if (
+      !shots ||
+      currentIndex === undefined ||
+      currentIndex >= shots.length - 1 ||
+      !onShotChange
+    )
+      return;
     const nextShot = shots[currentIndex + 1];
     if (nextShot) {
       onShotChange(nextShot);
@@ -275,29 +332,32 @@ export function ShotDetail({
     touchStartX.current = e.touches[0].clientX;
   }, []);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    touchEndX.current = e.changedTouches[0].clientX;
-    if (touchStartX.current === null || touchEndX.current === null) return;
-    
-    const deltaX = touchStartX.current - touchEndX.current;
-    if (Math.abs(deltaX) >= 50) {
-      if (deltaX > 0) {
-        // Swipe left - next shot
-        handleNext();
-      } else {
-        // Swipe right - previous shot
-        handlePrevious();
+  const handleTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      touchEndX.current = e.changedTouches[0].clientX;
+      if (touchStartX.current === null || touchEndX.current === null) return;
+
+      const deltaX = touchStartX.current - touchEndX.current;
+      if (Math.abs(deltaX) >= 50) {
+        if (deltaX > 0) {
+          // Swipe left - next shot
+          handleNext();
+        } else {
+          // Swipe right - previous shot
+          handlePrevious();
+        }
       }
-    }
-    
-    touchStartX.current = null;
-    touchEndX.current = null;
-  }, [handleNext, handlePrevious]);
+
+      touchStartX.current = null;
+      touchEndX.current = null;
+    },
+    [handleNext, handlePrevious],
+  );
 
   // Keyboard navigation
   useEffect(() => {
     if (!open || !shots || currentIndex === undefined) return;
-    
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
         e.preventDefault();
@@ -307,7 +367,7 @@ export function ShotDetail({
         handleNext();
       }
     };
-    
+
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
@@ -344,8 +404,12 @@ export function ShotDetail({
         yieldGrams: shot.yieldGrams ? parseFloat(shot.yieldGrams) : undefined,
         grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
         brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
-        preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
-        brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : undefined,
+        preInfusionDuration: shot.preInfusionDuration
+          ? parseFloat(shot.preInfusionDuration)
+          : undefined,
+        brewPressure: shot.brewPressure
+          ? parseFloat(shot.brewPressure)
+          : undefined,
         toolsUsed: shot.toolsUsed || [],
       };
       sessionStorage.setItem("duplicateShot", JSON.stringify(duplicateData));
@@ -368,189 +432,77 @@ export function ShotDetail({
 
   const dose = parseFloat(shot.doseGrams);
   const yieldG = parseFloat(shot.yieldGrams);
-  const yieldActual = shot.yieldActualGrams ? parseFloat(shot.yieldActualGrams) : null;
+  const yieldActual = shot.yieldActualGrams
+    ? parseFloat(shot.yieldActualGrams)
+    : null;
   const ratio = dose > 0 ? parseFloat((yieldG / dose).toFixed(2)) : null;
-  const actualRatio = dose > 0 && yieldActual ? parseFloat((yieldActual / dose).toFixed(2)) : null;
+  const actualRatio =
+    dose > 0 && yieldActual
+      ? parseFloat((yieldActual / dose).toFixed(2))
+      : null;
 
   const footer = readOnly ? null : (
-    <div className="flex items-center gap-2">
-      {!isEditMode && (
-        <Button
-          type="button"
-          variant="secondary"
-          size="md"
-          onClick={() => setIsEditMode(true)}
-          className="flex-1"
-          title="Edit shot"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
-        </Button>
-      )}
-      {onToggleReference && (
-        <Button
-          variant={shot.isReferenceShot ? "primary" : "secondary"}
-          size="md"
-          onClick={handleToggleReference}
-          className="flex-1"
-          title={shot.isReferenceShot ? "Remove reference shot" : "Mark as reference shot"}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill={shot.isReferenceShot ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-          </svg>
-        </Button>
-      )}
-      {onToggleHidden && (
-        <Button
-          variant={shot.isHidden ? "secondary" : "ghost"}
-          size="md"
-          onClick={handleToggleHidden}
-          className="flex-1"
-          title={shot.isHidden ? "Show shot" : "Hide shot"}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            {shot.isHidden ? (
-              <>
-                <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
-                <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
-                <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
-                <line x1="2" y1="2" x2="22" y2="22" />
-              </>
-            ) : (
-              <>
-                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
-                <circle cx="12" cy="12" r="3" />
-              </>
-            )}
-          </svg>
-        </Button>
-      )}
-      <Button
-        variant="secondary"
-        size="md"
-        onClick={handleDuplicate}
-        className="flex-1"
-        title="Duplicate shot"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-        </svg>
-      </Button>
-      {shotShareData ? (
-        <LongPressShareButton
-          shotData={shotShareData}
-          tempUnit={tempUnit}
-          getShareUrl={getShareUrl}
-          onShare={handleShare}
-          className="flex-1"
-          variant="secondary"
-          size="md"
-        >
-          {shareCopied ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M20 6L9 17l-5-5" />
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="18" cy="5" r="3" />
-              <circle cx="6" cy="12" r="3" />
-              <circle cx="18" cy="19" r="3" />
-              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-            </svg>
-          )}
-        </LongPressShareButton>
-      ) : (
-        <Button
-          variant="secondary"
-          size="md"
-          className="flex-1"
-          title="Share shot"
-          disabled={createShareLink.isPending}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="18" cy="5" r="3" />
-            <circle cx="6" cy="12" r="3" />
-            <circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-          </svg>
-        </Button>
-      )}
-    </div>
+    <ActionButtonBar
+      actions={[
+        ...(!isEditMode
+          ? [
+              {
+                key: "edit",
+                icon: PencilSquareIcon,
+                onClick: () => setIsEditMode(true),
+                title: "Edit shot",
+                variant: "default" as const,
+              },
+            ]
+          : []),
+        ...(onToggleReference
+          ? [
+              {
+                key: "reference",
+                icon: shot.isReferenceShot ? StarIconSolid : StarIcon,
+                onClick: handleToggleReference,
+                title: shot.isReferenceShot
+                  ? "Remove reference shot"
+                  : "Mark as reference shot",
+                variant: shot.isReferenceShot
+                  ? ("active" as const)
+                  : ("default" as const),
+              },
+            ]
+          : []),
+        ...(onToggleHidden
+          ? [
+              {
+                key: "hidden",
+                icon: shot.isHidden ? EyeSlashIcon : EyeIconSolid,
+                onClick: handleToggleHidden,
+                title: shot.isHidden ? "Show shot" : "Hide shot",
+                variant: shot.isHidden
+                  ? ("default" as const)
+                  : ("active" as const),
+              },
+            ]
+          : []),
+        {
+          key: "duplicate",
+          icon: PlusCircleIcon,
+          onClick: handleDuplicate,
+          title: "Duplicate shot",
+          variant: "default" as const,
+        },
+        ...(shotShareData
+          ? [
+              {
+                key: "share" as const,
+                shotData: shotShareData,
+                tempUnit,
+                getShareUrl,
+                onShare: handleShare,
+              },
+            ]
+          : []),
+      ]}
+    />
   );
 
   // Custom header with navigation buttons
@@ -615,10 +567,10 @@ export function ShotDetail({
     ) : undefined;
 
   return (
-    <Modal 
-      open={open} 
-      onClose={onClose} 
-      title={canNavigate ? undefined : (isEditMode ? "Edit Shot" : "Shot Detail")}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={canNavigate ? undefined : isEditMode ? "Edit Shot" : "Shot Detail"}
       header={modalHeader}
       footer={isEditMode ? null : footer}
       leftSlot={leftArrowSlot}
@@ -632,7 +584,7 @@ export function ShotDetail({
           onDelete={onDelete}
         />
       ) : (
-        <div 
+        <div
           className="space-y-6"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -724,7 +676,10 @@ export function ShotDetail({
             </button>
             {expandedSections.has("recipe") && (
               <div className="divide-y divide-stone-100 rounded-lg border border-stone-200 px-4 dark:divide-stone-800 dark:border-stone-700">
-                <DetailRow label="Dose" value={`${roundToOneDecimal(shot.doseGrams)}g`} />
+                <DetailRow
+                  label="Dose"
+                  value={`${roundToOneDecimal(shot.doseGrams)}g`}
+                />
                 <DetailRow
                   label="Target Yield"
                   value={`${roundToOneDecimal(shot.yieldGrams)}g`}
@@ -745,7 +700,11 @@ export function ShotDetail({
                 />
                 <DetailRow
                   label="Brew Pressure"
-                  value={shot.brewPressure ? `${roundToOneDecimal(shot.brewPressure)} bar` : null}
+                  value={
+                    shot.brewPressure
+                      ? `${roundToOneDecimal(shot.brewPressure)} bar`
+                      : null
+                  }
                 />
                 {shot.toolsUsed && shot.toolsUsed.length > 0 && (
                   <div className="flex justify-between py-1.5">
@@ -769,7 +728,9 @@ export function ShotDetail({
           </div>
 
           {/* Results Section */}
-          {(shot.brewTimeSecs || shot.yieldActualGrams || shot.estimateMaxPressure) && (
+          {(shot.brewTimeSecs ||
+            shot.yieldActualGrams ||
+            shot.estimateMaxPressure) && (
             <div>
               <button
                 type="button"
@@ -798,7 +759,11 @@ export function ShotDetail({
                     <DetailRow
                       label="Brew Time"
                       value={`${roundToOneDecimal(shot.brewTimeSecs)}s`}
-                      subtitle={shot.flowRate ? `${roundToOneDecimal(shot.flowRate)} g/s` : "-:-"}
+                      subtitle={
+                        shot.flowRate
+                          ? `${roundToOneDecimal(shot.flowRate)} g/s`
+                          : "-:-"
+                      }
                     />
                   )}
                   {shot.estimateMaxPressure && (
@@ -851,60 +816,67 @@ export function ShotDetail({
                 )}
 
                 {/* Rating Distribution */}
-                {metrics?.ratingDistribution && metrics.ratingDistribution.length > 0 && (
-                  <div>
-                    <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
-                      Rating Distribution
-                    </p>
-                    <div className="space-y-1.5">
-                      {metrics.ratingDistribution.map((item) => {
-                        const maxCount = Math.max(
-                          ...metrics.ratingDistribution.map((d) => d.count),
-                          1
-                        );
-                        const widthPct = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
-                        const isCurrentShot =
-                          metrics.currentShotRating != null &&
-                          Math.floor(metrics.currentShotRating) === item.rating;
-
-                        return (
-                          <div key={item.rating} className="flex items-center gap-2">
-                            <span className="w-8 text-xs font-medium text-stone-600 dark:text-stone-400">
-                              {item.rating}
-                            </span>
-                            <div className="flex-1">
-                              <div className="relative h-5 overflow-hidden rounded bg-stone-100 dark:bg-stone-800">
-                                <div
-                                  className={`h-full transition-all ${
-                                    isCurrentShot
-                                      ? "bg-blue-500 dark:bg-blue-600"
-                                      : "bg-stone-300 dark:bg-stone-600"
-                                  }`}
-                                  style={{ width: `${widthPct}%` }}
-                                />
-                                {isCurrentShot && (
-                                  <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-xs font-semibold text-white">
-                                      ⭐
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <span className="w-8 text-right text-xs text-stone-500 dark:text-stone-400">
-                              {item.count}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {metrics.currentShotRating != null && (
-                      <p className="mt-2 text-xs text-stone-400 dark:text-stone-500">
-                        ⭐ Current shot: {roundToOneDecimal(metrics.currentShotRating)}
+                {metrics?.ratingDistribution &&
+                  metrics.ratingDistribution.length > 0 && (
+                    <div>
+                      <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+                        Rating Distribution
                       </p>
-                    )}
-                  </div>
-                )}
+                      <div className="space-y-1.5">
+                        {metrics.ratingDistribution.map((item) => {
+                          const maxCount = Math.max(
+                            ...metrics.ratingDistribution.map((d) => d.count),
+                            1,
+                          );
+                          const widthPct =
+                            maxCount > 0 ? (item.count / maxCount) * 100 : 0;
+                          const isCurrentShot =
+                            metrics.currentShotRating != null &&
+                            Math.floor(metrics.currentShotRating) ===
+                              item.rating;
+
+                          return (
+                            <div
+                              key={item.rating}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="w-8 text-xs font-medium text-stone-600 dark:text-stone-400">
+                                {item.rating}
+                              </span>
+                              <div className="flex-1">
+                                <div className="relative h-5 overflow-hidden rounded bg-stone-100 dark:bg-stone-800">
+                                  <div
+                                    className={`h-full transition-all ${
+                                      isCurrentShot
+                                        ? "bg-blue-500 dark:bg-blue-600"
+                                        : "bg-stone-300 dark:bg-stone-600"
+                                    }`}
+                                    style={{ width: `${widthPct}%` }}
+                                  />
+                                  {isCurrentShot && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                      <span className="text-xs font-semibold text-white">
+                                        ⭐
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <span className="w-8 text-right text-xs text-stone-500 dark:text-stone-400">
+                                {item.count}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {metrics.currentShotRating != null && (
+                        <p className="mt-2 text-xs text-stone-400 dark:text-stone-500">
+                          ⭐ Current shot:{" "}
+                          {roundToOneDecimal(metrics.currentShotRating)}
+                        </p>
+                      )}
+                    </div>
+                  )}
               </div>
             )}
           </div>
@@ -935,18 +907,24 @@ export function ShotDetail({
                   <span className="ml-auto text-2xl font-bold text-amber-600 dark:text-amber-400">
                     {shot.shotQuality}
                   </span>
-                  <span className="text-sm text-stone-400 dark:text-stone-500">/ 5</span>
+                  <span className="text-sm text-stone-400 dark:text-stone-500">
+                    / 5
+                  </span>
                 </div>
 
                 {/* Rating */}
                 {shot.rating != null && (
                   <div className="flex items-center gap-2 rounded-lg bg-stone-50 px-4 py-3 dark:bg-stone-800">
-                    <span className="text-sm text-stone-500 dark:text-stone-400">Rating</span>
+                    <span className="text-sm text-stone-500 dark:text-stone-400">
+                      Rating
+                    </span>
                     <span className="ml-auto flex items-center gap-1.5">
                       <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         {shot.rating}
                       </span>
-                      <span className="text-lg">{formatRating(shot.rating)}</span>
+                      <span className="text-lg">
+                        {formatRating(shot.rating)}
+                      </span>
                     </span>
                   </div>
                 )}
@@ -954,7 +932,9 @@ export function ShotDetail({
                 {/* Bitter */}
                 {shot.bitter != null && (
                   <div className="flex items-center gap-2 rounded-lg bg-stone-50 px-4 py-3 dark:bg-stone-800">
-                    <span className="text-sm text-stone-500 dark:text-stone-400">Bitter</span>
+                    <span className="text-sm text-stone-500 dark:text-stone-400">
+                      Bitter
+                    </span>
                     <span className="ml-auto flex items-center gap-2">
                       <div
                         className="h-4 w-4 rounded-full"
@@ -966,7 +946,9 @@ export function ShotDetail({
                       >
                         {shot.bitter}
                       </span>
-                      <span className="text-sm text-stone-400 dark:text-stone-500">/ 5</span>
+                      <span className="text-sm text-stone-400 dark:text-stone-500">
+                        / 5
+                      </span>
                     </span>
                   </div>
                 )}
@@ -974,7 +956,9 @@ export function ShotDetail({
                 {/* Sour */}
                 {shot.sour != null && (
                   <div className="flex items-center gap-2 rounded-lg bg-stone-50 px-4 py-3 dark:bg-stone-800">
-                    <span className="text-sm text-stone-500 dark:text-stone-400">Sour</span>
+                    <span className="text-sm text-stone-500 dark:text-stone-400">
+                      Sour
+                    </span>
                     <span className="ml-auto flex items-center gap-2">
                       <div
                         className="h-4 w-4 rounded-full"
@@ -986,7 +970,9 @@ export function ShotDetail({
                       >
                         {shot.sour}
                       </span>
-                      <span className="text-sm text-stone-400 dark:text-stone-500">/ 5</span>
+                      <span className="text-sm text-stone-400 dark:text-stone-500">
+                        / 5
+                      </span>
                     </span>
                   </div>
                 )}
@@ -994,13 +980,17 @@ export function ShotDetail({
                 {/* Body */}
                 {shot.bodyTexture && shot.bodyTexture.length > 0 && (
                   <div>
-                    <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">Body</p>
+                    <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
+                      Body
+                    </p>
                     <SelectedBadges
                       title=""
                       items={[
                         {
                           label: shot.bodyTexture[shot.bodyTexture.length - 1],
-                          color: getBodyColor(shot.bodyTexture[shot.bodyTexture.length - 1]),
+                          color: getBodyColor(
+                            shot.bodyTexture[shot.bodyTexture.length - 1],
+                          ),
                           key: shot.bodyTexture[shot.bodyTexture.length - 1],
                           className: "capitalize",
                         },
@@ -1012,14 +1002,16 @@ export function ShotDetail({
                 {/* Flavors */}
                 {shot.flavors && shot.flavors.length > 0 && (
                   <div>
-                    <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">Flavors</p>
+                    <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
+                      Flavors
+                    </p>
                     <SelectedBadges
                       title=""
                       items={shot.flavors.map((flavorName) => {
                         // Find the path for this flavor name in the tree
                         const findFlavorPath = (
                           node: FlavorNode,
-                          path: string[] = []
+                          path: string[] = [],
                         ): string[] | null => {
                           const currentPath = [...path, node.name];
                           if (node.name === flavorName) {
@@ -1056,7 +1048,9 @@ export function ShotDetail({
                 {/* Adjectives */}
                 {shot.adjectives && shot.adjectives.length > 0 && (
                   <div>
-                    <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">Adjectives</p>
+                    <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
+                      Adjectives
+                    </p>
                     <SelectedBadges
                       title=""
                       items={shot.adjectives.map((adjective) => ({
@@ -1071,7 +1065,9 @@ export function ShotDetail({
                 {/* Notes */}
                 {shot.notes && (
                   <div>
-                    <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">Notes</p>
+                    <p className="mb-1 text-xs text-stone-500 dark:text-stone-400">
+                      Notes
+                    </p>
                     <p className="whitespace-pre-wrap text-sm text-stone-700 dark:text-stone-300">
                       {shot.notes}
                     </p>
@@ -1090,7 +1086,11 @@ export function ShotDetail({
               <p className="text-center text-xs text-stone-500 dark:text-stone-400">
                 Scan to duplicate this shot recipe
               </p>
-              <QRCode value={duplicateUrl} size={200} title="Duplicate Shot Recipe" />
+              <QRCode
+                value={duplicateUrl}
+                size={200}
+                title="Duplicate Shot Recipe"
+              />
             </div>
           )}
         </div>

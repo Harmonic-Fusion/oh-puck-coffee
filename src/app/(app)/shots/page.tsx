@@ -25,7 +25,10 @@ import {
   type ShotWithJoins,
 } from "@/components/shots/hooks";
 import { ShotDetail } from "@/components/shots/ShotDetail";
-import { LongPressShareButton } from "@/components/shots/LongPressShareButton";
+import {
+  ActionButtonBar,
+  type ActionConfig,
+} from "@/components/shots/ActionButtonBar";
 import { useToast } from "@/components/common/Toast";
 import { AppRoutes, resolvePath } from "@/app/routes";
 import { buildShareText, type ShotShareData } from "@/lib/share-text";
@@ -44,10 +47,13 @@ import {
   StarIcon,
   EyeIcon,
   EyeSlashIcon,
-  DocumentDuplicateIcon,
+  PlusCircleIcon,
   ShareIcon,
 } from "@heroicons/react/24/outline";
-import { StarIcon as StarIconSolid } from "@heroicons/react/24/solid";
+import {
+  StarIcon as StarIconSolid,
+  EyeIcon as EyeIconSolid,
+} from "@heroicons/react/24/solid";
 import { ArrowDownTrayIcon } from "@heroicons/react/16/solid";
 import {
   DropdownMenu,
@@ -62,7 +68,7 @@ import { exportToCsv, type CSVColumn } from "@/lib/export-csv";
 /** Multi-select: row matches if its value is in the selected set. */
 function multiSelectFilterFn(
   rowValue: string | null | undefined,
-  filterValues: string[]
+  filterValues: string[],
 ): boolean {
   if (!filterValues || filterValues.length === 0) return true;
   if (rowValue == null) return false;
@@ -72,7 +78,7 @@ function multiSelectFilterFn(
 /** Numeric bucket: row matches if its rounded value is in the selected set. */
 function numericBucketFilterFn(
   rowValue: number | null | undefined,
-  filterValues: string[]
+  filterValues: string[],
 ): boolean {
   if (!filterValues || filterValues.length === 0) return true;
   if (rowValue == null) return false;
@@ -82,7 +88,7 @@ function numericBucketFilterFn(
 /** Date range: row matches if its date is within [from, to]. */
 function dateRangeFilterFn(
   rowValue: string,
-  filterValue: [string, string] // [from, to] as ISO date strings
+  filterValue: [string, string], // [from, to] as ISO date strings
 ): boolean {
   if (!filterValue || (!filterValue[0] && !filterValue[1])) return true;
   const d = new Date(rowValue).getTime();
@@ -97,10 +103,7 @@ function dateRangeFilterFn(
 }
 
 /** Boolean: row matches selected true/false values */
-function booleanFilterFn(
-  rowValue: boolean,
-  filterValues: string[]
-): boolean {
+function booleanFilterFn(rowValue: boolean, filterValues: string[]): boolean {
   if (!filterValues || filterValues.length === 0) return true;
   return filterValues.includes(String(rowValue));
 }
@@ -292,7 +295,7 @@ function ShotCard({
       adjectives: shot.adjectives,
       notes: shot.notes,
     }),
-    [shot]
+    [shot],
   );
 
   const getShareUrl = useCallback(async (): Promise<string> => {
@@ -341,7 +344,7 @@ function ShotCard({
         console.error("Error copying to clipboard:", clipboardErr);
       }
     },
-    []
+    [],
   );
 
   return (
@@ -363,7 +366,7 @@ function ShotCard({
           : "border-stone-200 dark:border-stone-700",
         isSelected
           ? "ring-2 ring-amber-500 border-amber-500 bg-amber-50/30 dark:bg-amber-900/20"
-          : ""
+          : "",
       )}
     >
       {/* Header */}
@@ -391,9 +394,15 @@ function ShotCard({
       <div className="grid grid-cols-3 gap-2 text-center">
         {[
           { label: "Dose", value: shot.doseGrams ? `${shot.doseGrams}g` : "—" },
-          { label: "Yield", value: shot.yieldGrams ? `${shot.yieldGrams}g` : "—" },
+          {
+            label: "Yield",
+            value: shot.yieldGrams ? `${shot.yieldGrams}g` : "—",
+          },
           { label: "Ratio", value: ratio },
-          { label: "Time", value: shot.brewTimeSecs ? `${shot.brewTimeSecs}s` : "—" },
+          {
+            label: "Time",
+            value: shot.brewTimeSecs ? `${shot.brewTimeSecs}s` : "—",
+          },
           { label: "Grind", value: shot.grindLevel ?? "—" },
           { label: "By", value: shot.userName ?? "—" },
         ].map((cell) => (
@@ -425,64 +434,65 @@ function ShotCard({
           onClick={(e) => e.stopPropagation()}
         >
           {!isSelecting ? (
-            <>
-              {onToggleReference && (
-                <button
-                  onClick={() => onToggleReference(shot.id)}
-                  className="flex h-10 flex-1 items-center justify-center rounded-lg transition-colors hover:bg-amber-50 dark:hover:bg-amber-900/20"
-                  title={isRef ? "Unmark reference" : "Mark reference"}
-                >
-                  <StarIcon
-                    className={cn(
-                      "h-5 w-5",
-                      isRef
-                        ? "fill-amber-500 text-amber-500"
-                        : "text-stone-400 dark:text-stone-500"
-                    )}
-                  />
-                </button>
-              )}
-              {onToggleHidden && (
-                <button
-                  onClick={() => onToggleHidden(shot.id)}
-                  className="flex h-10 flex-1 items-center justify-center rounded-lg transition-colors hover:bg-stone-100 dark:hover:bg-stone-800"
-                  title={isHidden ? "Show" : "Hide"}
-                >
-                  {isHidden ? (
-                    <EyeSlashIcon className="h-5 w-5 text-stone-400 dark:text-stone-500" />
-                  ) : (
-                    <EyeIcon className="h-5 w-5 text-stone-400 dark:text-stone-500" />
-                  )}
-                </button>
-              )}
-              {onDuplicate && (
-                <button
-                  onClick={() => onDuplicate(shot)}
-                  className="flex h-10 flex-1 items-center justify-center rounded-lg transition-colors hover:bg-stone-100 dark:hover:bg-stone-800"
-                  title="Duplicate"
-                >
-                  <DocumentDuplicateIcon className="h-5 w-5 text-stone-400 dark:text-stone-500" />
-                </button>
-              )}
-              <div className="flex h-10 flex-1">
-                <LongPressShareButton
-                  shotData={shotShareData}
-                  tempUnit={tempUnit}
-                  getShareUrl={getShareUrl}
-                  onShare={handleShareAction}
-                  className="h-10 w-full"
-                  variant="ghost"
-                  size="sm"
-                >
-                  <ShareIcon className="h-5 w-5 text-stone-400 dark:text-stone-500" />
-                </LongPressShareButton>
-              </div>
-            </>
+            <ActionButtonBar
+              actions={[
+                ...(onToggleReference
+                  ? [
+                      {
+                        key: "reference",
+                        icon: isRef ? StarIconSolid : StarIcon,
+                        onClick: () => onToggleReference(shot.id),
+                        title: isRef ? "Unmark reference" : "Mark reference",
+                        variant: isRef
+                          ? ("active" as const)
+                          : ("default" as const),
+                      },
+                    ]
+                  : []),
+                ...(onToggleHidden
+                  ? [
+                      {
+                        key: "hidden",
+                        icon: isHidden ? EyeSlashIcon : EyeIconSolid,
+                        onClick: () => onToggleHidden(shot.id),
+                        title: isHidden ? "Show" : "Hide",
+                        variant: isHidden
+                          ? ("default" as const)
+                          : ("active" as const),
+                      },
+                    ]
+                  : []),
+                ...(onDuplicate
+                  ? [
+                      {
+                        key: "duplicate",
+                        icon: PlusCircleIcon,
+                        onClick: () => onDuplicate(shot),
+                        title: "Duplicate",
+                        variant: "default" as const,
+                      },
+                    ]
+                  : []),
+                {
+                  key: "share" as const,
+                  shotData: shotShareData,
+                  tempUnit,
+                  getShareUrl,
+                  onShare: handleShareAction,
+                },
+              ]}
+            />
           ) : (
             <>
-              {onToggleReference && <div className="h-10 flex-1" aria-hidden="true" />}
-              {onToggleHidden && <div className="h-10 flex-1" aria-hidden="true" />}
-              {onDuplicate && <div className="h-10 flex-1" aria-hidden="true" />}
+              {onToggleReference && (
+                <div className="h-10 flex-1" aria-hidden="true" />
+              )}
+              {onToggleHidden && (
+                <div className="h-10 flex-1" aria-hidden="true" />
+              )}
+              {onDuplicate && (
+                <div className="h-10 flex-1" aria-hidden="true" />
+              )}
               <div className="h-10 flex-1" aria-hidden="true" />
             </>
           )}
@@ -551,7 +561,7 @@ function MultiSelectFilter({
         : [...selected, value];
       column.setFilterValue(next.length > 0 ? next : undefined);
     },
-    [column, selected]
+    [column, selected],
   );
 
   const count = selected.length;
@@ -806,7 +816,7 @@ function FilterBar({
               ? String(
                   typeof col.columnDef.header === "string"
                     ? col.columnDef.header
-                    : f.id
+                    : f.id,
                 )
               : f.id;
             const val = f.value;
@@ -816,7 +826,8 @@ function FilterBar({
               const to = val[1] ? val[1] : "…";
               display = `${from} → ${to}`;
             } else if (Array.isArray(val)) {
-              display = val.length <= 2 ? val.join(", ") : `${val.length} selected`;
+              display =
+                val.length <= 2 ? val.join(", ") : `${val.length} selected`;
             } else {
               display = String(val);
             }
@@ -873,13 +884,15 @@ export default function ShotsPage() {
         onSuccess: (updatedShot) => {
           if (selectedShot?.id === id) {
             setSelectedShot((prev) =>
-              prev ? { ...prev, isReferenceShot: updatedShot.isReferenceShot } : null
+              prev
+                ? { ...prev, isReferenceShot: updatedShot.isReferenceShot }
+                : null,
             );
           }
         },
       });
     },
-    [toggleReference, selectedShot?.id]
+    [toggleReference, selectedShot?.id],
   );
 
   const handleToggleHidden = useCallback(
@@ -888,13 +901,13 @@ export default function ShotsPage() {
         onSuccess: (updatedShot) => {
           if (selectedShot?.id === id) {
             setSelectedShot((prev) =>
-              prev ? { ...prev, isHidden: updatedShot.isHidden } : null
+              prev ? { ...prev, isHidden: updatedShot.isHidden } : null,
             );
           }
         },
       });
     },
-    [toggleHidden, selectedShot?.id]
+    [toggleHidden, selectedShot?.id],
   );
 
   const handleDelete = useCallback(
@@ -902,7 +915,7 @@ export default function ShotsPage() {
       deleteShot.mutate(id);
       if (selectedShot?.id === id) setSelectedShot(null);
     },
-    [deleteShot, selectedShot?.id]
+    [deleteShot, selectedShot?.id],
   );
 
   const handleDuplicate = useCallback(
@@ -915,14 +928,15 @@ export default function ShotsPage() {
       if (shot.yieldGrams) params.set("yieldGrams", shot.yieldGrams);
       if (shot.grindLevel) params.set("grindLevel", shot.grindLevel);
       if (shot.brewTempC) params.set("brewTempC", shot.brewTempC);
-      if (shot.preInfusionDuration) params.set("preInfusionDuration", shot.preInfusionDuration);
+      if (shot.preInfusionDuration)
+        params.set("preInfusionDuration", shot.preInfusionDuration);
       if (shot.brewPressure) params.set("brewPressure", shot.brewPressure);
       if (shot.toolsUsed && shot.toolsUsed.length > 0) {
         params.set("toolsUsed", shot.toolsUsed.join(","));
       }
       router.push(`${AppRoutes.log.path}?${params.toString()}`);
     },
-    [router]
+    [router],
   );
 
   const handleShare = useCallback(
@@ -951,11 +965,19 @@ export default function ShotsPage() {
                 sour: shot.sour,
                 doseGrams: parseFloat(shot.doseGrams),
                 yieldGrams: parseFloat(shot.yieldGrams),
-                yieldActualGrams: shot.yieldActualGrams ? parseFloat(shot.yieldActualGrams) : null,
-                brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : null,
-                grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : null,
+                yieldActualGrams: shot.yieldActualGrams
+                  ? parseFloat(shot.yieldActualGrams)
+                  : null,
+                brewTimeSecs: shot.brewTimeSecs
+                  ? parseFloat(shot.brewTimeSecs)
+                  : null,
+                grindLevel: shot.grindLevel
+                  ? parseFloat(shot.grindLevel)
+                  : null,
                 brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : null,
-                brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : null,
+                brewPressure: shot.brewPressure
+                  ? parseFloat(shot.brewPressure)
+                  : null,
                 grinderName: shot.grinderName,
                 machineName: shot.machineName,
                 flavors: shot.flavors,
@@ -964,7 +986,7 @@ export default function ShotsPage() {
                 notes: shot.notes,
                 url: shareUrl,
               },
-              tempUnit
+              tempUnit,
             );
 
             const shareDataObj = {
@@ -973,7 +995,11 @@ export default function ShotsPage() {
               url: shareUrl,
             };
 
-            if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
+            if (
+              typeof navigator !== "undefined" &&
+              navigator.share &&
+              navigator.canShare
+            ) {
               try {
                 if (navigator.canShare(shareDataObj)) {
                   await navigator.share(shareDataObj);
@@ -998,7 +1024,7 @@ export default function ShotsPage() {
         showToast("error", "Failed to share shot");
       }
     },
-    [createShareLink, showToast, tempUnit]
+    [createShareLink, showToast, tempUnit],
   );
 
   const handleSelect = useCallback((shot: ShotWithJoins) => {
@@ -1031,14 +1057,14 @@ export default function ShotsPage() {
     (ids: string[]) => {
       for (const id of ids) deleteShot.mutate(id);
     },
-    [deleteShot]
+    [deleteShot],
   );
 
   const handleBulkToggleReference = useCallback(
     (ids: string[]) => {
       ids.forEach((id) => toggleReference.mutate(id));
     },
-    [toggleReference]
+    [toggleReference],
   );
 
   const handleBulkSetHidden = useCallback(
@@ -1048,7 +1074,7 @@ export default function ShotsPage() {
       const toToggle = selected.filter((s) => s.isHidden !== hidden);
       for (const s of toToggle) toggleHidden.mutate(s.id);
     },
-    [shots, toggleHidden]
+    [shots, toggleHidden],
   );
 
   const table = useReactTable({
@@ -1062,9 +1088,13 @@ export default function ShotsPage() {
       const q = String(filterValue).toLowerCase().trim();
       if (!q) return true;
       const s = row.original;
-      return [s.beanName, s.grinderName, s.machineName, s.userName, s.notes].some(
-        (f) => f != null && f.toLowerCase().includes(q)
-      );
+      return [
+        s.beanName,
+        s.grinderName,
+        s.machineName,
+        s.userName,
+        s.notes,
+      ].some((f) => f != null && f.toLowerCase().includes(q));
     },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -1079,21 +1109,64 @@ export default function ShotsPage() {
 
   // Handle CSV export
   const handleExport = useCallback(() => {
-    const filteredRows = table.getFilteredRowModel().rows.map((row) => row.original);
-    
+    const filteredRows = table
+      .getFilteredRowModel()
+      .rows.map((row) => row.original);
+
     const columns: CSVColumn<ShotWithJoins>[] = [
-      { id: "date", header: "Date", accessorFn: (row) => new Date(row.createdAt).toLocaleString() },
+      {
+        id: "date",
+        header: "Date",
+        accessorFn: (row) => new Date(row.createdAt).toLocaleString(),
+      },
       { id: "bean", header: "Bean", accessorFn: (row) => row.beanName ?? "" },
-      { id: "dose", header: "Dose (g)", accessorFn: (row) => row.doseGrams ?? "" },
-      { id: "yield", header: "Yield (g)", accessorFn: (row) => row.yieldGrams ?? "" },
-      { id: "ratio", header: "Ratio", accessorFn: (row) => row.brewRatio != null ? `1:${row.brewRatio}` : "" },
-      { id: "time", header: "Time (s)", accessorFn: (row) => row.brewTimeSecs ?? "" },
-      { id: "grind", header: "Grind", accessorFn: (row) => row.grindLevel ?? "" },
-      { id: "grinder", header: "Grinder", accessorFn: (row) => row.grinderName ?? "" },
-      { id: "machine", header: "Machine", accessorFn: (row) => row.machineName ?? "" },
-      { id: "quality", header: "Quality", accessorFn: (row) => row.shotQuality ?? "" },
+      {
+        id: "dose",
+        header: "Dose (g)",
+        accessorFn: (row) => row.doseGrams ?? "",
+      },
+      {
+        id: "yield",
+        header: "Yield (g)",
+        accessorFn: (row) => row.yieldGrams ?? "",
+      },
+      {
+        id: "ratio",
+        header: "Ratio",
+        accessorFn: (row) =>
+          row.brewRatio != null ? `1:${row.brewRatio}` : "",
+      },
+      {
+        id: "time",
+        header: "Time (s)",
+        accessorFn: (row) => row.brewTimeSecs ?? "",
+      },
+      {
+        id: "grind",
+        header: "Grind",
+        accessorFn: (row) => row.grindLevel ?? "",
+      },
+      {
+        id: "grinder",
+        header: "Grinder",
+        accessorFn: (row) => row.grinderName ?? "",
+      },
+      {
+        id: "machine",
+        header: "Machine",
+        accessorFn: (row) => row.machineName ?? "",
+      },
+      {
+        id: "quality",
+        header: "Quality",
+        accessorFn: (row) => row.shotQuality ?? "",
+      },
       { id: "rating", header: "Rating", accessorFn: (row) => row.rating ?? "" },
-      { id: "ref", header: "Reference", accessorFn: (row) => row.isReferenceShot ? "Yes" : "No" },
+      {
+        id: "ref",
+        header: "Reference",
+        accessorFn: (row) => (row.isReferenceShot ? "Yes" : "No"),
+      },
       { id: "user", header: "User", accessorFn: (row) => row.userName ?? "" },
     ];
 
@@ -1104,7 +1177,7 @@ export default function ShotsPage() {
   // Extract filtered shots array for navigation
   const filteredShots = useMemo(
     () => filteredRows.map((row) => row.original),
-    [filteredRows]
+    [filteredRows],
   );
 
   // Build unique option lists from data for multi-select filters
@@ -1188,111 +1261,121 @@ export default function ShotsPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-          Shots
-        </h1>
-        <div className="relative">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
-              >
-                <ArrowDownTrayIcon className="h-4 w-4" />
-                {filteredRows.length} shot{filteredRows.length !== 1 ? "s" : ""}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExport}>
-                <ArrowDownTrayIcon className="mr-2 h-4 w-4" />
-                Download CSV
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      {/* Sticky header area on mobile */}
+      <div className="sticky top-0 z-10 space-y-4 bg-white pb-4 dark:bg-stone-950 sm:static sm:bg-transparent dark:sm:bg-transparent sm:pb-0">
+        {/* Header */}
+        <div className="flex items-center justify-between pt-4 sm:pt-0">
+          <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
+            Shots
+          </h1>
+          <div className="relative">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 rounded-md border border-stone-200 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
+                >
+                  <ArrowDownTrayIcon className="h-4 w-4" />
+                  {filteredRows.length} shot
+                  {filteredRows.length !== 1 ? "s" : ""}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[180px]">
+                <DropdownMenuItem
+                  onClick={handleExport}
+                  className="flex items-center gap-3 px-4 py-3 text-base"
+                >
+                  <ArrowDownTrayIcon className="h-5 w-5" />
+                  Download CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-      </div>
 
-      {/* Selection bar */}
-      {isSelecting && (
-        <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
-          <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
-            {selectedIds.size} {selectedIds.size === 1 ? "shot" : "shots"} selected
-          </span>
-          <div className="ml-auto flex items-center gap-2">
-            {selectedIds.size > 0 && (
-              <>
-                <button
-                  onClick={() => {
-                    const ids = Array.from(selectedIds);
-                    if (confirm(`Delete ${ids.length} shot(s)?`)) {
-                      handleBulkDelete(ids);
-                      setSelectedIds(new Set());
+        {/* Selection bar */}
+        {isSelecting && (
+          <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
+            <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+              {selectedIds.size} {selectedIds.size === 1 ? "shot" : "shots"}{" "}
+              selected
+            </span>
+            <div className="ml-auto flex items-center gap-2">
+              {selectedIds.size > 0 && (
+                <>
+                  <button
+                    onClick={() => {
+                      const ids = Array.from(selectedIds);
+                      if (confirm(`Delete ${ids.length} shot(s)?`)) {
+                        handleBulkDelete(ids);
+                        setSelectedIds(new Set());
+                      }
+                    }}
+                    className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm transition-colors hover:bg-amber-100 dark:bg-stone-800 dark:text-amber-300 dark:hover:bg-stone-700"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleBulkToggleReference(Array.from(selectedIds))
                     }
-                  }}
-                  className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm transition-colors hover:bg-amber-100 dark:bg-stone-800 dark:text-amber-300 dark:hover:bg-stone-700"
-                >
-                  Delete
-                </button>
-                <button
-                  onClick={() => handleBulkToggleReference(Array.from(selectedIds))}
-                  className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm transition-colors hover:bg-amber-100 dark:bg-stone-800 dark:text-amber-300 dark:hover:bg-stone-700"
-                >
-                  Reference
-                </button>
-                <button
-                  onClick={() => {
-                    const ids = Array.from(selectedIds);
-                    if (!shots) return;
-                    const sel = shots.filter((s) => ids.includes(s.id));
-                    const anyVisible = sel.some((s) => !s.isHidden);
-                    handleBulkSetHidden(ids, anyVisible);
-                  }}
-                  className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm transition-colors hover:bg-amber-100 dark:bg-stone-800 dark:text-amber-300 dark:hover:bg-stone-700"
-                >
-                  Hide
-                </button>
-              </>
-            )}
+                    className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm transition-colors hover:bg-amber-100 dark:bg-stone-800 dark:text-amber-300 dark:hover:bg-stone-700"
+                  >
+                    Reference
+                  </button>
+                  <button
+                    onClick={() => {
+                      const ids = Array.from(selectedIds);
+                      if (!shots) return;
+                      const sel = shots.filter((s) => ids.includes(s.id));
+                      const anyVisible = sel.some((s) => !s.isHidden);
+                      handleBulkSetHidden(ids, anyVisible);
+                    }}
+                    className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm transition-colors hover:bg-amber-100 dark:bg-stone-800 dark:text-amber-300 dark:hover:bg-stone-700"
+                  >
+                    Hide
+                  </button>
+                </>
+              )}
+              <button
+                onClick={handleDeselectAll}
+                className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-stone-600 shadow-sm transition-colors hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Search */}
+        <div className="relative">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+          <input
+            type="text"
+            placeholder="Search beans, grinders, machines, notes…"
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder-stone-400 outline-none transition-colors focus:border-amber-400 focus:ring-1 focus:ring-amber-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:placeholder-stone-500 dark:focus:border-amber-500 dark:focus:ring-amber-500"
+          />
+          {globalFilter && (
             <button
-              onClick={handleDeselectAll}
-              className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-stone-600 shadow-sm transition-colors hover:bg-stone-100 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+              onClick={() => setGlobalFilter("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
             >
               Clear
             </button>
-          </div>
+          )}
         </div>
-      )}
 
-      {/* Search */}
-      <div className="relative">
-        <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
-        <input
-          type="text"
-          placeholder="Search beans, grinders, machines, notes…"
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder-stone-400 outline-none transition-colors focus:border-amber-400 focus:ring-1 focus:ring-amber-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:placeholder-stone-500 dark:focus:border-amber-500 dark:focus:ring-amber-500"
+        {/* Filter bar — visible on both mobile and desktop */}
+        <FilterBar
+          table={table}
+          beanOptions={beanOptions}
+          grinderOptions={grinderOptions}
+          machineOptions={machineOptions}
+          userOptions={userOptions}
         />
-        {globalFilter && (
-          <button
-            onClick={() => setGlobalFilter("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
-          >
-            Clear
-          </button>
-        )}
       </div>
-
-      {/* Filter bar — visible on both mobile and desktop */}
-      <FilterBar
-        table={table}
-        beanOptions={beanOptions}
-        grinderOptions={grinderOptions}
-        machineOptions={machineOptions}
-        userOptions={userOptions}
-      />
 
       {/* ── Desktop table ───────────────────────────────────────────── */}
       <div className="hidden md:block">
@@ -1302,10 +1385,7 @@ export default function ShotsPage() {
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="whitespace-nowrap px-3 py-2"
-                    >
+                    <th key={header.id} className="whitespace-nowrap px-3 py-2">
                       {header.isPlaceholder ? null : (
                         <button
                           type="button"
@@ -1318,12 +1398,10 @@ export default function ShotsPage() {
                         >
                           {flexRender(
                             header.column.columnDef.header,
-                            header.getContext()
+                            header.getContext(),
                           )}
                           {header.column.getCanSort() && (
-                            <SortIcon
-                              isSorted={header.column.getIsSorted()}
-                            />
+                            <SortIcon isSorted={header.column.getIsSorted()} />
                           )}
                         </button>
                       )}
@@ -1343,7 +1421,7 @@ export default function ShotsPage() {
                       "cursor-pointer transition-colors hover:bg-stone-50 dark:hover:bg-stone-800/50",
                       row.original.isReferenceShot
                         ? "border-l-4 border-l-amber-400 bg-amber-50/40 dark:bg-amber-900/10"
-                        : "bg-white dark:bg-stone-900"
+                        : "bg-white dark:bg-stone-900",
                     )}
                   >
                     {row.getVisibleCells().map((cell) => (
@@ -1353,7 +1431,7 @@ export default function ShotsPage() {
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </td>
                     ))}
@@ -1368,9 +1446,13 @@ export default function ShotsPage() {
                             "text-lg transition-transform hover:scale-110",
                             row.original.isReferenceShot
                               ? "text-amber-500"
-                              : "text-stone-300 hover:text-amber-400 dark:text-stone-600"
+                              : "text-stone-300 hover:text-amber-400 dark:text-stone-600",
                           )}
-                          title={row.original.isReferenceShot ? "Remove reference" : "Mark reference"}
+                          title={
+                            row.original.isReferenceShot
+                              ? "Remove reference"
+                              : "Mark reference"
+                          }
                         >
                           {row.original.isReferenceShot ? "⭐" : "☆"}
                         </button>
@@ -1380,9 +1462,11 @@ export default function ShotsPage() {
                             "transition-transform hover:scale-110",
                             row.original.isHidden
                               ? "text-stone-500"
-                              : "text-stone-300 hover:text-stone-500 dark:text-stone-600"
+                              : "text-stone-300 hover:text-stone-500 dark:text-stone-600",
                           )}
-                          title={row.original.isHidden ? "Show shot" : "Hide shot"}
+                          title={
+                            row.original.isHidden ? "Show shot" : "Hide shot"
+                          }
                         >
                           {row.original.isHidden ? (
                             <EyeSlashIcon className="h-4 w-4" />
@@ -1395,7 +1479,7 @@ export default function ShotsPage() {
                           className="text-stone-300 transition-transform hover:scale-110 hover:text-stone-500 dark:text-stone-600"
                           title="Duplicate"
                         >
-                          <DocumentDuplicateIcon className="h-4 w-4" />
+                          <PlusCircleIcon className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleShare(row.original)}

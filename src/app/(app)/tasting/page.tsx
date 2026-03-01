@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { NestedFlavorWheel } from "@/components/flavor-wheel/NestedFlavorWheel";
 import { NestedBodySelector } from "@/components/flavor-wheel/NestedBodySelector";
 import { AdjectivesIntensifiersSelector } from "@/components/flavor-wheel/AdjectivesIntensifiersSelector";
 import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
 import {
-  FLAVOR_WHEEL_DATA,
+  FLAVOR_WHEELS,
+  type FlavorWheelType,
   getFlavorColor,
   getBodyColor,
   getAdjectiveColor,
@@ -15,9 +17,61 @@ import type { FlavorNode } from "@/shared/flavor-wheel/types";
 import { ShareIcon, DocumentDuplicateIcon } from "@heroicons/react/24/outline";
 
 export default function TastingPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Initialize flavor wheel type from URL parameter or localStorage
+  const [wheelType, setWheelType] = useState<FlavorWheelType>(() => {
+    if (typeof window === "undefined") return "coffee";
+
+    // Check URL parameter first
+    const urlParam = searchParams.get("select") as FlavorWheelType | null;
+    if (
+      urlParam &&
+      (urlParam === "coffee" || urlParam === "tea" || urlParam === "whiskey")
+    ) {
+      // Store the URL parameter choice in localStorage
+      localStorage.setItem("flavorWheelType", urlParam);
+      return urlParam;
+    }
+
+    // Fall back to localStorage
+    const stored = localStorage.getItem(
+      "flavorWheelType",
+    ) as FlavorWheelType | null;
+    if (
+      stored &&
+      (stored === "coffee" || stored === "tea" || stored === "whiskey")
+    ) {
+      return stored;
+    }
+
+    return "coffee";
+  });
+
   const [flavorCategories, setFlavorCategories] = useState<string[]>([]);
   const [body, setBody] = useState<string[]>([]);
   const [adjectives, setAdjectives] = useState<string[]>([]);
+
+  // Get the current flavor wheel data
+  const FLAVOR_WHEEL_DATA = FLAVOR_WHEELS[wheelType];
+
+  // Handle wheel type changes
+  const handleWheelTypeChange = (newType: FlavorWheelType) => {
+    setWheelType(newType);
+    localStorage.setItem("flavorWheelType", newType);
+
+    // Update URL parameter
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("select", newType);
+    router.push(`/tasting?${params.toString()}`, { scroll: false });
+
+    // Clear selections when switching wheels
+    setFlavorCategories([]);
+    setFlavorOrder(null);
+    setBody([]);
+    setAdjectives([]);
+  };
 
   // Helper function to build node path
   function buildNodePath(node: FlavorNode, parentPath: string[]): string[] {
@@ -29,7 +83,7 @@ export default function TastingPage() {
     node: FlavorNode,
     nodePath: string[],
     selectedNodes: Set<string>,
-    result: Array<{ name: string; path: string[] }>
+    result: Array<{ name: string; path: string[] }>,
   ): void {
     const currentNodePath = buildNodePath(node, nodePath);
     const currentNodeKey = currentNodePath.join(":");
@@ -53,28 +107,31 @@ export default function TastingPage() {
 
   // Helper function to find the full path (ancestors + node) for a given node name
   function findNodePath(nodeName: string): string[] | null {
-    function searchNode(node: FlavorNode, path: string[] = []): string[] | null {
+    function searchNode(
+      node: FlavorNode,
+      path: string[] = [],
+    ): string[] | null {
       const currentPath = [...path, node.name];
-      
+
       if (node.name === nodeName) {
         return currentPath;
       }
-      
+
       if (node.children) {
         for (const child of node.children) {
           const result = searchNode(child, currentPath);
           if (result) return result;
         }
       }
-      
+
       return null;
     }
-    
+
     for (const category of FLAVOR_WHEEL_DATA.children) {
       const result = searchNode(category);
       if (result) return result;
     }
-    
+
     return null;
   }
 
@@ -82,21 +139,21 @@ export default function TastingPage() {
   function handleFlavorCategoriesChange(newValue: string[]) {
     const currentSet = new Set(flavorCategories);
     const newSet = new Set(newValue);
-    
+
     // Find items that are new (in newValue but not in current)
     const newItems = newValue.filter((name) => !currentSet.has(name));
-    
+
     if (newItems.length === 0) {
       // No new items, just update (could be removal or reordering from component)
       setFlavorCategories(newValue);
       return;
     }
-    
+
     // Collect all paths for new items and build a map of node to depth
     const nodeToDepth = new Map<string, number>();
     const allPaths: string[][] = [];
     const newItemSet = new Set(newItems);
-    
+
     for (const newNodeName of newItems) {
       const fullPath = findNodePath(newNodeName);
       if (fullPath) {
@@ -118,7 +175,7 @@ export default function TastingPage() {
         nodeToDepth.set(newNodeName, 0);
       }
     }
-    
+
     // Sort new items by depth (ancestors first), then by order in their paths
     const itemsToAppend = newItems
       .filter((name) => nodeToDepth.has(name))
@@ -138,13 +195,13 @@ export default function TastingPage() {
         }
         return 0;
       });
-    
+
     // Preserve existing order, append new items at the end
     const existingItems = flavorCategories.filter((name) => newSet.has(name));
     const updatedCategories = [...existingItems, ...itemsToAppend];
-    
+
     setFlavorCategories(updatedCategories);
-    
+
     // Update custom order if it exists
     if (flavorOrder) {
       const filteredOrder = flavorOrder.filter((name) => newSet.has(name));
@@ -157,7 +214,7 @@ export default function TastingPage() {
     if (flavorOrder) {
       // Remove items that are no longer in flavorCategories
       const filteredOrder = flavorOrder.filter((name) =>
-        flavorCategories.includes(name)
+        flavorCategories.includes(name),
       );
       if (filteredOrder.length !== flavorOrder.length) {
         setFlavorOrder(filteredOrder);
@@ -172,11 +229,15 @@ export default function TastingPage() {
     }
 
     const flavorsMap = new Map<string, { name: string; path: string[] }>();
-    
+
     // For each selected node name, find it in the tree to get the full path for display/color
-    const findNodeByName = (nodeName: string, category: FlavorNode, path: string[] = []): void => {
+    const findNodeByName = (
+      nodeName: string,
+      category: FlavorNode,
+      path: string[] = [],
+    ): void => {
       const currentPath = [...path, category.name];
-      
+
       if (category.name === nodeName) {
         // Store in map to avoid duplicates, keeping the first match
         if (!flavorsMap.has(nodeName)) {
@@ -186,17 +247,17 @@ export default function TastingPage() {
           });
         }
       }
-      
+
       if (category.children) {
         for (const child of category.children) {
           findNodeByName(nodeName, child, currentPath);
         }
       }
     };
-    
+
     // Use custom order if set, otherwise use flavorCategories order
     const orderToUse = flavorOrder || flavorCategories;
-    
+
     // Process nodes in order, only finding each once
     for (const nodeName of orderToUse) {
       // Only process if it's still in flavorCategories (in case items were removed)
@@ -246,19 +307,21 @@ export default function TastingPage() {
   // Generate text representation of tasting notes
   const tastingNotesText = useMemo(() => {
     const parts: string[] = [];
-    
+
     if (selectedFlavorWords.length > 0) {
-      parts.push(`Flavors: ${selectedFlavorWords.map(f => f.name).join(", ")}`);
+      parts.push(
+        `Flavors: ${selectedFlavorWords.map((f) => f.name).join(", ")}`,
+      );
     }
-    
+
     if (body.length > 0) {
       parts.push(`Body: ${body[0]}`);
     }
-    
+
     if (adjectives.length > 0) {
       parts.push(`Adjectives: ${adjectives.join(", ")}`);
     }
-    
+
     return parts.join("\n");
   }, [selectedFlavorWords, body, adjectives]);
 
@@ -280,7 +343,11 @@ export default function TastingPage() {
     };
 
     // Check if Web Share API is available
-    if (typeof navigator !== "undefined" && navigator.share && navigator.canShare) {
+    if (
+      typeof navigator !== "undefined" &&
+      navigator.share &&
+      navigator.canShare
+    ) {
       try {
         if (navigator.canShare(shareData)) {
           await navigator.share(shareData);
@@ -305,13 +372,31 @@ export default function TastingPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-stone-900 dark:text-stone-100">
-          Tasting Notes
-        </h1>
-        <p className="mt-2 text-stone-600 dark:text-stone-400">
-          Tool for capturing your tasting notes and improving your palate.
-        </p>
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-stone-900 dark:text-stone-100">
+            Tasting Notes
+          </h1>
+          <p className="mt-2 text-stone-600 dark:text-stone-400">
+            Tool for capturing your tasting notes and improving your palate.
+          </p>
+        </div>
+
+        {/* Flavor Wheel Selector */}
+        <div className="flex flex-col items-end gap-1">
+          <select
+            id="wheel-select"
+            value={wheelType}
+            onChange={(e) =>
+              handleWheelTypeChange(e.target.value as FlavorWheelType)
+            }
+            className="rounded-md border border-stone-200 bg-white px-3 py-2 text-sm font-medium text-stone-900 shadow-sm transition-colors hover:bg-stone-50 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:hover:bg-stone-800"
+          >
+            <option value="coffee">Coffee</option>
+            <option value="tea">Tea</option>
+            <option value="whiskey">Whiskey</option>
+          </select>
+        </div>
       </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
@@ -321,19 +406,24 @@ export default function TastingPage() {
             <NestedFlavorWheel
               value={flavorCategories}
               onChange={handleFlavorCategoriesChange}
+              data={FLAVOR_WHEEL_DATA}
             />
           </div>
 
-          <div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900">
-            <NestedBodySelector value={body} onChange={setBody} />
-          </div>
+          {wheelType === "coffee" && (
+            <>
+              <div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900">
+                <NestedBodySelector value={body} onChange={setBody} />
+              </div>
 
-          <div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900">
-            <AdjectivesIntensifiersSelector
-              value={adjectives}
-              onChange={setAdjectives}
-            />
-          </div>
+              <div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900">
+                <AdjectivesIntensifiersSelector
+                  value={adjectives}
+                  onChange={setAdjectives}
+                />
+              </div>
+            </>
+          )}
         </div>
 
         {/* Output/Resolution Column */}
@@ -359,17 +449,19 @@ export default function TastingPage() {
                   }}
                   onReorder={(reorderedItems) => {
                     // Map reordered badge items back to flavor names
-                    const reorderedNames = reorderedItems.map((item) => item.key || item.label);
+                    const reorderedNames = reorderedItems.map(
+                      (item) => item.key || item.label,
+                    );
                     // Update the custom order
                     setFlavorOrder(reorderedNames);
                     // Also update flavorCategories to match the new order
                     // Filter to only include names that are still in flavorCategories
                     const orderedCategories = reorderedNames.filter((name) =>
-                      flavorCategories.includes(name)
+                      flavorCategories.includes(name),
                     );
                     // Add any items that weren't in the reordered list (shouldn't happen, but safety check)
                     const remaining = flavorCategories.filter(
-                      (name) => !reorderedNames.includes(name)
+                      (name) => !reorderedNames.includes(name),
                     );
                     setFlavorCategories([...orderedCategories, ...remaining]);
                   }}
@@ -377,7 +469,7 @@ export default function TastingPage() {
               </div>
 
               {/* Selected Body Badge */}
-              {bodyBadgeData && (
+              {wheelType === "coffee" && bodyBadgeData && (
                 <div className="mb-6">
                   <SelectedBadges
                     title="Body / Texture"
@@ -388,7 +480,7 @@ export default function TastingPage() {
               )}
 
               {/* Selected Adjectives Badges */}
-              {adjectivesBadgeData.length > 0 && (
+              {wheelType === "coffee" && adjectivesBadgeData.length > 0 && (
                 <div className="mb-6">
                   <SelectedBadges
                     title="Adjectives & Intensifiers"
@@ -396,7 +488,9 @@ export default function TastingPage() {
                     onClear={() => setAdjectives([])}
                     onReorder={(reorderedItems) => {
                       // Map reordered badge items back to adjective names
-                      const reorderedNames = reorderedItems.map((item) => item.key || item.label);
+                      const reorderedNames = reorderedItems.map(
+                        (item) => item.key || item.label,
+                      );
                       setAdjectives(reorderedNames);
                     }}
                   />

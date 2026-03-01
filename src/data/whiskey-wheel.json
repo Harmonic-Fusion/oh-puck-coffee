@@ -1,0 +1,1149 @@
+{
+  "name": "Whisky",
+  "color": "rgba(158, 158, 158, 0.3)",
+  "colorName": "Muted Gray",
+  "children": [
+    {
+      "name": "Fruity",
+      "color": "rgba(233, 30, 99, 0.25)",
+      "colorName": "Muted Pink/Red",
+      "children": [
+        {
+          "name": "Orchard Fruit",
+          "color": "rgba(129, 199, 132, 0.3)",
+          "colorName": "Muted Green",
+          "children": [
+            {
+              "name": "Green Apple",
+              "color": "rgba(129, 199, 132, 0.3)",
+              "colorName": "Muted Green"
+            },
+            {
+              "name": "Red Apple",
+              "color": "rgba(244, 67, 54, 0.25)",
+              "colorName": "Muted Red"
+            },
+            {
+              "name": "Pear",
+              "color": "rgba(197, 225, 165, 0.3)",
+              "colorName": "Muted Light Green"
+            },
+            {
+              "name": "Quince",
+              "color": "rgba(255, 235, 59, 0.3)",
+              "colorName": "Muted Yellow"
+            },
+            {
+              "name": "Ripe Melon",
+              "color": "rgba(205, 220, 57, 0.3)",
+              "colorName": "Muted Light Green"
+            }
+          ]
+        },
+        {
+          "name": "Stone Fruit",
+          "color": "rgba(255, 111, 0, 0.25)",
+          "colorName": "Muted Orange/Red",
+          "children": [
+            {
+              "name": "Peach",
+              "color": "rgba(255, 183, 77, 0.3)",
+              "colorName": "Muted Light Orange"
+            },
+            {
+              "name": "Apricot",
+              "color": "rgba(255, 167, 38, 0.3)",
+              "colorName": "Muted Orange"
+            },
+            {
+              "name": "Nectarine",
+              "color": "rgba(255, 152, 0, 0.25)",
+              "colorName": "Muted Orange"
+            },
+            {
+              "name": "Plum",
+              "color": "rgba(142, 36, 170, 0.25)",
+              "colorName": "Muted Purple"
+            },
+            {
+              "name": "Cherry",
+              "color": "rgba(211, 47, 47, 0.25)",
+              "colorName": "Muted Red"
+            },
+            {
+              "name": "Black Cherry",
+              "color": "rgba(74, 20, 140, 0.25)",
+              "colorName": "Muted Dark Purple"
+            }
+          ]
+        },
+        {
+          "name": "Berry",
+          "color": "rgba(233, 30, 99, 0.25)",
+          "colorName": "Muted Pink/Red",
+          "children": [
+            {
+              "name": "Raspberry",
+              "color": "rgba(233, 30, 99, 0.25)",
+              "colorName": "Muted Pink"
+            },
+            {
+              "name": "Blackberry",
+              "color": "rgba(156, 39, 176, 0.25)",
+              "colorName": "Muted Dark Purple"
+            },
+            {
+              "name": "Blueberry",
+              "color": "rgba(63, 81, 181, 0.25)",
+              "colorName": "Muted Blue"
+            },
+            {
+              "name": "Red Currant",
+              "color": "rgba(233, 30, 99, 0.25)",
+              "colorName": "Muted Pink"
+            },
+            {
+              "name": "Gooseberry",
+              "color": "rgba(197, 225, 165, 0.3)",
+              "colorName": "Muted Light Green"
+            },
+            {
+              "name": "Cranberry",
+              "color": "rgba(211, 47, 47, 0.25)",
+              "colorName": "Muted Red"
+            }
+          ]
+        },
+        {
+          "name": "Tropical",
+          "color": "rgba(255, 179, 0, 0.25)",
+          "colorName": "Muted Amber/Yellow",
+          "children": [
+            {
+              "name": "Pineapple",
+              "color": "rgba(255, 235, 59, 0.3)",
+              "colorName": "Muted Yellow"
+            },
+            {
+              "name": "Mango",
+              "color": "rgba(255, 152, 0, 0.25)",
+              "colorName": "Muted Orange"
+            },
+            {
+              "name": "Passion Fruit",
+              "color": "rgba(255, 111, 0, 0.25)",
+              "colorName": "Muted Orange"
+            },
+            {
+              "name": "Banana",
+              "color": "rgba(255, 235, 59, 0.3)",
+              "colorName": "Muted Yellow"
+            },
+            {
+              "name": "Coconut",
+              "color": "rgba(255, 255, 255, 0.4)",
+              "colorName": "Muted White"
+            },
+            {
+              "name": "Papaya",
+              "color": "rgba(255, 183, 77, 0.3)",
+              "colorName": "Muted Light Orange"
+            }
+          ]
+        },
+        {
+          "name": "Dried & Preserved Fruit",
+          "color": "rgba(106, 27, 154, 0.25)",
+          "colorName": "Muted Purple/Brown",
+          "children": [
+            {
+              "name": "Raisin",
+              "color": "rgba(121, 85, 72, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Sultana",
+              "color": "rgba(188, 143, 87, 0.3)",
+              "colorName": "Muted Tan"
+            },
+            {
+              "name": "Prune",
+              "color": "rgba(74, 20, 140, 0.25)",
+              "colorName": "Muted Dark Purple"
+            },
+            {
+              "name": "Date",
+              "color": "rgba(141, 110, 99, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Fig",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Dark Brown"
+            },
+            {
+              "name": "Dried Apricot",
+              "color": "rgba(255, 167, 38, 0.3)",
+              "colorName": "Muted Orange"
+            },
+            {
+              "name": "Marmalade",
+              "color": "rgba(255, 152, 0, 0.25)",
+              "colorName": "Muted Orange"
+            }
+          ]
+        },
+        {
+          "name": "Citrus",
+          "color": "rgba(255, 193, 7, 0.25)",
+          "colorName": "Muted Amber/Yellow",
+          "children": [
+            {
+              "name": "Lemon Zest",
+              "color": "rgba(255, 235, 59, 0.3)",
+              "colorName": "Muted Yellow"
+            },
+            {
+              "name": "Orange Peel",
+              "color": "rgba(255, 152, 0, 0.25)",
+              "colorName": "Muted Orange"
+            },
+            {
+              "name": "Grapefruit",
+              "color": "rgba(255, 138, 101, 0.25)",
+              "colorName": "Muted Pink-Orange"
+            },
+            {
+              "name": "Lime",
+              "color": "rgba(205, 220, 57, 0.3)",
+              "colorName": "Muted Light Green"
+            },
+            {
+              "name": "Candied Citrus",
+              "color": "rgba(255, 183, 77, 0.3)",
+              "colorName": "Muted Light Orange"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sweet & Confectionery",
+      "color": "rgba(255, 183, 77, 0.3)",
+      "colorName": "Muted Light Orange",
+      "children": [
+        {
+          "name": "Sugars",
+          "color": "rgba(255, 235, 59, 0.3)",
+          "colorName": "Muted Yellow",
+          "children": [
+            {
+              "name": "Honey",
+              "color": "rgba(255, 193, 7, 0.3)",
+              "colorName": "Muted Amber"
+            },
+            {
+              "name": "Heather Honey",
+              "color": "rgba(255, 167, 38, 0.3)",
+              "colorName": "Muted Orange"
+            },
+            {
+              "name": "Caramel",
+              "color": "rgba(255, 183, 77, 0.3)",
+              "colorName": "Muted Light Orange"
+            },
+            {
+              "name": "Toffee",
+              "color": "rgba(188, 143, 87, 0.3)",
+              "colorName": "Muted Tan"
+            },
+            {
+              "name": "Butterscotch",
+              "color": "rgba(255, 193, 7, 0.3)",
+              "colorName": "Muted Amber"
+            },
+            {
+              "name": "Brown Sugar",
+              "color": "rgba(141, 110, 99, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Molasses",
+              "color": "rgba(78, 52, 46, 0.25)",
+              "colorName": "Muted Dark Brown"
+            },
+            {
+              "name": "Maple Syrup",
+              "color": "rgba(141, 110, 99, 0.25)",
+              "colorName": "Muted Brown"
+            }
+          ]
+        },
+        {
+          "name": "Chocolate & Cocoa",
+          "color": "rgba(93, 64, 55, 0.25)",
+          "colorName": "Muted Brown",
+          "children": [
+            {
+              "name": "Milk Chocolate",
+              "color": "rgba(121, 85, 72, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Dark Chocolate",
+              "color": "rgba(62, 39, 35, 0.25)",
+              "colorName": "Muted Very Dark Brown"
+            },
+            {
+              "name": "Cocoa Powder",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Chocolate Fudge",
+              "color": "rgba(78, 52, 46, 0.25)",
+              "colorName": "Muted Dark Brown"
+            },
+            {
+              "name": "Mocha",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Brown"
+            }
+          ]
+        },
+        {
+          "name": "Baked Goods",
+          "color": "rgba(215, 204, 200, 0.3)",
+          "colorName": "Muted Light Brown",
+          "children": [
+            {
+              "name": "Vanilla",
+              "color": "rgba(255, 249, 196, 0.35)",
+              "colorName": "Muted Light Yellow"
+            },
+            {
+              "name": "Custard",
+              "color": "rgba(255, 245, 157, 0.35)",
+              "colorName": "Muted Light Yellow"
+            },
+            {
+              "name": "Shortbread",
+              "color": "rgba(215, 204, 200, 0.3)",
+              "colorName": "Muted Light Brown"
+            },
+            {
+              "name": "Cream",
+              "color": "rgba(255, 255, 255, 0.4)",
+              "colorName": "Muted White"
+            },
+            {
+              "name": "Marzipan",
+              "color": "rgba(255, 245, 157, 0.35)",
+              "colorName": "Muted Light Yellow"
+            },
+            {
+              "name": "Fruitcake",
+              "color": "rgba(121, 85, 72, 0.25)",
+              "colorName": "Muted Brown"
+            }
+          ]
+        },
+        {
+          "name": "Nut",
+          "color": "rgba(188, 170, 164, 0.3)",
+          "colorName": "Muted Tan",
+          "children": [
+            {
+              "name": "Almond",
+              "color": "rgba(224, 224, 224, 0.3)",
+              "colorName": "Muted Light Gray"
+            },
+            {
+              "name": "Hazelnut",
+              "color": "rgba(161, 136, 127, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Walnut",
+              "color": "rgba(121, 85, 72, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Pecan",
+              "color": "rgba(161, 136, 127, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Toasted Coconut",
+              "color": "rgba(215, 204, 200, 0.3)",
+              "colorName": "Muted Light Brown"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cereal & Malt",
+      "color": "rgba(188, 170, 164, 0.3)",
+      "colorName": "Muted Tan",
+      "children": [
+        {
+          "name": "Malt",
+          "color": "rgba(188, 170, 164, 0.3)",
+          "colorName": "Muted Tan",
+          "children": [
+            {
+              "name": "Malty",
+              "color": "rgba(188, 170, 164, 0.3)",
+              "colorName": "Muted Tan"
+            },
+            {
+              "name": "Malted Barley",
+              "color": "rgba(161, 136, 127, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Hops",
+              "color": "rgba(129, 199, 132, 0.3)",
+              "colorName": "Muted Green"
+            },
+            {
+              "name": "Wort",
+              "color": "rgba(255, 235, 59, 0.3)",
+              "colorName": "Muted Yellow"
+            },
+            {
+              "name": "Biscuit",
+              "color": "rgba(215, 204, 200, 0.3)",
+              "colorName": "Muted Light Brown"
+            }
+          ]
+        },
+        {
+          "name": "Grain",
+          "color": "rgba(215, 204, 200, 0.3)",
+          "colorName": "Muted Light Brown",
+          "children": [
+            {
+              "name": "Cornmeal",
+              "color": "rgba(255, 235, 59, 0.3)",
+              "colorName": "Muted Yellow"
+            },
+            {
+              "name": "Rye Bread",
+              "color": "rgba(141, 110, 99, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Wheat",
+              "color": "rgba(215, 204, 200, 0.3)",
+              "colorName": "Muted Light Brown"
+            },
+            {
+              "name": "Oatmeal",
+              "color": "rgba(188, 170, 164, 0.3)",
+              "colorName": "Muted Tan"
+            },
+            {
+              "name": "Graham Cracker",
+              "color": "rgba(188, 170, 164, 0.3)",
+              "colorName": "Muted Tan"
+            },
+            {
+              "name": "Porridge",
+              "color": "rgba(215, 204, 200, 0.3)",
+              "colorName": "Muted Light Brown"
+            }
+          ]
+        },
+        {
+          "name": "Yeasty",
+          "color": "rgba(255, 249, 196, 0.35)",
+          "colorName": "Muted Light Yellow",
+          "children": [
+            {
+              "name": "Bread Dough",
+              "color": "rgba(255, 249, 196, 0.35)",
+              "colorName": "Muted Light Yellow"
+            },
+            {
+              "name": "Sourdough",
+              "color": "rgba(215, 204, 200, 0.3)",
+              "colorName": "Muted Light Brown"
+            },
+            {
+              "name": "Brioche",
+              "color": "rgba(255, 235, 59, 0.3)",
+              "colorName": "Muted Yellow"
+            },
+            {
+              "name": "Lager",
+              "color": "rgba(255, 245, 157, 0.35)",
+              "colorName": "Muted Light Yellow"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Wood & Oak",
+      "color": "rgba(121, 85, 72, 0.25)",
+      "colorName": "Muted Brown",
+      "children": [
+        {
+          "name": "Oak",
+          "color": "rgba(141, 110, 99, 0.25)",
+          "colorName": "Muted Brown",
+          "children": [
+            {
+              "name": "American Oak",
+              "color": "rgba(188, 143, 87, 0.3)",
+              "colorName": "Muted Tan"
+            },
+            {
+              "name": "European Oak",
+              "color": "rgba(121, 85, 72, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Toasted Oak",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Dark Brown"
+            },
+            {
+              "name": "New Oak",
+              "color": "rgba(188, 143, 87, 0.3)",
+              "colorName": "Muted Tan"
+            },
+            {
+              "name": "Sawdust",
+              "color": "rgba(215, 204, 200, 0.3)",
+              "colorName": "Muted Light Brown"
+            }
+          ]
+        },
+        {
+          "name": "Cask Influence",
+          "color": "rgba(93, 64, 55, 0.25)",
+          "colorName": "Muted Brown",
+          "children": [
+            {
+              "name": "Sherry Cask",
+              "color": "rgba(142, 36, 170, 0.25)",
+              "colorName": "Muted Purple"
+            },
+            {
+              "name": "Bourbon Cask",
+              "color": "rgba(255, 183, 77, 0.3)",
+              "colorName": "Muted Light Orange"
+            },
+            {
+              "name": "Port Cask",
+              "color": "rgba(156, 39, 176, 0.25)",
+              "colorName": "Muted Dark Purple"
+            },
+            {
+              "name": "Wine Cask",
+              "color": "rgba(233, 30, 99, 0.25)",
+              "colorName": "Muted Pink"
+            },
+            {
+              "name": "Rum Cask",
+              "color": "rgba(141, 110, 99, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Virgin Oak",
+              "color": "rgba(161, 136, 127, 0.25)",
+              "colorName": "Muted Brown"
+            }
+          ]
+        },
+        {
+          "name": "Resinous",
+          "color": "rgba(85, 139, 47, 0.25)",
+          "colorName": "Muted Green",
+          "children": [
+            {
+              "name": "Cedar",
+              "color": "rgba(121, 85, 72, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Pine Resin",
+              "color": "rgba(85, 139, 47, 0.25)",
+              "colorName": "Muted Green"
+            },
+            {
+              "name": "Sandalwood",
+              "color": "rgba(188, 143, 87, 0.3)",
+              "colorName": "Muted Tan"
+            },
+            {
+              "name": "Varnish",
+              "color": "rgba(121, 85, 72, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Lacquer",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Dark Brown"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Smoky & Peaty",
+      "color": "rgba(66, 66, 66, 0.3)",
+      "colorName": "Muted Dark Gray",
+      "children": [
+        {
+          "name": "Peat",
+          "color": "rgba(66, 66, 66, 0.3)",
+          "colorName": "Muted Dark Gray",
+          "children": [
+            {
+              "name": "Medicinal Peat",
+              "color": "rgba(33, 33, 33, 0.3)",
+              "colorName": "Muted Black"
+            },
+            {
+              "name": "Mossy Peat",
+              "color": "rgba(85, 139, 47, 0.25)",
+              "colorName": "Muted Green"
+            },
+            {
+              "name": "Boggy Peat",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Dark Brown"
+            },
+            {
+              "name": "Coastal Peat",
+              "color": "rgba(79, 195, 247, 0.25)",
+              "colorName": "Muted Light Blue"
+            },
+            {
+              "name": "Dry Peat",
+              "color": "rgba(158, 158, 158, 0.3)",
+              "colorName": "Muted Gray"
+            }
+          ]
+        },
+        {
+          "name": "Smoke",
+          "color": "rgba(50, 50, 50, 0.3)",
+          "colorName": "Muted Dark Gray",
+          "children": [
+            {
+              "name": "Campfire",
+              "color": "rgba(66, 66, 66, 0.3)",
+              "colorName": "Muted Dark Gray"
+            },
+            {
+              "name": "Bonfire",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "BBQ Smoke",
+              "color": "rgba(66, 66, 66, 0.3)",
+              "colorName": "Muted Dark Gray"
+            },
+            {
+              "name": "Charcoal",
+              "color": "rgba(33, 33, 33, 0.3)",
+              "colorName": "Muted Black"
+            },
+            {
+              "name": "Ash",
+              "color": "rgba(158, 158, 158, 0.3)",
+              "colorName": "Muted Gray"
+            }
+          ]
+        },
+        {
+          "name": "Medicinal & Phenolic",
+          "color": "rgba(96, 125, 139, 0.25)",
+          "colorName": "Muted Blue-Gray",
+          "children": [
+            {
+              "name": "Iodine",
+              "color": "rgba(96, 125, 139, 0.25)",
+              "colorName": "Muted Blue-Gray"
+            },
+            {
+              "name": "Antiseptic",
+              "color": "rgba(120, 144, 156, 0.25)",
+              "colorName": "Muted Blue-Gray"
+            },
+            {
+              "name": "Brine",
+              "color": "rgba(79, 195, 247, 0.25)",
+              "colorName": "Muted Light Blue"
+            },
+            {
+              "name": "Tar",
+              "color": "rgba(33, 33, 33, 0.3)",
+              "colorName": "Muted Black"
+            },
+            {
+              "name": "Rubber",
+              "color": "rgba(50, 50, 50, 0.3)",
+              "colorName": "Muted Dark Gray"
+            }
+          ]
+        },
+        {
+          "name": "Coastal & Marine",
+          "color": "rgba(41, 182, 246, 0.25)",
+          "colorName": "Muted Blue",
+          "children": [
+            {
+              "name": "Sea Salt",
+              "color": "rgba(79, 195, 247, 0.25)",
+              "colorName": "Muted Light Blue"
+            },
+            {
+              "name": "Seaweed",
+              "color": "rgba(38, 166, 154, 0.25)",
+              "colorName": "Muted Teal"
+            },
+            {
+              "name": "Brine",
+              "color": "rgba(79, 195, 247, 0.25)",
+              "colorName": "Muted Light Blue"
+            },
+            {
+              "name": "Sea Spray",
+              "color": "rgba(41, 182, 246, 0.25)",
+              "colorName": "Muted Blue"
+            },
+            {
+              "name": "Oyster Shell",
+              "color": "rgba(158, 158, 158, 0.3)",
+              "colorName": "Muted Gray"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Spicy & Herbal",
+      "color": "rgba(255, 152, 0, 0.25)",
+      "colorName": "Muted Orange",
+      "children": [
+        {
+          "name": "Warm Spice",
+          "color": "rgba(255, 152, 0, 0.25)",
+          "colorName": "Muted Orange",
+          "children": [
+            {
+              "name": "Cinnamon",
+              "color": "rgba(141, 110, 99, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Clove",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Nutmeg",
+              "color": "rgba(121, 85, 72, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Cardamom",
+              "color": "rgba(129, 199, 132, 0.3)",
+              "colorName": "Muted Green"
+            },
+            {
+              "name": "Allspice",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Star Anise",
+              "color": "rgba(66, 66, 66, 0.3)",
+              "colorName": "Muted Dark Gray"
+            }
+          ]
+        },
+        {
+          "name": "Pungent Spice",
+          "color": "rgba(255, 111, 0, 0.25)",
+          "colorName": "Muted Orange",
+          "children": [
+            {
+              "name": "Black Pepper",
+              "color": "rgba(66, 66, 66, 0.3)",
+              "colorName": "Muted Dark Gray"
+            },
+            {
+              "name": "White Pepper",
+              "color": "rgba(224, 224, 224, 0.3)",
+              "colorName": "Muted Light Gray"
+            },
+            {
+              "name": "Ginger",
+              "color": "rgba(255, 152, 0, 0.25)",
+              "colorName": "Muted Orange"
+            },
+            {
+              "name": "Chili Heat",
+              "color": "rgba(244, 67, 54, 0.25)",
+              "colorName": "Muted Red"
+            },
+            {
+              "name": "Dry Mustard",
+              "color": "rgba(255, 235, 59, 0.3)",
+              "colorName": "Muted Yellow"
+            }
+          ]
+        },
+        {
+          "name": "Herbal",
+          "color": "rgba(197, 225, 165, 0.3)",
+          "colorName": "Muted Light Green",
+          "children": [
+            {
+              "name": "Mint",
+              "color": "rgba(129, 199, 132, 0.3)",
+              "colorName": "Muted Green"
+            },
+            {
+              "name": "Eucalyptus",
+              "color": "rgba(38, 166, 154, 0.25)",
+              "colorName": "Muted Teal"
+            },
+            {
+              "name": "Menthol",
+              "color": "rgba(129, 199, 132, 0.3)",
+              "colorName": "Muted Green"
+            },
+            {
+              "name": "Dried Herbs",
+              "color": "rgba(197, 225, 165, 0.3)",
+              "colorName": "Muted Light Green"
+            },
+            {
+              "name": "Lavender",
+              "color": "rgba(186, 104, 200, 0.25)",
+              "colorName": "Muted Purple"
+            }
+          ]
+        },
+        {
+          "name": "Floral",
+          "color": "rgba(248, 187, 208, 0.3)",
+          "colorName": "Muted Light Pink",
+          "children": [
+            {
+              "name": "Rose",
+              "color": "rgba(244, 143, 177, 0.25)",
+              "colorName": "Muted Pink"
+            },
+            {
+              "name": "Violet",
+              "color": "rgba(186, 104, 200, 0.25)",
+              "colorName": "Muted Purple"
+            },
+            {
+              "name": "Heather",
+              "color": "rgba(186, 104, 200, 0.25)",
+              "colorName": "Muted Purple"
+            },
+            {
+              "name": "Orange Blossom",
+              "color": "rgba(255, 245, 238, 0.35)",
+              "colorName": "Muted Cream"
+            },
+            {
+              "name": "Potpourri",
+              "color": "rgba(248, 187, 208, 0.3)",
+              "colorName": "Muted Light Pink"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Earthy & Mineral",
+      "color": "rgba(85, 139, 47, 0.25)",
+      "colorName": "Muted Green",
+      "children": [
+        {
+          "name": "Earthy",
+          "color": "rgba(121, 85, 72, 0.25)",
+          "colorName": "Muted Brown",
+          "children": [
+            {
+              "name": "Mushroom",
+              "color": "rgba(141, 110, 99, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Forest Floor",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Dark Brown"
+            },
+            {
+              "name": "Wet Soil",
+              "color": "rgba(85, 139, 47, 0.25)",
+              "colorName": "Muted Green"
+            },
+            {
+              "name": "Moss",
+              "color": "rgba(85, 139, 47, 0.25)",
+              "colorName": "Muted Green"
+            },
+            {
+              "name": "Hay",
+              "color": "rgba(255, 235, 59, 0.3)",
+              "colorName": "Muted Yellow"
+            },
+            {
+              "name": "Tobacco",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Brown"
+            }
+          ]
+        },
+        {
+          "name": "Mineral",
+          "color": "rgba(158, 158, 158, 0.3)",
+          "colorName": "Muted Gray",
+          "children": [
+            {
+              "name": "Flint",
+              "color": "rgba(158, 158, 158, 0.3)",
+              "colorName": "Muted Gray"
+            },
+            {
+              "name": "Chalk",
+              "color": "rgba(224, 224, 224, 0.3)",
+              "colorName": "Muted Light Gray"
+            },
+            {
+              "name": "Slate",
+              "color": "rgba(96, 125, 139, 0.25)",
+              "colorName": "Muted Blue-Gray"
+            },
+            {
+              "name": "Wet Stone",
+              "color": "rgba(120, 144, 156, 0.25)",
+              "colorName": "Muted Blue-Gray"
+            },
+            {
+              "name": "Sulfur",
+              "color": "rgba(255, 235, 59, 0.3)",
+              "colorName": "Muted Yellow"
+            }
+          ]
+        },
+        {
+          "name": "Leather & Aged",
+          "color": "rgba(93, 64, 55, 0.25)",
+          "colorName": "Muted Brown",
+          "children": [
+            {
+              "name": "Old Leather",
+              "color": "rgba(121, 85, 72, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Saddle",
+              "color": "rgba(141, 110, 99, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Tobacco Leaf",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Dark Brown"
+            },
+            {
+              "name": "Old Book",
+              "color": "rgba(215, 204, 200, 0.3)",
+              "colorName": "Muted Light Brown"
+            },
+            {
+              "name": "Beeswax",
+              "color": "rgba(255, 193, 7, 0.3)",
+              "colorName": "Muted Amber"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Roasted",
+      "color": "rgba(78, 52, 46, 0.25)",
+      "colorName": "Muted Dark Brown",
+      "children": [
+        {
+          "name": "Coffee & Espresso",
+          "color": "rgba(62, 39, 35, 0.25)",
+          "colorName": "Muted Very Dark Brown",
+          "children": [
+            {
+              "name": "Espresso",
+              "color": "rgba(62, 39, 35, 0.25)",
+              "colorName": "Muted Very Dark Brown"
+            },
+            {
+              "name": "Cold Brew",
+              "color": "rgba(78, 52, 46, 0.25)",
+              "colorName": "Muted Dark Brown"
+            },
+            {
+              "name": "Coffee Grounds",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Mocha",
+              "color": "rgba(93, 64, 55, 0.25)",
+              "colorName": "Muted Brown"
+            }
+          ]
+        },
+        {
+          "name": "Toasted",
+          "color": "rgba(141, 110, 99, 0.25)",
+          "colorName": "Muted Brown",
+          "children": [
+            {
+              "name": "Toast",
+              "color": "rgba(141, 110, 99, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Toasted Malt",
+              "color": "rgba(161, 136, 127, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Roasted Grain",
+              "color": "rgba(188, 170, 164, 0.3)",
+              "colorName": "Muted Tan"
+            },
+            {
+              "name": "Burnt Caramel",
+              "color": "rgba(78, 52, 46, 0.25)",
+              "colorName": "Muted Dark Brown"
+            },
+            {
+              "name": "Charred Oak",
+              "color": "rgba(33, 33, 33, 0.3)",
+              "colorName": "Muted Black"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Winey & Vinous",
+      "color": "rgba(156, 39, 176, 0.25)",
+      "colorName": "Muted Dark Purple",
+      "children": [
+        {
+          "name": "Sherry & Fortified",
+          "color": "rgba(142, 36, 170, 0.25)",
+          "colorName": "Muted Purple",
+          "children": [
+            {
+              "name": "Oloroso Sherry",
+              "color": "rgba(141, 110, 99, 0.25)",
+              "colorName": "Muted Brown"
+            },
+            {
+              "name": "Pedro Ximenez",
+              "color": "rgba(78, 52, 46, 0.25)",
+              "colorName": "Muted Dark Brown"
+            },
+            {
+              "name": "Fino Sherry",
+              "color": "rgba(255, 245, 157, 0.35)",
+              "colorName": "Muted Light Yellow"
+            },
+            {
+              "name": "Port",
+              "color": "rgba(156, 39, 176, 0.25)",
+              "colorName": "Muted Dark Purple"
+            },
+            {
+              "name": "Madeira",
+              "color": "rgba(121, 85, 72, 0.25)",
+              "colorName": "Muted Brown"
+            }
+          ]
+        },
+        {
+          "name": "Wine",
+          "color": "rgba(233, 30, 99, 0.25)",
+          "colorName": "Muted Pink/Red",
+          "children": [
+            {
+              "name": "Red Wine",
+              "color": "rgba(156, 39, 176, 0.25)",
+              "colorName": "Muted Dark Purple"
+            },
+            {
+              "name": "White Wine",
+              "color": "rgba(255, 245, 157, 0.35)",
+              "colorName": "Muted Light Yellow"
+            },
+            {
+              "name": "Muscat",
+              "color": "rgba(255, 235, 59, 0.3)",
+              "colorName": "Muted Yellow"
+            },
+            {
+              "name": "Sauternes",
+              "color": "rgba(255, 193, 7, 0.3)",
+              "colorName": "Muted Amber"
+            },
+            {
+              "name": "Burgundy",
+              "color": "rgba(142, 36, 170, 0.25)",
+              "colorName": "Muted Purple"
+            }
+          ]
+        },
+        {
+          "name": "Distillery Character",
+          "color": "rgba(188, 170, 164, 0.3)",
+          "colorName": "Muted Tan",
+          "children": [
+            {
+              "name": "New Make Spirit",
+              "color": "rgba(224, 224, 224, 0.3)",
+              "colorName": "Muted Light Gray"
+            },
+            {
+              "name": "Acetone",
+              "color": "rgba(224, 224, 224, 0.3)",
+              "colorName": "Muted Light Gray"
+            },
+            {
+              "name": "Ethanol Warmth",
+              "color": "rgba(255, 249, 196, 0.35)",
+              "colorName": "Muted Light Yellow"
+            },
+            {
+              "name": "Feints",
+              "color": "rgba(158, 158, 158, 0.3)",
+              "colorName": "Muted Gray"
+            },
+            {
+              "name": "Sulfurous",
+              "color": "rgba(205, 220, 57, 0.3)",
+              "colorName": "Muted Light Green"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

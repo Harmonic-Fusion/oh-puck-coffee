@@ -3,13 +3,15 @@
 import { useState, useMemo } from "react";
 import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
-import { FLAVOR_WHEEL_DATA, getFlavorColor, increaseOpacity } from "@/shared/flavor-wheel";
+import { getFlavorColor, increaseOpacity } from "@/shared/flavor-wheel";
+import type { FlavorWheelData } from "@/shared/flavor-wheel/types";
 import { SelectedBadges } from "./SelectedBadges";
 import { InfoTooltip } from "@/components/common/InfoTooltip";
 
 interface NestedFlavorWheelProps {
   value: string[]; // Array of node names like ["Sweet", "Chocolate", "Dark Chocolate"]
   onChange: (value: string[]) => void; // Output array of node names
+  data: FlavorWheelData; // The flavor wheel data to use
 }
 
 /**
@@ -25,25 +27,25 @@ function buildNodePath(node: FlavorNode, parentPath: string[]): string[] {
 function countSelectedDescendants(
   node: FlavorNode,
   nodePath: string[],
-  selectedNodes: Set<string>
+  selectedNodes: Set<string>,
 ): number {
   const currentNodePath = buildNodePath(node, nodePath);
   const currentNodeKey = currentNodePath.join(":");
-  
+
   let count = 0;
-  
+
   // Count self if selected
   if (selectedNodes.has(currentNodeKey)) {
     count = 1;
   }
-  
+
   // Recursively count children
   if (node.children && node.children.length > 0) {
     for (const child of node.children) {
       count += countSelectedDescendants(child, currentNodePath, selectedNodes);
     }
   }
-  
+
   return count;
 }
 
@@ -54,11 +56,11 @@ function collectSelectedNodes(
   node: FlavorNode,
   nodePath: string[],
   selectedNodes: Set<string>,
-  result: Array<{ name: string; path: string[] }>
+  result: Array<{ name: string; path: string[] }>,
 ): void {
   const currentNodePath = buildNodePath(node, nodePath);
   const currentNodeKey = currentNodePath.join(":");
-  
+
   // Collect this node if it's selected (including ancestors)
   if (selectedNodes.has(currentNodeKey)) {
     result.push({
@@ -66,7 +68,7 @@ function collectSelectedNodes(
       path: currentNodePath,
     });
   }
-  
+
   // Recursively collect from children
   if (node.children && node.children.length > 0) {
     for (const child of node.children) {
@@ -113,7 +115,7 @@ function FlavorTreeNode({
   };
 
   return (
-    <div 
+    <div
       className="select-none"
       style={{
         marginLeft: `${depth * 2}em`,
@@ -129,9 +131,7 @@ function FlavorTreeNode({
               : "font-normal"
         }`}
         style={{
-          backgroundColor: isSelected 
-            ? increaseOpacity(color, 0.5)
-            : color,
+          backgroundColor: isSelected ? increaseOpacity(color, 0.5) : color,
           border: isSelected ? "2px solid white" : "2px solid transparent",
         }}
       >
@@ -165,8 +165,8 @@ function FlavorTreeNode({
             type="button"
             onClick={handleExpandClick}
             className={`flex-shrink-0 h-16 w-16 flex items-center justify-center transition-colors ${
-              isSelected 
-                ? "text-white hover:bg-white/20" 
+              isSelected
+                ? "text-white hover:bg-white/20"
                 : "text-stone-700 hover:bg-stone-200/50 dark:text-stone-300 dark:hover:bg-stone-700/50"
             }`}
             aria-label={isExpanded ? "Collapse" : "Expand"}
@@ -205,6 +205,7 @@ function FlavorTreeNode({
 export function NestedFlavorWheel({
   value,
   onChange,
+  data,
 }: NestedFlavorWheelProps) {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
@@ -214,23 +215,23 @@ export function NestedFlavorWheel({
     if (!value) return new Set<string>();
     if (!Array.isArray(value)) return new Set<string>();
     return new Set(value);
-  }, [value]);
+  }, [value, data]);
 
   // Convert selected node names to a Set of full paths for UI display
   const selectedNodes = useMemo(() => {
     const paths = new Set<string>();
     if (!selectedNodeNames.size) return paths;
-    
+
     // For each selected node name, find all matching nodes in the tree and add their paths
     const findAndAddPaths = (node: FlavorNode, path: string[] = []): void => {
       const currentPath = [...path, node.name];
       const pathKey = currentPath.join(":");
-      
+
       // If this node's name is selected, add its path
       if (selectedNodeNames.has(node.name)) {
         paths.add(pathKey);
       }
-      
+
       // Recursively check children
       if (node.children) {
         for (const child of node.children) {
@@ -238,11 +239,11 @@ export function NestedFlavorWheel({
         }
       }
     };
-    
-    for (const category of FLAVOR_WHEEL_DATA.children) {
+
+    for (const category of data.children) {
       findAndAddPaths(category);
     }
-    
+
     return paths;
   }, [selectedNodeNames]);
 
@@ -252,7 +253,7 @@ export function NestedFlavorWheel({
     // Extract all node names from the path (all ancestors + selected node)
     const allNodeNames = nodePath;
     const selectedNodeName = nodePath[nodePath.length - 1]; // The actual selected node
-    
+
     // Check if the selected node is currently selected
     const isCurrentlySelected = selectedNodeNames.has(selectedNodeName);
 
@@ -265,8 +266,12 @@ export function NestedFlavorWheel({
       const descendants = new Set<string>();
       const findDescendants = (node: FlavorNode, path: string[] = []): void => {
         const currentPath = [...path, node.name];
-        if (currentPath.length > nodePath.length && 
-            currentPath.slice(0, nodePath.length).every((n, i) => n === nodePath[i])) {
+        if (
+          currentPath.length > nodePath.length &&
+          currentPath
+            .slice(0, nodePath.length)
+            .every((n, i) => n === nodePath[i])
+        ) {
           descendants.add(node.name);
         }
         if (node.children) {
@@ -275,14 +280,14 @@ export function NestedFlavorWheel({
           }
         }
       };
-      
-      for (const category of FLAVOR_WHEEL_DATA.children) {
+
+      for (const category of data.children) {
         findDescendants(category);
       }
-      
+
       // Remove the selected node and all its descendants
-      const newValue = currentValue.filter((name) => 
-        name !== selectedNodeName && !descendants.has(name)
+      const newValue = currentValue.filter(
+        (name) => name !== selectedNodeName && !descendants.has(name),
       );
       onChange(newValue);
     } else {
@@ -309,7 +314,7 @@ export function NestedFlavorWheel({
     const currentPath = [...path, node.name];
     const pathKey = currentPath.join(":");
     const paths: string[] = [];
-    
+
     if (node.children && node.children.length > 0) {
       paths.push(pathKey);
       for (const child of node.children) {
@@ -321,7 +326,7 @@ export function NestedFlavorWheel({
 
   const handleExpandAll = () => {
     const allPaths = new Set<string>();
-    for (const category of FLAVOR_WHEEL_DATA.children) {
+    for (const category of data.children) {
       const paths = collectAllPaths(category, []);
       for (const path of paths) {
         allPaths.add(path);
@@ -336,27 +341,34 @@ export function NestedFlavorWheel({
 
   const allExpanded = useMemo(() => {
     const allPaths = new Set<string>();
-    for (const category of FLAVOR_WHEEL_DATA.children) {
+    for (const category of data.children) {
       const paths = collectAllPaths(category, []);
       for (const path of paths) {
         allPaths.add(path);
       }
     }
-    return allPaths.size > 0 && Array.from(allPaths).every(path => expandedNodes.has(path));
-  }, [expandedNodes]);
+    return (
+      allPaths.size > 0 &&
+      Array.from(allPaths).every((path) => expandedNodes.has(path))
+    );
+  }, [expandedNodes, data]);
 
   // Extract flavor words for display badges
   const selectedFlavorWords = useMemo(() => {
     const flavors: Array<{ name: string; path: string[] }> = [];
     const flavorsMap = new Map<string, { name: string; path: string[] }>();
-    
+
     // Ensure value is an array
     if (!value || !Array.isArray(value)) return flavors;
-    
+
     // For each selected node name, find all matching nodes in the tree
-    const findNodesByName = (nodeName: string, category: FlavorNode, path: string[] = []): void => {
+    const findNodesByName = (
+      nodeName: string,
+      category: FlavorNode,
+      path: string[] = [],
+    ): void => {
       const currentPath = [...path, category.name];
-      
+
       if (category.name === nodeName) {
         // Store in map to avoid duplicates, keeping the first match
         if (!flavorsMap.has(nodeName)) {
@@ -366,24 +378,24 @@ export function NestedFlavorWheel({
           });
         }
       }
-      
+
       if (category.children) {
         for (const child of category.children) {
           findNodesByName(nodeName, child, currentPath);
         }
       }
     };
-    
+
     // Process nodes in the order they appear in value
     for (const nodeName of value) {
       // Only process if we haven't already found it
       if (!flavorsMap.has(nodeName)) {
-        for (const category of FLAVOR_WHEEL_DATA.children) {
+        for (const category of data.children) {
           findNodesByName(nodeName, category);
         }
       }
     }
-    
+
     // Build result array preserving the order from value
     const orderedFlavors: Array<{ name: string; path: string[] }> = [];
     for (const nodeName of value) {
@@ -392,9 +404,9 @@ export function NestedFlavorWheel({
         orderedFlavors.push(flavor);
       }
     }
-    
+
     return orderedFlavors;
-  }, [value]);
+  }, [value, data]);
 
   return (
     <div className="space-y-2">
@@ -417,7 +429,7 @@ export function NestedFlavorWheel({
         </button>
       </div>
       <div className="space-y-3 rounded-lg border border-stone-200 p-2 pt-4 dark:border-stone-700">
-        {FLAVOR_WHEEL_DATA.children.map((category) => (
+        {data.children.map((category) => (
           <FlavorTreeNode
             key={category.name}
             node={category}
@@ -440,13 +452,19 @@ export function NestedFlavorWheel({
         onClear={() => onChange([])}
         onReorder={(reorderedItems) => {
           // Map reordered badge items back to node names
-          const reorderedNames = reorderedItems.map((item) => item.key || item.label);
+          const reorderedNames = reorderedItems.map(
+            (item) => item.key || item.label,
+          );
           // Update value with the new order, preserving all items
           const currentSet = new Set(value);
           const reorderedSet = new Set(reorderedNames);
           // Keep items in the reordered order, then append any items not in the reordered list
-          const orderedItems = reorderedNames.filter((name) => currentSet.has(name));
-          const remainingItems = value.filter((name) => !reorderedSet.has(name));
+          const orderedItems = reorderedNames.filter((name) =>
+            currentSet.has(name),
+          );
+          const remainingItems = value.filter(
+            (name) => !reorderedSet.has(name),
+          );
           onChange([...orderedItems, ...remainingItems]);
         }}
       />

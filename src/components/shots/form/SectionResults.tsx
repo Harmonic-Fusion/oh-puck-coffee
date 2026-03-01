@@ -11,6 +11,7 @@ import { BrewTimer } from "./BrewTimer";
 import { NestedFlavorWheel } from "@/components/flavor-wheel/NestedFlavorWheel";
 import { NestedBodySelector } from "@/components/flavor-wheel/NestedBodySelector";
 import { AdjectivesIntensifiersSelector } from "@/components/flavor-wheel/AdjectivesIntensifiersSelector";
+import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
@@ -23,8 +24,19 @@ const RESULTS_VISIBILITY_KEY = "coffee-results-visibility";
 const TASTING_ORDER_KEY = "coffee-tasting-order";
 const TASTING_VISIBILITY_KEY = "coffee-tasting-visibility";
 
-type ResultsStepId = "yieldActual" | "brewTime" | "estimateMaxPressure" | "shotQuality";
-type TastingStepId = "flavors" | "body" | "adjectives" | "rating" | "bitter" | "sour" | "notes";
+type ResultsStepId =
+  | "yieldActual"
+  | "brewTime"
+  | "estimateMaxPressure"
+  | "shotQuality";
+type TastingStepId =
+  | "flavors"
+  | "body"
+  | "adjectives"
+  | "rating"
+  | "bitter"
+  | "sour"
+  | "notes";
 
 interface ResultsStepConfig {
   id: ResultsStepId;
@@ -73,24 +85,24 @@ function interpolateColor(
   min: number = 1,
   max: number = 5,
   startColor: string,
-  endColor: string
+  endColor: string,
 ): string {
   const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
-  
+
   // Parse RGB values
   const parseRGB = (rgb: string): [number, number, number] => {
     const match = rgb.match(/\d+/g);
     if (!match || match.length !== 3) return [156, 163, 175]; // fallback to neutral gray
     return [parseInt(match[0]), parseInt(match[1]), parseInt(match[2])];
   };
-  
+
   const [r1, g1, b1] = parseRGB(startColor);
   const [r2, g2, b2] = parseRGB(endColor);
-  
+
   const r = Math.round(r1 + (r2 - r1) * ratio);
   const g = Math.round(g1 + (g2 - g1) * ratio);
   const b = Math.round(b1 + (b2 - b1) * ratio);
-  
+
   return `rgb(${r}, ${g}, ${b})`;
 }
 
@@ -103,7 +115,7 @@ function getSourColor(value: number): string {
     1,
     5,
     "rgb(156, 163, 175)", // stone-400 (neutral gray)
-    "rgb(234, 179, 8)" // amber-500 (bright yellow)
+    "rgb(234, 179, 8)", // amber-500 (bright yellow)
   );
 }
 
@@ -116,14 +128,15 @@ function getBitterColor(value: number): string {
     1,
     5,
     "rgb(156, 163, 175)", // stone-400 (neutral gray)
-    "rgb(69, 26, 3)" // brown-950 (dark brown/black)
+    "rgb(69, 26, 3)", // brown-950 (dark brown/black)
   );
 }
 
 // ── LocalStorage helpers for Results ──
 
 function getSavedResultsOrder(): ResultsStepId[] {
-  if (typeof window === "undefined") return DEFAULT_RESULTS_STEPS.map((s) => s.id);
+  if (typeof window === "undefined")
+    return DEFAULT_RESULTS_STEPS.map((s) => s.id);
   const saved = localStorage.getItem(RESULTS_ORDER_KEY);
   if (!saved) return DEFAULT_RESULTS_STEPS.map((s) => s.id);
   try {
@@ -138,17 +151,29 @@ function getSavedResultsOrder(): ResultsStepId[] {
 
 function getSavedResultsVisibility(): Record<ResultsStepId, boolean> {
   if (typeof window === "undefined") {
-    return DEFAULT_RESULTS_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<ResultsStepId, boolean>);
+    return DEFAULT_RESULTS_STEPS.reduce(
+      (acc, step) => ({ ...acc, [step.id]: step.visible }),
+      {} as Record<ResultsStepId, boolean>,
+    );
   }
   const saved = localStorage.getItem(RESULTS_VISIBILITY_KEY);
   if (!saved) {
-    return DEFAULT_RESULTS_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<ResultsStepId, boolean>);
+    return DEFAULT_RESULTS_STEPS.reduce(
+      (acc, step) => ({ ...acc, [step.id]: step.visible }),
+      {} as Record<ResultsStepId, boolean>,
+    );
   }
   try {
     const parsed = JSON.parse(saved) as Record<string, boolean>;
-    return DEFAULT_RESULTS_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: parsed[step.id] ?? step.visible }), {} as Record<ResultsStepId, boolean>);
+    return DEFAULT_RESULTS_STEPS.reduce(
+      (acc, step) => ({ ...acc, [step.id]: parsed[step.id] ?? step.visible }),
+      {} as Record<ResultsStepId, boolean>,
+    );
   } catch {
-    return DEFAULT_RESULTS_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<ResultsStepId, boolean>);
+    return DEFAULT_RESULTS_STEPS.reduce(
+      (acc, step) => ({ ...acc, [step.id]: step.visible }),
+      {} as Record<ResultsStepId, boolean>,
+    );
   }
 }
 
@@ -157,7 +182,9 @@ function saveResultsOrder(order: ResultsStepId[]): void {
   localStorage.setItem(RESULTS_ORDER_KEY, JSON.stringify(order));
 }
 
-function saveResultsVisibility(visibility: Record<ResultsStepId, boolean>): void {
+function saveResultsVisibility(
+  visibility: Record<ResultsStepId, boolean>,
+): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(RESULTS_VISIBILITY_KEY, JSON.stringify(visibility));
 }
@@ -165,7 +192,8 @@ function saveResultsVisibility(visibility: Record<ResultsStepId, boolean>): void
 // ── LocalStorage helpers for Tasting Notes ──
 
 function getSavedTastingOrder(): TastingStepId[] {
-  if (typeof window === "undefined") return DEFAULT_TASTING_STEPS.map((s) => s.id);
+  if (typeof window === "undefined")
+    return DEFAULT_TASTING_STEPS.map((s) => s.id);
   const saved = localStorage.getItem(TASTING_ORDER_KEY);
   if (!saved) return DEFAULT_TASTING_STEPS.map((s) => s.id);
   try {
@@ -180,17 +208,29 @@ function getSavedTastingOrder(): TastingStepId[] {
 
 function getSavedTastingVisibility(): Record<TastingStepId, boolean> {
   if (typeof window === "undefined") {
-    return DEFAULT_TASTING_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<TastingStepId, boolean>);
+    return DEFAULT_TASTING_STEPS.reduce(
+      (acc, step) => ({ ...acc, [step.id]: step.visible }),
+      {} as Record<TastingStepId, boolean>,
+    );
   }
   const saved = localStorage.getItem(TASTING_VISIBILITY_KEY);
   if (!saved) {
-    return DEFAULT_TASTING_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<TastingStepId, boolean>);
+    return DEFAULT_TASTING_STEPS.reduce(
+      (acc, step) => ({ ...acc, [step.id]: step.visible }),
+      {} as Record<TastingStepId, boolean>,
+    );
   }
   try {
     const parsed = JSON.parse(saved) as Record<string, boolean>;
-    return DEFAULT_TASTING_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: parsed[step.id] ?? step.visible }), {} as Record<TastingStepId, boolean>);
+    return DEFAULT_TASTING_STEPS.reduce(
+      (acc, step) => ({ ...acc, [step.id]: parsed[step.id] ?? step.visible }),
+      {} as Record<TastingStepId, boolean>,
+    );
   } catch {
-    return DEFAULT_TASTING_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<TastingStepId, boolean>);
+    return DEFAULT_TASTING_STEPS.reduce(
+      (acc, step) => ({ ...acc, [step.id]: step.visible }),
+      {} as Record<TastingStepId, boolean>,
+    );
   }
 }
 
@@ -199,7 +239,9 @@ function saveTastingOrder(order: TastingStepId[]): void {
   localStorage.setItem(TASTING_ORDER_KEY, JSON.stringify(order));
 }
 
-function saveTastingVisibility(visibility: Record<TastingStepId, boolean>): void {
+function saveTastingVisibility(
+  visibility: Record<TastingStepId, boolean>,
+): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(TASTING_VISIBILITY_KEY, JSON.stringify(visibility));
 }
@@ -221,25 +263,41 @@ export function SectionResults() {
   const brewTime = watch("brewTimeSecs");
 
   // Calculate ratio for actual yield
-  const actualRatio = dose && yieldActual ? (yieldActual / dose).toFixed(2) : null;
+  const actualRatio =
+    dose && yieldActual ? (yieldActual / dose).toFixed(2) : null;
 
   // Calculate flow rate (g/s) from actual yield and brew time
-  const flowRate = yieldActual && brewTime ? (yieldActual / brewTime).toFixed(2) : null;
+  const flowRate =
+    yieldActual && brewTime ? (yieldActual / brewTime).toFixed(2) : null;
 
   // ── Results order and visibility ──
   // Initialize with static defaults to avoid hydration mismatch (localStorage read happens in useEffect below)
-  const [resultsOrder, setResultsOrder] = useState<ResultsStepId[]>(DEFAULT_RESULTS_STEPS.map((s) => s.id));
-  const [resultsVisibility, setResultsVisibility] = useState<Record<ResultsStepId, boolean>>(
-    DEFAULT_RESULTS_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<ResultsStepId, boolean>)
+  const [resultsOrder, setResultsOrder] = useState<ResultsStepId[]>(
+    DEFAULT_RESULTS_STEPS.map((s) => s.id),
+  );
+  const [resultsVisibility, setResultsVisibility] = useState<
+    Record<ResultsStepId, boolean>
+  >(
+    DEFAULT_RESULTS_STEPS.reduce(
+      (acc, step) => ({ ...acc, [step.id]: step.visible }),
+      {} as Record<ResultsStepId, boolean>,
+    ),
   );
   const [showResultsMenu, setShowResultsMenu] = useState(false);
   const [showResultsOrderModal, setShowResultsOrderModal] = useState(false);
   const resultsMenuRef = useRef<HTMLDivElement>(null);
 
   // ── Tasting Notes order and visibility ──
-  const [tastingOrder, setTastingOrder] = useState<TastingStepId[]>(DEFAULT_TASTING_STEPS.map((s) => s.id));
-  const [tastingVisibility, setTastingVisibility] = useState<Record<TastingStepId, boolean>>(
-    DEFAULT_TASTING_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<TastingStepId, boolean>)
+  const [tastingOrder, setTastingOrder] = useState<TastingStepId[]>(
+    DEFAULT_TASTING_STEPS.map((s) => s.id),
+  );
+  const [tastingVisibility, setTastingVisibility] = useState<
+    Record<TastingStepId, boolean>
+  >(
+    DEFAULT_TASTING_STEPS.reduce(
+      (acc, step) => ({ ...acc, [step.id]: step.visible }),
+      {} as Record<TastingStepId, boolean>,
+    ),
   );
   const [showTastingMenu, setShowTastingMenu] = useState(false);
   const [showTastingOrderModal, setShowTastingOrderModal] = useState(false);
@@ -260,10 +318,16 @@ export function SectionResults() {
   useEffect(() => {
     if (!showResultsMenu && !showTastingMenu) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (resultsMenuRef.current && !resultsMenuRef.current.contains(e.target as Node)) {
+      if (
+        resultsMenuRef.current &&
+        !resultsMenuRef.current.contains(e.target as Node)
+      ) {
         setShowResultsMenu(false);
       }
-      if (tastingMenuRef.current && !tastingMenuRef.current.contains(e.target as Node)) {
+      if (
+        tastingMenuRef.current &&
+        !tastingMenuRef.current.contains(e.target as Node)
+      ) {
         setShowTastingMenu(false);
       }
     };
@@ -272,20 +336,32 @@ export function SectionResults() {
   }, [showResultsMenu, showTastingMenu]);
 
   // ── Results order modal handlers ──
-  const handleResultsOrderChange = useCallback((newOrder: ResultsStepId[], newVisibility: Record<ResultsStepId, boolean>) => {
-    setResultsOrder(newOrder);
-    setResultsVisibility(newVisibility);
-    saveResultsOrder(newOrder);
-    saveResultsVisibility(newVisibility);
-  }, []);
+  const handleResultsOrderChange = useCallback(
+    (
+      newOrder: ResultsStepId[],
+      newVisibility: Record<ResultsStepId, boolean>,
+    ) => {
+      setResultsOrder(newOrder);
+      setResultsVisibility(newVisibility);
+      saveResultsOrder(newOrder);
+      saveResultsVisibility(newVisibility);
+    },
+    [],
+  );
 
   // ── Tasting Notes order modal handlers ──
-  const handleTastingOrderChange = useCallback((newOrder: TastingStepId[], newVisibility: Record<TastingStepId, boolean>) => {
-    setTastingOrder(newOrder);
-    setTastingVisibility(newVisibility);
-    saveTastingOrder(newOrder);
-    saveTastingVisibility(newVisibility);
-  }, []);
+  const handleTastingOrderChange = useCallback(
+    (
+      newOrder: TastingStepId[],
+      newVisibility: Record<TastingStepId, boolean>,
+    ) => {
+      setTastingOrder(newOrder);
+      setTastingVisibility(newVisibility);
+      saveTastingOrder(newOrder);
+      saveTastingVisibility(newVisibility);
+    },
+    [],
+  );
 
   // Get ordered steps
   const orderedResultsSteps = useMemo(() => {
@@ -328,7 +404,10 @@ export function SectionResults() {
                   yieldTarget
                     ? {
                         label: `Use Target Yield ${yieldTarget}g`,
-                        onClick: () => setValue("yieldActualGrams", yieldTarget, { shouldValidate: true }),
+                        onClick: () =>
+                          setValue("yieldActualGrams", yieldTarget, {
+                            shouldValidate: true,
+                          }),
                       }
                     : undefined
                 }
@@ -383,7 +462,9 @@ export function SectionResults() {
                 onChange={(val) => {
                   field.onChange(val);
                   if (val != null) {
-                    const match = PRESSURE_OPTIONS.find((p) => Math.abs(p - val) < 0.01);
+                    const match = PRESSURE_OPTIONS.find(
+                      (p) => Math.abs(p - val) < 0.01,
+                    );
                     setActivePressure(match ?? null);
                   } else {
                     setActivePressure(null);
@@ -403,7 +484,9 @@ export function SectionResults() {
                         type="button"
                         onClick={() => {
                           setActivePressure(p);
-                          setValue("estimateMaxPressure", p, { shouldValidate: true });
+                          setValue("estimateMaxPressure", p, {
+                            shouldValidate: true,
+                          });
                         }}
                         tabIndex={-1}
                         className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
@@ -472,6 +555,7 @@ export function SectionResults() {
                 <NestedFlavorWheel
                   value={field.value || []}
                   onChange={field.onChange}
+                  data={FLAVOR_WHEEL_DATA}
                 />
               );
             }}
@@ -552,7 +636,9 @@ export function SectionResults() {
                 step={0.5}
                 error={errors.bitter?.message}
                 id="bitter"
-                thumbColor={field.value ? getBitterColor(field.value) : undefined}
+                thumbColor={
+                  field.value ? getBitterColor(field.value) : undefined
+                }
                 labels={{
                   1: "Not bitter",
                   2: "Slightly bitter",
@@ -749,7 +835,7 @@ export function SectionResults() {
         defaultOrder={DEFAULT_RESULTS_STEPS.map((s) => s.id)}
         defaultVisibility={DEFAULT_RESULTS_STEPS.reduce(
           (acc, step) => ({ ...acc, [step.id]: step.visible }),
-          {} as Record<ResultsStepId, boolean>
+          {} as Record<ResultsStepId, boolean>,
         )}
         onChange={handleResultsOrderChange}
         requiredFields={["yieldActual"]}
@@ -757,7 +843,7 @@ export function SectionResults() {
           const defaultOrder = DEFAULT_RESULTS_STEPS.map((s) => s.id);
           const defaultVisibility = DEFAULT_RESULTS_STEPS.reduce(
             (acc, step) => ({ ...acc, [step.id]: step.visible }),
-            {} as Record<ResultsStepId, boolean>
+            {} as Record<ResultsStepId, boolean>,
           );
           handleResultsOrderChange(defaultOrder, defaultVisibility);
         }}
@@ -774,7 +860,7 @@ export function SectionResults() {
         defaultOrder={DEFAULT_TASTING_STEPS.map((s) => s.id)}
         defaultVisibility={DEFAULT_TASTING_STEPS.reduce(
           (acc, step) => ({ ...acc, [step.id]: step.visible }),
-          {} as Record<TastingStepId, boolean>
+          {} as Record<TastingStepId, boolean>,
         )}
         onChange={handleTastingOrderChange}
         requiredFields={["rating"]}
@@ -782,7 +868,7 @@ export function SectionResults() {
           const defaultOrder = DEFAULT_TASTING_STEPS.map((s) => s.id);
           const defaultVisibility = DEFAULT_TASTING_STEPS.reduce(
             (acc, step) => ({ ...acc, [step.id]: step.visible }),
-            {} as Record<TastingStepId, boolean>
+            {} as Record<TastingStepId, boolean>,
           );
           handleTastingOrderChange(defaultOrder, defaultVisibility);
         }}
