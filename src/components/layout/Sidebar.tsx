@@ -20,8 +20,8 @@ import { useSidebar } from "./SidebarContext";
 import { FeedbackModal } from "@/components/common/FeedbackModal";
 
 const navItems = [
-  { label: "Log Shot", href: AppRoutes.log.path, icon: BeakerIcon },
-  { label: "Dashboard", href: AppRoutes.dashboard.path, icon: ChartBarIcon },
+  { label: "New Shot", href: AppRoutes.log.path, icon: BeakerIcon },
+  { label: "Stats", href: AppRoutes.dashboard.path, icon: ChartBarIcon },
   { label: "Shots", href: AppRoutes.shots.path, icon: ClipboardDocumentListIcon },
   { label: "Tasting Notes", href: AppRoutes.tasting.path, icon: SparklesIcon },
 ];

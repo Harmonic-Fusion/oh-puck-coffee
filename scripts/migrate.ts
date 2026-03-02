@@ -221,14 +221,41 @@ async function runMigrations() {
     process.exit(1);
   }
 
-  console.log("🔄 Connecting to database...");
-  let client: postgres.Sql | null = null;
+    console.log("🔄 Connecting to database...");
+    let client: postgres.Sql | null = null;
 
-  try {
-    client = postgres(databaseUrl, { max: 1 });
-    const db = drizzle(client);
+    try {
+      client = postgres(databaseUrl, { max: 1 });
+      const db = drizzle(client);
 
-    console.log("✅ Database connection established");
+      console.log("✅ Database connection established");
+      
+      // Ensure drizzle schema exists (Drizzle migrator requires it)
+      try {
+        await db.execute(sql`CREATE SCHEMA IF NOT EXISTS drizzle`);
+        console.log("✅ Drizzle schema ready");
+      } catch (schemaError) {
+        // If schema creation fails, check if it already exists
+        const schemaExists = await db.execute(sql`
+          SELECT EXISTS (
+            SELECT FROM information_schema.schemata 
+            WHERE schema_name = 'drizzle'
+          );
+        `);
+        const exists = Array.isArray(schemaExists) 
+          ? (schemaExists[0] as { exists: boolean })?.exists ?? false
+          : false;
+        
+        if (!exists) {
+          console.error("❌ Failed to create drizzle schema and it doesn't exist");
+          console.error("💡 The database user needs CREATE SCHEMA permission");
+          console.error("   You can grant it with: GRANT CREATE ON DATABASE coffee TO your_user;");
+          console.error("   Or create the schema manually: CREATE SCHEMA drizzle;");
+          throw schemaError;
+        } else {
+          console.log("✅ Drizzle schema already exists");
+        }
+      }
     
     // Get migration status before running
     console.log("\n📊 Migration Status:");

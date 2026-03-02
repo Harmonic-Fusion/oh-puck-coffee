@@ -44,14 +44,14 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   XMarkIcon,
-  StarIcon,
+  BookmarkIcon,
   EyeIcon,
   EyeSlashIcon,
   PlusCircleIcon,
   ShareIcon,
 } from "@heroicons/react/24/outline";
 import {
-  StarIcon as StarIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
   EyeIcon as EyeIconSolid,
 } from "@heroicons/react/24/solid";
 import { ArrowDownTrayIcon } from "@heroicons/react/16/solid";
@@ -207,7 +207,7 @@ const columns = [
   columnHelper.accessor("isReferenceShot", {
     id: "ref",
     header: "Ref",
-    cell: (info) => (info.getValue() ? "⭐" : ""),
+    cell: (info) => (info.getValue() ? "🔖" : ""),
     enableSorting: false,
     filterFn: (row, _id, value) =>
       booleanFilterFn(row.original.isReferenceShot, value as string[]),
@@ -362,10 +362,10 @@ function ShotCard({
           ? "cursor-pointer active:bg-stone-50 dark:active:bg-stone-800"
           : "",
         isRef
-          ? "border-amber-300 bg-amber-50/50 dark:border-amber-700 dark:bg-amber-900/10"
+          ? "border-amber-700 bg-amber-50/50 dark:border-amber-500 dark:bg-amber-900/10"
           : "border-stone-200 dark:border-stone-700",
         isSelected
-          ? "ring-2 ring-amber-500 border-amber-500 bg-amber-50/30 dark:bg-amber-900/20"
+          ? "ring-2 ring-amber-700 border-amber-700 bg-amber-50/30 dark:ring-amber-500 dark:border-amber-500 dark:bg-amber-900/20"
           : "",
       )}
     >
@@ -386,7 +386,7 @@ function ShotCard({
               {shot.rating}/5
             </span>
           )}
-          {isRef && <StarIconSolid className="h-4 w-4 text-amber-500" />}
+          {isRef && <BookmarkIconSolid className="h-4 w-4 text-amber-500" />}
         </div>
       </div>
 
@@ -434,79 +434,85 @@ function ShotCard({
           onClick={(e) => e.stopPropagation()}
         >
           {!isSelecting ? (
-            <ActionButtonBar
-              actions={[
-                ...(onToggleReference
-                  ? [
-                      {
-                        key: "reference",
-                        icon: isRef ? StarIconSolid : StarIcon,
-                        onClick: () => onToggleReference(shot.id),
-                        title: isRef ? "Unmark reference" : "Mark reference",
-                        variant: isRef
-                          ? ("active" as const)
-                          : ("default" as const),
-                      },
-                    ]
-                  : []),
-                ...(onToggleHidden
-                  ? [
-                      {
-                        key: "hidden",
-                        icon: isHidden ? EyeSlashIcon : EyeIconSolid,
-                        onClick: () => onToggleHidden(shot.id),
-                        title: isHidden ? "Show" : "Hide",
-                        variant: isHidden
-                          ? ("default" as const)
-                          : ("active" as const),
-                      },
-                    ]
-                  : []),
-                ...(onDuplicate
-                  ? [
-                      {
-                        key: "duplicate",
-                        icon: PlusCircleIcon,
-                        onClick: () => onDuplicate(shot),
-                        title: "Duplicate",
-                        variant: "default" as const,
-                      },
-                    ]
-                  : []),
-                {
-                  key: "share" as const,
-                  shotData: shotShareData,
-                  tempUnit,
-                  getShareUrl,
-                  onShare: handleShareAction,
-                },
-              ]}
-            />
+            <div className="flex-[0.9]">
+              <ActionButtonBar
+                actions={[
+                  ...(onToggleReference
+                    ? [
+                        {
+                          key: "reference",
+                          icon: isRef ? BookmarkIconSolid : BookmarkIcon,
+                          onClick: () => onToggleReference(shot.id),
+                          title: isRef ? "Unmark reference" : "Mark reference",
+                          variant: isRef
+                            ? ("active" as const)
+                            : ("default" as const),
+                        },
+                      ]
+                    : []),
+                  ...(onToggleHidden
+                    ? [
+                        {
+                          key: "hidden",
+                          icon: isHidden ? EyeSlashIcon : EyeIconSolid,
+                          onClick: () => onToggleHidden(shot.id),
+                          title: isHidden ? "Show" : "Hide",
+                          variant: isHidden
+                            ? ("active" as const)
+                            : ("default" as const),
+                        },
+                      ]
+                    : []),
+                  ...(onDuplicate
+                    ? [
+                        {
+                          key: "duplicate",
+                          icon: PlusCircleIcon,
+                          onClick: () => onDuplicate(shot),
+                          title: "Duplicate",
+                          variant: "default" as const,
+                        },
+                      ]
+                    : []),
+                  {
+                    key: "share" as const,
+                    shotData: shotShareData,
+                    tempUnit,
+                    getShareUrl,
+                    onShare: handleShareAction,
+                  },
+                ]}
+              />
+            </div>
           ) : (
-            <>
-              {onToggleReference && (
+            <div className="flex-[0.9]">
+              <>
+                {onToggleReference && (
+                  <div className="h-10 flex-1" aria-hidden="true" />
+                )}
+                {onToggleHidden && (
+                  <div className="h-10 flex-1" aria-hidden="true" />
+                )}
+                {onDuplicate && (
+                  <div className="h-10 flex-1" aria-hidden="true" />
+                )}
                 <div className="h-10 flex-1" aria-hidden="true" />
-              )}
-              {onToggleHidden && (
-                <div className="h-10 flex-1" aria-hidden="true" />
-              )}
-              {onDuplicate && (
-                <div className="h-10 flex-1" aria-hidden="true" />
-              )}
-              <div className="h-10 flex-1" aria-hidden="true" />
-            </>
+              </>
+            </div>
           )}
           {onSelect && (
-            <input
-              type="checkbox"
-              checked={isSelected ?? false}
-              onChange={(e) => {
-                e.stopPropagation();
-                onSelect(shot);
-              }}
-              className="h-5 w-5 shrink-0 cursor-pointer rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
-              title="Select"
-            />
+            <div className="flex-[0.1] flex justify-end">
+              <input
+                type="checkbox"
+                checked={isSelected ?? false}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onSelect(shot);
+                }}
+                className="h-5 w-5 shrink-0 cursor-pointer rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
+                title="Select"
+              />
+            </div>
           )}
         </div>
       )}
@@ -1454,7 +1460,7 @@ export default function ShotsPage() {
                               : "Mark reference"
                           }
                         >
-                          {row.original.isReferenceShot ? "⭐" : "☆"}
+                          {row.original.isReferenceShot ? "🔖" : "📑"}
                         </button>
                         <button
                           onClick={() => handleToggleHidden(row.original.id)}

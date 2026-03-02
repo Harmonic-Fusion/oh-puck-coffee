@@ -5,6 +5,7 @@ import { useShot, type ShotWithJoins } from "@/components/shots/hooks";
 import { Button } from "@/components/common/Button";
 import { formatRating } from "@/lib/format-rating";
 import { roundToOneDecimal } from "@/lib/format-numbers";
+import { ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
 
 interface PreviousShotRowProps {
   shotId: string | null;
@@ -128,8 +129,22 @@ function TruncatedNotes({ notes }: { notes: string }) {
   );
 }
 
+/**
+ * Displays a reference shot that the user wants to recreate.
+ * 
+ * This component shows a "Previous Shot" which is actually a reference shot — any shot
+ * the user wants to base their new shot on, not just the most recent one. The reference
+ * shot can come from:
+ * - URL param `previousShotId` or `shotId`
+ * - Session storage `duplicateShot`
+ * - The last shot from the database (default)
+ * 
+ * The name "Previous Shot" is a UI label for clarity, not a constraint on which shot
+ * can be selected.
+ */
 export function PreviousShotRow({ shotId, onViewShot }: PreviousShotRowProps) {
   const { data: shot, isLoading } = useShot(shotId);
+  const [isExpanded, setIsExpanded] = useState(true); // Default to expanded when reference shot exists
 
   if (!shotId) return null;
 
@@ -153,26 +168,58 @@ export function PreviousShotRow({ shotId, onViewShot }: PreviousShotRowProps) {
     );
   }
 
-  const dose = parseFloat(shot.doseGrams);
-  const yieldG = parseFloat(shot.yieldGrams);
-  const ratio = dose > 0 ? parseFloat((yieldG / dose).toFixed(2)) : null;
+  const dose = shot.doseGrams ? parseFloat(shot.doseGrams) : null;
+  const yieldG = shot.yieldGrams ? parseFloat(shot.yieldGrams) : null;
+  const ratio = dose && dose > 0 && yieldG ? parseFloat((yieldG / dose).toFixed(2)) : null;
 
+  // Collapsed state: show only label + chevron
+  if (!isExpanded) {
+    return (
+      <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300">
+            Previous Shot
+          </h3>
+          <button
+            type="button"
+            onClick={() => setIsExpanded(true)}
+            className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-700 dark:hover:text-stone-300"
+            aria-label="Expand previous shot"
+          >
+            <ChevronDownIcon className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Expanded state: show all content + View button + collapse chevron
   return (
     <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300">
           Previous Shot
         </h3>
-        {onViewShot && (
-          <Button
+        <div className="flex items-center gap-2">
+          {onViewShot && (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={handleViewShot}
+            >
+              Details
+            </Button>
+          )}
+          <button
             type="button"
-            size="sm"
-            variant="secondary"
-            onClick={handleViewShot}
+            onClick={() => setIsExpanded(false)}
+            className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-700 dark:hover:text-stone-300"
+            aria-label="Collapse previous shot"
           >
-            View Shot
-          </Button>
-        )}
+            <ChevronUpIcon className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {[shot.beanName, shot.grinderName, shot.machineName].filter(Boolean).length > 0 && (

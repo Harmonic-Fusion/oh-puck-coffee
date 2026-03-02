@@ -3,8 +3,6 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/common/Modal";
-import { Button } from "@/components/common/Button";
-import { QRCode } from "@/components/common/QRCode";
 import { useTools } from "@/components/equipment/hooks";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { AppRoutes, resolvePath } from "@/app/routes";
@@ -15,8 +13,7 @@ import {
   useShotMetrics,
 } from "@/components/shots/hooks";
 import { type ShotShareData } from "@/lib/share-text";
-import { LongPressShareButton } from "@/components/shots/LongPressShareButton";
-import { ActionButtonBar, type ActionConfig } from "./ActionButtonBar";
+import { ActionButtonBar } from "./ActionButtonBar";
 import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
 import {
   FLAVOR_WHEEL_DATA,
@@ -38,10 +35,10 @@ import {
   PencilSquareIcon,
   PlusCircleIcon,
   EyeSlashIcon,
-  StarIcon,
+  BookmarkIcon,
 } from "@heroicons/react/24/outline";
 import {
-  StarIcon as StarIconSolid,
+  BookmarkIcon as BookmarkIconSolid,
   EyeIcon as EyeIconSolid,
 } from "@heroicons/react/24/solid";
 
@@ -459,7 +456,7 @@ export function ShotDetail({
           ? [
               {
                 key: "reference",
-                icon: shot.isReferenceShot ? StarIconSolid : StarIcon,
+                icon: shot.isReferenceShot ? BookmarkIconSolid : BookmarkIcon,
                 onClick: handleToggleReference,
                 title: shot.isReferenceShot
                   ? "Remove reference shot"
@@ -478,8 +475,8 @@ export function ShotDetail({
                 onClick: handleToggleHidden,
                 title: shot.isHidden ? "Show shot" : "Hide shot",
                 variant: shot.isHidden
-                  ? ("default" as const)
-                  : ("active" as const),
+                  ? ("active" as const)
+                  : ("default" as const),
               },
             ]
           : []),
@@ -625,8 +622,9 @@ export function ShotDetail({
               </p>
             </div>
             {shot.isReferenceShot && (
-              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-                ⭐ Reference
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                <BookmarkIconSolid className="h-3.5 w-3.5" />
+                Reference
               </span>
             )}
           </div>
@@ -1076,23 +1074,6 @@ export function ShotDetail({
               </div>
             )}
           </div>
-
-          {/* QR Code for Duplicate */}
-          {!readOnly && duplicateUrl && (
-            <div className="flex flex-col items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                Duplicate Shot
-              </h3>
-              <p className="text-center text-xs text-stone-500 dark:text-stone-400">
-                Scan to duplicate this shot recipe
-              </p>
-              <QRCode
-                value={duplicateUrl}
-                size={200}
-                title="Duplicate Shot Recipe"
-              />
-            </div>
-          )}
         </div>
       )}
     </Modal>

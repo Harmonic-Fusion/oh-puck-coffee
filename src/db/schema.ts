@@ -136,15 +136,15 @@ export const shots = pgTable("shots", {
     .references(() => grinders.id),
   machineId: uuid("machine_id").references(() => machines.id),
   // Recipe
-  doseGrams: numeric("dose_grams", { precision: 5, scale: 1 }).notNull(),
-  yieldGrams: numeric("yield_grams", { precision: 5, scale: 1 }).notNull(),
+  doseGrams: numeric("dose_grams", { precision: 5, scale: 1 }),
+  yieldGrams: numeric("yield_grams", { precision: 5, scale: 1 }),
   grindLevel: numeric("grind_level", { precision: 6, scale: 2 }),
   brewTempC: numeric("brew_temp_c", { precision: 4, scale: 1 }),
   preInfusionDuration: numeric("pre_infusion_duration", { precision: 5, scale: 1 }),
   brewPressure: numeric("brew_pressure", { precision: 4, scale: 1 }).default("9"),
   // Results
   brewTimeSecs: numeric("brew_time_secs", { precision: 5, scale: 1 }),
-  yieldActualGrams: numeric("yield_actual_grams", { precision: 5, scale: 1 }).notNull(),
+  yieldActualGrams: numeric("yield_actual_grams", { precision: 5, scale: 1 }),
   estimateMaxPressure: numeric("estimate_max_pressure", { precision: 4, scale: 1 }),
   flowControl: numeric("flow_control", { precision: 4, scale: 1 }),
   // Computed (stored on write)

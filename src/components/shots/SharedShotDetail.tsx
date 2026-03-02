@@ -13,8 +13,8 @@ interface SharedShotData {
   beanRoastDate: Date | string | null;
   grinderName: string | null;
   machineName: string | null;
-  doseGrams: string;
-  yieldGrams: string;
+  doseGrams: string | null;
+  yieldGrams: string | null;
   yieldActualGrams: string | null;
   grindLevel: string | null;
   brewTimeSecs: string | null;
@@ -57,8 +57,8 @@ export function SharedShotDetail({ shot }: SharedShotDetailProps) {
     grinderName: shot.grinderName,
     machineId: null, // Not needed for read-only
     machineName: shot.machineName,
-    doseGrams: shot.doseGrams,
-    yieldGrams: shot.yieldGrams,
+    doseGrams: shot.doseGrams ?? "0",
+    yieldGrams: shot.yieldGrams ?? "0",
     yieldActualGrams: shot.yieldActualGrams,
     grindLevel: shot.grindLevel || "",
     brewTimeSecs: shot.brewTimeSecs,

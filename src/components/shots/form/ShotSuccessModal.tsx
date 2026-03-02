@@ -2,11 +2,10 @@
 
 import { useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/common/Button";
 import { AppRoutes, resolvePath } from "@/app/routes";
 import { useCreateShareLink } from "@/components/shots/hooks";
 import { type ShotShareData } from "@/lib/share-text";
-import { LongPressShareButton } from "@/components/shots/LongPressShareButton";
+import { ActionButtonBar, type ActionConfig } from "@/components/shots/ActionButtonBar";
 import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
 import {
   FLAVOR_WHEEL_DATA,
@@ -17,6 +16,7 @@ import type { FlavorNode } from "@/shared/flavor-wheel/types";
 import { formatRating } from "@/lib/format-rating";
 import { formatTemp, roundToOneDecimal } from "@/lib/format-numbers";
 import { useTempUnit } from "@/lib/use-temp-unit";
+import { ChartBarIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
 
 export interface ShotSummary extends ShotShareData {
   shotId: string;
@@ -94,6 +94,34 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
     ? roundToOneDecimal(actualYield / summary.doseGrams)
     : null;
   const flavors = summary.flavors || [];
+  const actionConfigs: ActionConfig[] = [
+    {
+      key: "stats",
+      icon: ChartBarIcon,
+      onClick: () => router.push(AppRoutes.dashboard.path),
+      title: "Stats",
+      variant: "default",
+    },
+    {
+      key: "logAnother",
+      icon: PlusCircleIcon,
+      onClick: () => {
+        onClose();
+        router.push(`${AppRoutes.log.path}?previousShotId=${summary.shotId}#recipe`);
+      },
+      title: "Log Another",
+      variant: "default",
+    },
+    {
+      key: "share",
+      shotData: summary,
+      tempUnit,
+      getShareUrl,
+      onShare: handleShare,
+      title: "Share",
+      buttonVariant: "primary",
+    },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
@@ -247,50 +275,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
         </div>
 
         {/* Action buttons */}
-        <div className="flex gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            className="flex-1"
-            onClick={() => router.push(AppRoutes.dashboard.path)}
-          >
-            Dashboard
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            className="flex-1"
-            onClick={() => {
-              onClose();
-              router.push(`${AppRoutes.log.path}?previousShotId=${summary.shotId}#recipe`);
-            }}
-          >
-            Log Another
-          </Button>
-          {summary ? (
-            <LongPressShareButton
-              shotData={summary}
-              tempUnit={tempUnit}
-              getShareUrl={getShareUrl}
-              onShare={handleShare}
-              className="flex-1"
-              variant="primary"
-              size="md"
-            />
-          ) : (
-            <Button
-              type="button"
-              variant="primary"
-              size="md"
-              className="flex-1"
-              disabled
-            >
-              Share
-            </Button>
-          )}
-        </div>
+        <ActionButtonBar actions={actionConfigs} className="gap-3" showLabels />
       </div>
     </div>
   );

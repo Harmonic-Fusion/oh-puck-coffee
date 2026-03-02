@@ -7,6 +7,7 @@ import { QRCode } from "@/components/common/QRCode";
 import { Modal } from "@/components/common/Modal";
 import { EditOrderModal } from "@/components/common/EditOrderModal";
 import { ToolSelector } from "@/components/equipment/ToolSelector";
+import { BeanSection } from "./BeanSection";
 import { Card } from "@/components/common/Card";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
@@ -16,6 +17,7 @@ import type { ShotWithJoins } from "@/components/shots/hooks";
 import { useGrinders } from "@/components/equipment/hooks";
 import { isSpecialGrinder } from "@/shared/equipment/constants";
 import { TEMP_UNIT_KEY, fToC, cToF } from "@/lib/format-numbers";
+import { getRequiredStepIds, type ReorderableStepConfig } from "./step-config";
 const RECIPE_ORDER_KEY = "coffee-recipe-order";
 const RECIPE_VISIBILITY_KEY = "coffee-recipe-visibility";
 const RATIO_OPTIONS = [1, 2, 3, 4] as const;
@@ -23,35 +25,34 @@ const DOSE_OPTIONS = [16, 18, 20, 22] as const;
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
 const DEFAULT_BREW_TEMP_F = 200;
 
-type RecipeStepId = "previousShot" | "dose" | "yield" | "grindLevel" | "brewTemp" | "brewPressure" | "preInfusion" | "toolsUsed";
+type RecipeStepId = "beans" | "previousShot" | "dose" | "yield" | "grindLevel" | "brewTemp" | "brewPressure" | "preInfusion" | "toolsUsed";
 
-interface RecipeStepConfig {
-  id: RecipeStepId;
-  label: string;
-  visible: boolean;
-}
+type RecipeStepConfig = ReorderableStepConfig<RecipeStepId>;
 
 /**
  * Default recipe section order:
  * 1. Previous Shot (visible by default when available)
- * 2. Grind Level (hidden by default)
- * 3. Dose (visible by default)
- * 4. Target Yield (visible by default)
- * 5. Brew Temp (hidden by default)
- * 6. Brew Pressure (hidden by default)
- * 7. Pre-infusion (hidden by default)
- * 8. Tools Used (hidden by default)
+ * 2. Beans (visible by default, required)
+ * 3. Grind Level (hidden by default)
+ * 4. Dose (visible by default)
+ * 5. Target Yield (visible by default)
+ * 6. Brew Temp (hidden by default)
+ * 7. Brew Pressure (hidden by default)
+ * 8. Pre-infusion (hidden by default)
+ * 9. Tools Used (hidden by default)
  */
 const DEFAULT_STEPS: RecipeStepConfig[] = [
   { id: "previousShot", label: "Previous Shot", visible: true },
+  { id: "beans", label: "Beans", visible: true, required: true },
   { id: "grindLevel", label: "Grind Level", visible: false },
-  { id: "dose", label: "Dose", visible: true },
-  { id: "yield", label: "Target Yield", visible: true },
+  { id: "dose", label: "Dose", visible: false },
+  { id: "yield", label: "Target Yield", visible: false },
   { id: "brewTemp", label: "Brew Temp", visible: false },
   { id: "brewPressure", label: "Brew Pressure", visible: false },
   { id: "preInfusion", label: "Pre-infusion", visible: false },
   { id: "toolsUsed", label: "Tools Used", visible: false },
 ];
+const REQUIRED_RECIPE_FIELDS: RecipeStepId[] = getRequiredStepIds(DEFAULT_STEPS);
 
 function getSavedTempUnit(): "C" | "F" {
   if (typeof window === "undefined") return "F";
@@ -316,6 +317,14 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
     if (stepId === "grindLevel" && isPreGround) return null;
 
     switch (stepId) {
+      case "beans":
+        return (
+          <BeanSection
+            key="beans"
+            error={errors.beanId?.message}
+            id="beanId"
+          />
+        );
       case "previousShot":
         return (
           <PreviousShotRow key="previousShot" shotId={previousShotId!} onViewShot={onViewShot} />
@@ -687,7 +696,7 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
           {} as Record<RecipeStepId, boolean>
         )}
         onChange={handleOrderChange}
-        requiredFields={["dose", "yield"]}
+        requiredFields={REQUIRED_RECIPE_FIELDS}
         onReset={() => {
           const defaultOrder = DEFAULT_STEPS.map((s) => s.id);
           const defaultVisibility = DEFAULT_STEPS.reduce(

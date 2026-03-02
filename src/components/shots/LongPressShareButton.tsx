@@ -202,7 +202,7 @@ export function LongPressShareButton({
         type="button"
         variant={variant}
         size={size}
-        className="h-full w-full p-0 flex items-center justify-center rounded-lg transition-colors hover:bg-stone-100 dark:hover:bg-stone-800"
+        className="h-full w-full p-0 flex items-center justify-center rounded-lg"
         disabled={isSharing}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}

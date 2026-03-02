@@ -11,7 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getSession();
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -76,9 +76,12 @@ export async function GET(
   if (accessError) return accessError;
 
   // Compute derived fields on read
-  const dose = parseFloat(result.doseGrams);
-  const yieldG = parseFloat(result.yieldGrams);
-  const brewRatio = dose > 0 ? parseFloat((yieldG / dose).toFixed(2)) : null;
+  const dose = result.doseGrams ? parseFloat(result.doseGrams) : null;
+  const yieldG = result.yieldGrams ? parseFloat(result.yieldGrams) : null;
+  const brewRatio =
+    dose !== null && yieldG !== null && dose > 0
+      ? parseFloat((yieldG / dose).toFixed(2))
+      : null;
 
   let daysPostRoast: number | null = null;
   if (result.beanRoastDate) {
@@ -140,7 +143,7 @@ export async function PATCH(
   // Compute flow rate (stored on write) - use actual yield if available, otherwise target yield
   const yieldForFlow = data.yieldActualGrams ?? data.yieldGrams;
   const flowRate =
-    data.brewTimeSecs && data.brewTimeSecs > 0 && yieldForFlow
+    data.brewTimeSecs && data.brewTimeSecs > 0 && yieldForFlow && yieldForFlow > 0
       ? parseFloat((yieldForFlow / data.brewTimeSecs).toFixed(2))
       : null;
 
@@ -150,12 +153,12 @@ export async function PATCH(
       beanId: data.beanId,
       grinderId: data.grinderId || null,
       machineId: data.machineId || null,
-      doseGrams: String(data.doseGrams),
-      yieldGrams: String(data.yieldGrams),
+      doseGrams: data.doseGrams != null ? String(data.doseGrams) : null,
+      yieldGrams: data.yieldGrams != null ? String(data.yieldGrams) : null,
       grindLevel: data.grindLevel ? String(data.grindLevel) : null,
       brewTempC: data.brewTempC ? String(data.brewTempC) : null,
       brewTimeSecs: data.brewTimeSecs ? String(data.brewTimeSecs) : null,
-      yieldActualGrams: String(data.yieldActualGrams),
+      yieldActualGrams: data.yieldActualGrams != null ? String(data.yieldActualGrams) : null,
       estimateMaxPressure: data.estimateMaxPressure ? String(data.estimateMaxPressure) : null,
       flowControl: data.flowControl ? String(data.flowControl) : null,
       preInfusionDuration: data.preInfusionDuration ? String(data.preInfusionDuration) : null,

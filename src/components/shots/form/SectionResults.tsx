@@ -16,6 +16,7 @@ import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
 import { RATING_LABELS } from "@/lib/format-rating";
+import { getRequiredStepIds, type ReorderableStepConfig } from "./step-config";
 
 // ── Results step types and configuration ──
 
@@ -38,34 +39,27 @@ type TastingStepId =
   | "sour"
   | "notes";
 
-interface ResultsStepConfig {
-  id: ResultsStepId;
-  label: string;
-  visible: boolean;
-}
-
-interface TastingStepConfig {
-  id: TastingStepId;
-  label: string;
-  visible: boolean;
-}
+type ResultsStepConfig = ReorderableStepConfig<ResultsStepId>;
+type TastingStepConfig = ReorderableStepConfig<TastingStepId>;
 
 const DEFAULT_RESULTS_STEPS: ResultsStepConfig[] = [
-  { id: "yieldActual", label: "Actual Yield", visible: true },
-  { id: "brewTime", label: "Brew Time", visible: false },
+  { id: "brewTime", label: "Brew Time", visible: true },
+  { id: "yieldActual", label: "Actual Yield", visible: false },
   { id: "estimateMaxPressure", label: "Est. Max Pressure", visible: false },
   { id: "shotQuality", label: "Shot Quality", visible: false },
 ];
 
 const DEFAULT_TASTING_STEPS: TastingStepConfig[] = [
-  { id: "rating", label: "Rating", visible: true },
   { id: "bitter", label: "Bitter", visible: false },
   { id: "sour", label: "Sour", visible: false },
   { id: "flavors", label: "Flavors", visible: false },
   { id: "body", label: "Body / Texture", visible: false },
   { id: "adjectives", label: "Adjectives & Intensifiers", visible: false },
+  { id: "rating", label: "Rating", visible: true, required: true },
   { id: "notes", label: "Notes", visible: true },
 ];
+const REQUIRED_RESULTS_FIELDS: ResultsStepId[] = getRequiredStepIds(DEFAULT_RESULTS_STEPS);
+const REQUIRED_TASTING_FIELDS: TastingStepId[] = getRequiredStepIds(DEFAULT_TASTING_STEPS);
 
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
 
@@ -604,19 +598,23 @@ export function SectionResults() {
             key="rating"
             name="rating"
             control={control}
-            render={({ field }) => (
-              <Slider
-                label="Rating"
-                value={field.value || 1}
-                onChange={field.onChange}
-                min={1}
-                max={5}
-                step={0.5}
-                error={errors.rating?.message}
-                id="rating"
-                labels={RATING_LABELS}
-              />
-            )}
+            render={({ field }) => {
+              const hasRating = field.value != null;
+              return (
+                <Slider
+                  label="Rating"
+                  value={field.value}
+                  onChange={field.onChange}
+                  min={1}
+                  max={5}
+                  step={0.5}
+                  showValue={hasRating}
+                  error={errors.rating?.message}
+                  id="rating"
+                  labels={RATING_LABELS}
+                />
+              );
+            }}
           />
         );
 
@@ -838,7 +836,7 @@ export function SectionResults() {
           {} as Record<ResultsStepId, boolean>,
         )}
         onChange={handleResultsOrderChange}
-        requiredFields={["yieldActual"]}
+        requiredFields={REQUIRED_RESULTS_FIELDS}
         onReset={() => {
           const defaultOrder = DEFAULT_RESULTS_STEPS.map((s) => s.id);
           const defaultVisibility = DEFAULT_RESULTS_STEPS.reduce(
@@ -863,7 +861,7 @@ export function SectionResults() {
           {} as Record<TastingStepId, boolean>,
         )}
         onChange={handleTastingOrderChange}
-        requiredFields={["rating"]}
+        requiredFields={REQUIRED_TASTING_FIELDS}
         onReset={() => {
           const defaultOrder = DEFAULT_TASTING_STEPS.map((s) => s.id);
           const defaultVisibility = DEFAULT_TASTING_STEPS.reduce(

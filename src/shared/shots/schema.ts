@@ -1,18 +1,30 @@
 import * as z from "zod";
 
+function parseRequiredRating(value: unknown): unknown {
+  if (value == null) return undefined;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    const numeric = Number(trimmed);
+    return Number.isNaN(numeric) ? undefined : numeric;
+  }
+  if (typeof value === "number" && Number.isNaN(value)) return undefined;
+  return value;
+}
+
 export const createShotSchema = z.object({
-  beanId: z.string().uuid(),
+  beanId: z.string().min(1, { message: "Required" }).uuid(),
   grinderId: z.string().uuid().optional(),
   machineId: z.string().uuid().optional(),
-  doseGrams: z.coerce.number().positive().max(50),
-  yieldGrams: z.coerce.number().positive().max(100),
+  doseGrams: z.coerce.number().positive().max(50).optional(),
+  yieldGrams: z.coerce.number().positive().max(100).optional(),
   grindLevel: z.coerce.number().nonnegative().optional(),
   brewTempC: z.coerce.number().positive().max(200).optional(),
   preInfusionDuration: z.coerce.number().nonnegative().max(60).optional(),
   brewPressure: z.coerce.number().positive().max(20).optional(),
   // Results
   brewTimeSecs: z.coerce.number().positive().max(120).optional(),
-  yieldActualGrams: z.coerce.number().positive().max(200),
+  yieldActualGrams: z.coerce.number().positive().max(200).optional(),
   estimateMaxPressure: z.coerce.number().positive().max(20).optional(),
   flowControl: z.coerce.number().positive().max(20).optional(),
   shotQuality: z.coerce.number().min(1).max(5).refine((val) => {
@@ -21,12 +33,18 @@ export const createShotSchema = z.object({
     const normalized = Math.round(val / step) * step;
     return Math.abs(val - normalized) < 0.01;
   }, { message: "Quality must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }).optional(),
-  rating: z.coerce.number().min(1).max(5).refine((val) => {
-    // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
-    const step = 0.5;
-    const normalized = Math.round(val / step) * step;
-    return Math.abs(val - normalized) < 0.01;
-  }, { message: "Rating must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }),
+  rating: z.preprocess(
+    parseRequiredRating,
+    z.number({ required_error: "Rating is required", invalid_type_error: "Rating is required" })
+      .min(1)
+      .max(5)
+      .refine((val) => {
+        // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
+        const step = 0.5;
+        const normalized = Math.round(val / step) * step;
+        return Math.abs(val - normalized) < 0.01;
+      }, { message: "Rating must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }),
+  ),
   bitter: z.coerce.number().min(1).max(5).refine((val) => {
     // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
     const step = 0.5;

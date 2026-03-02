@@ -55,6 +55,7 @@ export async function GET() {
   if (allShots.length > 0) {
     const ratios = allShots
       .map((s) => {
+        if (!s.doseGrams || !s.yieldGrams) return null;
         const dose = parseFloat(s.doseGrams);
         const yieldG = parseFloat(s.yieldGrams);
         return dose > 0 ? yieldG / dose : null;

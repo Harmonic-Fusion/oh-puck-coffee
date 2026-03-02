@@ -10,7 +10,7 @@ export async function GET(
   { params }: { params: Promise<{ beanId: string }> }
 ) {
   const session = await getSession();
-  if (!session?.user) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -82,6 +82,7 @@ export async function GET(
   // Average brew ratio
   const ratios = beanShots
     .map((s) => {
+      if (!s.doseGrams || !s.yieldGrams) return null;
       const dose = parseFloat(s.doseGrams);
       const yieldG = parseFloat(s.yieldGrams);
       return dose > 0 ? yieldG / dose : null;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createShotSchema, type CreateShot } from "@/shared/shots/schema";
 import { useUpdateShot, useDeleteShot } from "@/components/shots/hooks";
@@ -26,13 +26,13 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
   const { showToast } = useToast();
 
   const methods = useForm<CreateShot>({
-    resolver: zodResolver(createShotSchema),
+    resolver: zodResolver(createShotSchema) as Resolver<CreateShot>,
     defaultValues: {
       beanId: shot.beanId,
       grinderId: shot.grinderId,
       machineId: shot.machineId || undefined,
-      doseGrams: parseFloat(shot.doseGrams),
-      yieldGrams: parseFloat(shot.yieldGrams),
+      doseGrams: shot.doseGrams ? parseFloat(shot.doseGrams) : undefined,
+      yieldGrams: shot.yieldGrams ? parseFloat(shot.yieldGrams) : undefined,
       grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
       brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
       preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
@@ -41,7 +41,7 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
       brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : undefined,
       estimateMaxPressure: shot.estimateMaxPressure ? parseFloat(shot.estimateMaxPressure) : undefined,
       shotQuality: shot.shotQuality,
-      rating: shot.rating ?? 1,
+      rating: shot.rating ?? undefined,
       bitter: shot.bitter ?? undefined,
       sour: shot.sour ?? undefined,
       flavors: shot.flavors || undefined,

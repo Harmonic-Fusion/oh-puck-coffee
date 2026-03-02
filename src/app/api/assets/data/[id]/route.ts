@@ -17,14 +17,15 @@ const CACHE_HEADERS = {
   "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
 } as const;
 
-/** In-memory cache so each file is read from disk at most once per server lifecycle. */
-const dataCache = new Map<string, unknown>();
+interface CachedDataAsset {
+  data: unknown;
+  mtimeMs: number;
+}
+
+/** In-memory cache that automatically invalidates when a file changes on disk. */
+const dataCache = new Map<string, CachedDataAsset>();
 
 function loadDataAsset(id: string): unknown | null {
-  if (dataCache.has(id)) {
-    return dataCache.get(id)!;
-  }
-
   const filePath = path.join(DATA_DIR, `${id}.json`);
 
   // Prevent path traversal (e.g. ../../etc/passwd)
@@ -33,9 +34,16 @@ function loadDataAsset(id: string): unknown | null {
   }
 
   try {
+    const stats = fs.statSync(filePath);
+    const cached = dataCache.get(id);
+
+    if (cached && cached.mtimeMs === stats.mtimeMs) {
+      return cached.data;
+    }
+
     const raw = fs.readFileSync(filePath, "utf-8");
     const data: unknown = JSON.parse(raw);
-    dataCache.set(id, data);
+    dataCache.set(id, { data, mtimeMs: stats.mtimeMs });
     return data;
   } catch {
     return null;

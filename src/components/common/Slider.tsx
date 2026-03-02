@@ -3,7 +3,7 @@
 import { useRef, useCallback, useMemo, useState } from "react";
 
 interface SliderProps {
-  value: number;
+  value?: number;
   onChange: (value: number) => void;
   min?: number;
   max?: number;
@@ -33,7 +33,9 @@ export function Slider({
 }: SliderProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [hasInteracted, setHasInteracted] = useState(false);
-  const percentage = ((value - min) / (max - min)) * 100;
+  const hasValue = value != null;
+  const currentValue = hasValue ? value : min;
+  const percentage = ((currentValue - min) / (max - min)) * 100;
   const trackColor = thumbColor || "rgb(245 158 11)"; // amber-500 default
 
   // Build all step positions
@@ -72,11 +74,11 @@ export function Slider({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (disabled) return;
-      let newValue = value;
+      let newValue = currentValue;
       if (e.key === "ArrowRight" || e.key === "ArrowUp") {
-        newValue = Math.min(max, value + step);
+        newValue = Math.min(max, currentValue + step);
       } else if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
-        newValue = Math.max(min, value - step);
+        newValue = Math.max(min, currentValue - step);
       } else if (e.key === "Home") {
         newValue = min;
       } else if (e.key === "End") {
@@ -88,7 +90,7 @@ export function Slider({
       setHasInteracted(true);
       onChange(newValue);
     },
-    [disabled, value, min, max, step, onChange]
+    [disabled, currentValue, min, max, step, onChange]
   );
 
   return (
@@ -98,9 +100,9 @@ export function Slider({
           <span className="text-base font-semibold text-stone-800 dark:text-stone-200" tabIndex={-1}>
             {label}
           </span>
-          {showValue && value > 0 && (
+          {showValue && hasValue && (
             <span className="rounded-full bg-amber-100 px-3 py-1 text-md font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-              {value} / {max}
+              {currentValue} / {max}
             </span>
           )}
         </div>
@@ -115,7 +117,7 @@ export function Slider({
         tabIndex={disabled ? -1 : 0}
         aria-valuemin={min}
         aria-valuemax={max}
-        aria-valuenow={value}
+        aria-valuenow={hasValue ? currentValue : undefined}
         aria-label={label}
         aria-disabled={disabled}
         className={`relative h-14 cursor-pointer select-none touch-none ${
@@ -182,12 +184,12 @@ export function Slider({
                 className={`rounded-full ${
                   isWhole ? "h-2 w-2" : "h-1 w-1"
                 } ${
-                  hasInteracted && stepValue <= value + 0.01
+                  hasInteracted && stepValue <= currentValue + 0.01
                     ? ""
                     : "bg-stone-300 dark:bg-stone-600"
                 }`}
                 style={
-                  hasInteracted && stepValue <= value + 0.01
+                  hasInteracted && stepValue <= currentValue + 0.01
                     ? { backgroundColor: trackColor }
                     : undefined
                 }

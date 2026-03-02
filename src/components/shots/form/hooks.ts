@@ -105,12 +105,19 @@ function applyUrlParamsToForm(
 
 /**
  * Encapsulates the shot form pre-population priority chain.
+ * 
+ * This hook manages the "reference shot to recreate" concept — any shot the user wants
+ * to base their new shot on, not just the most recent one. The reference shot can come
+ * from multiple sources (see priority order below).
+ * 
+ * The name "Previous Shot" used in the UI is a label for clarity, not a constraint
+ * on which shot can be selected.
  *
  * Priority order:
  *   0. `previousShotId=` (empty) in URL → start fresh, no pre-population
  *   1. `previousShotId=<id>` or `shotId=<id>` in URL → fetch & apply that shot
  *   2. Individual recipe params in URL (QR code / direct link)
- *   3. Duplicate shot data in sessionStorage
+ *   3. Duplicate shot data in sessionStorage (`duplicateShot` key)
  *   4. Last shot from the database (most recent)
  *
  * Results and Tasting Notes fields are intentionally never pre-populated.

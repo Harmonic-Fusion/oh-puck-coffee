@@ -21,6 +21,8 @@ export type ShareButtonConfig = {
   tempUnit: TempUnit;
   getShareUrl: () => Promise<string>;
   onShare: (text: string, shareUrl: string) => Promise<void>;
+  title?: string;
+  buttonVariant?: "primary" | "secondary" | "ghost" | "danger";
 };
 
 export type ActionConfig = ActionButtonConfig | ShareButtonConfig;
@@ -28,6 +30,7 @@ export type ActionConfig = ActionButtonConfig | ShareButtonConfig;
 export interface ActionButtonBarProps {
   actions: ActionConfig[];
   className?: string;
+  showLabels?: boolean;
 }
 
 function isShareConfig(config: ActionConfig): config is ShareButtonConfig {
@@ -44,7 +47,7 @@ function getVariantClasses(variant?: "default" | "active"): string {
   }
 }
 
-export function ActionButtonBar({ actions, className }: ActionButtonBarProps) {
+export function ActionButtonBar({ actions, className, showLabels = false }: ActionButtonBarProps) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {actions.map((action) => {
@@ -57,10 +60,31 @@ export function ActionButtonBar({ actions, className }: ActionButtonBarProps) {
                 getShareUrl={action.getShareUrl}
                 onShare={action.onShare}
                 className="h-10 w-full"
-                variant="ghost"
+                variant={action.buttonVariant ?? "ghost"}
                 size="sm"
               >
-                <ShareIcon className="h-5 w-5 text-stone-400 dark:text-stone-500" />
+                <div className="flex items-center gap-2">
+                  <ShareIcon
+                    className={cn(
+                      "h-5 w-5",
+                      action.buttonVariant === "primary"
+                        ? "text-white"
+                        : "text-stone-400 dark:text-stone-500",
+                    )}
+                  />
+                  {showLabels && (
+                    <span
+                      className={cn(
+                        "text-sm font-medium",
+                        action.buttonVariant === "primary"
+                          ? "text-white"
+                          : "text-stone-500 dark:text-stone-400",
+                      )}
+                    >
+                      {action.title ?? "Share"}
+                    </span>
+                  )}
+                </div>
               </LongPressShareButton>
             </div>
           );
@@ -70,6 +94,7 @@ export function ActionButtonBar({ actions, className }: ActionButtonBarProps) {
         return (
           <button
             key={action.key}
+            type="button"
             onClick={action.onClick}
             className={cn(
               "flex h-10 flex-1 items-center justify-center rounded-lg transition-colors",
@@ -78,7 +103,10 @@ export function ActionButtonBar({ actions, className }: ActionButtonBarProps) {
             )}
             title={action.title}
           >
-            <Icon className="h-5 w-5" />
+            <div className="flex items-center gap-2">
+              <Icon className="h-5 w-5" />
+              {showLabels && <span className="text-sm font-medium">{action.title}</span>}
+            </div>
           </button>
         );
       })}

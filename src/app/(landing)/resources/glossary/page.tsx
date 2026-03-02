@@ -65,9 +65,9 @@ export default function GlossaryPage() {
     : new Map<string, GlossaryTerm[]>();
 
   return (
-    <div className="relative">
-      {/* Fixed vertical navigation bar on the left */}
-      <div className="fixed left-0 top-16 z-10 h-[calc(100vh-4rem)] w-14 border-r border-stone-200 bg-white/95 backdrop-blur-sm dark:border-stone-700 dark:bg-stone-950/95">
+    <div className="relative pr-14">
+      {/* Fixed vertical navigation bar on the right */}
+      <div className="fixed right-0 top-16 z-10 h-[calc(100vh-4rem)] w-14 border-l border-stone-200 bg-white/95 backdrop-blur-sm dark:border-stone-700 dark:bg-stone-950/95">
         <div className="flex h-full flex-col items-center justify-center overflow-x-hidden px-2">
           <div className="flex h-full flex-col items-center justify-between overflow-y-auto overflow-x-hidden py-4 scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             {allLetters.map((letter) => {
@@ -90,17 +90,17 @@ export default function GlossaryPage() {
         </div>
       </div>
 
-      <div className="absolute top-4 right-4 sm:right-6 lg:right-8">
-        <Link
-          href={AppRoutes.resources.path}
-          className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
-        >
-          ← Resources
-        </Link>
-      </div>
-      <div className="mx-auto max-w-7xl pl-16 pr-8 py-12 sm:pr-12 lg:pr-16">
+      <div className="mx-auto max-w-7xl px-8 py-12 sm:px-10 lg:px-12">
         {/* Main content */}
         <main className="min-w-0 flex-1">
+          <div className="mb-6">
+            <Link
+              href={AppRoutes.resources.path}
+              className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+            >
+              ← Resources
+            </Link>
+          </div>
           <h1 className="text-4xl font-bold tracking-tight text-stone-900 dark:text-stone-100 sm:text-5xl">
             Espresso Glossary
           </h1>
@@ -141,30 +141,33 @@ export default function GlossaryPage() {
                         <div
                           key={item.term}
                           id={item.slug}
-                          className="scroll-mt-36 rounded-lg border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900"
+                          className="scroll-mt-36 overflow-hidden rounded-lg border border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900"
                         >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1">
-                              <h3 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
-                                <a
-                                  href={`#${item.slug}`}
-                                  className="transition-colors hover:text-amber-600 dark:hover:text-amber-400"
-                                >
-                                  {item.term}
-                                </a>
-                              </h3>
-                              <p className="mt-2 text-stone-600 dark:text-stone-400">
-                                {item.definition}
+                          <div className="flex items-start justify-between gap-4 border-b border-stone-200 px-6 py-4 dark:border-stone-700">
+                            <h3 className="text-xl font-semibold text-stone-900 dark:text-stone-100">
+                              <a
+                                href={`#${item.slug}`}
+                                className="transition-colors hover:text-amber-600 dark:hover:text-amber-400"
+                              >
+                                {item.term}
+                              </a>
+                            </h3>
+                            <div className="shrink-0 text-right">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+                                How common
+                              </p>
+                              <p className="font-mono text-sm text-stone-600 dark:text-stone-300">
+                                {item.common}
                               </p>
                             </div>
-                            <div className="shrink-0 text-right">
-                              <div className="font-mono text-sm text-stone-500 dark:text-stone-400">
-                                {item.common}
-                              </div>
-                              <div className="mt-1 text-xs text-stone-400 dark:text-stone-500">
-                                {getCommonRatingDescription(item.common)}
-                              </div>
-                            </div>
+                          </div>
+                          <div className="px-6 py-4">
+                            <p className="text-stone-600 dark:text-stone-400">
+                              {item.definition}
+                            </p>
+                            <p className="mt-2 text-xs text-stone-400 dark:text-stone-500">
+                              {getCommonRatingDescription(item.common)}
+                            </p>
                           </div>
                         </div>
                       ))}

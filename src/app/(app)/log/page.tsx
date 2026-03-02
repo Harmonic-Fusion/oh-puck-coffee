@@ -3,25 +3,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { ShotForm } from "@/components/shots/form/ShotForm";
 
-const ENCOURAGING_PHRASES = [
-  "Time to dial in something delicious",
-  "Every shot is a step toward perfection",
-  "Your next great espresso starts here",
-  "Track it, tweak it, taste the difference",
-  "Let's capture some coffee magic",
-  "Good data makes great espresso",
-  "Another day, another chance to nail it",
-  "Your palate is getting sharper every shot",
-  "Precision meets passion — log your pull",
-  "The grind never stops",
-  "Chase that perfect extraction",
-  "Small adjustments, big flavor changes",
-  "Espresso is an art — here's your canvas",
-  "Ready to pull something special?",
-  "May this coffee bless you, especially if your name is Kat",
-  "I'm so proud of you",
-  "You're doing great!",
-  "You're a coffee legend!",
+const _PUN_PHRASES = [
   "One espresso to rule them all, one to find them, one to bring them all and in the darkness bind them",
   "The coffee gods are smiling on you today",
   "The espresso is strong with this one",
@@ -37,8 +19,28 @@ const ENCOURAGING_PHRASES = [
   "I'll be back... for another shot",
   "This coffee is a gift from the coffee gods",
   "Darkness comes before the dawn",
-  "I love you",
-];
+]
+
+const _ENCOURAGING_PHRASES = [
+  "Time to dial in something delicious",
+  "Every shot is a step toward perfection",
+  "Your next great espresso starts here",
+  "Track it, tweak it, taste the difference",
+  "Let's capture some coffee magic",
+  "Good data makes great espresso",
+  "Another day, another chance to nail it",
+  "I'm so proud of you",
+  "You're doing great!",
+  "You're a coffee legend!",
+]
+
+const _KAT_PHRASES = [
+  "May this coffee bless you, especially if your name is Kat",
+  "All bow before Kat's mighty coffee skills",
+  "Tremble mortal, before Kat's wrath",
+]
+
+const ENCOURAGING_PHRASES = [..._ENCOURAGING_PHRASES, ..._KAT_PHRASES, ..._PUN_PHRASES];
 
 function TypewriterText({ text }: { text: string }) {
   const [displayed, setDisplayed] = useState("");

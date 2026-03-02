@@ -185,9 +185,12 @@ export async function GET(request: NextRequest) {
 
   // Compute derived fields on read
   let enriched = results.map((row) => {
-    const dose = parseFloat(row.doseGrams);
-    const yieldG = parseFloat(row.yieldGrams);
-    const brewRatio = dose > 0 ? parseFloat((yieldG / dose).toFixed(2)) : null;
+    const dose = row.doseGrams ? parseFloat(row.doseGrams) : null;
+    const yieldG = row.yieldGrams ? parseFloat(row.yieldGrams) : null;
+    const brewRatio =
+      dose !== null && yieldG !== null && dose > 0
+        ? parseFloat((yieldG / dose).toFixed(2))
+        : null;
 
     let daysPostRoast: number | null = null;
     if (row.beanRoastDate) {
@@ -291,18 +294,10 @@ export async function POST(request: NextRequest) {
 
   const data = parsed.data;
 
-  // Validate yieldActualGrams is present (required field)
-  if (data.yieldActualGrams == null || data.yieldActualGrams <= 0) {
-    return NextResponse.json(
-      { error: "Validation failed", details: { yieldActualGrams: "Actual yield is required and must be positive" } },
-      { status: 400 }
-    );
-  }
-
   // Compute flow rate (stored on write) - use actual yield if available, otherwise target yield
   const yieldForFlow = data.yieldActualGrams ?? data.yieldGrams;
   const flowRate =
-    data.brewTimeSecs && data.brewTimeSecs > 0 && yieldForFlow
+    data.brewTimeSecs && data.brewTimeSecs > 0 && yieldForFlow && yieldForFlow > 0
       ? parseFloat((yieldForFlow / data.brewTimeSecs).toFixed(2))
       : null;
 
@@ -314,12 +309,12 @@ export async function POST(request: NextRequest) {
         beanId: data.beanId,
         grinderId: data.grinderId || null,
         machineId: data.machineId || null,
-        doseGrams: String(data.doseGrams),
-        yieldGrams: String(data.yieldGrams),
+        doseGrams: data.doseGrams != null ? String(data.doseGrams) : null,
+        yieldGrams: data.yieldGrams != null ? String(data.yieldGrams) : null,
         grindLevel: data.grindLevel ? String(data.grindLevel) : null,
         brewTempC: data.brewTempC ? String(data.brewTempC) : null,
         brewTimeSecs: data.brewTimeSecs ? String(data.brewTimeSecs) : null,
-        yieldActualGrams: String(data.yieldActualGrams),
+        yieldActualGrams: data.yieldActualGrams != null ? String(data.yieldActualGrams) : null,
         estimateMaxPressure: data.estimateMaxPressure ? String(data.estimateMaxPressure) : null,
         flowControl: data.flowControl ? String(data.flowControl) : null,
         preInfusionDuration: data.preInfusionDuration ? String(data.preInfusionDuration) : null,
@@ -374,7 +369,9 @@ export async function POST(request: NextRequest) {
         const dose = data.doseGrams;
         const yieldG = data.yieldGrams;
         const brewRatio =
-          dose > 0 ? parseFloat((yieldG / dose).toFixed(2)) : null;
+          dose !== undefined && yieldG !== undefined && dose > 0
+            ? parseFloat((yieldG / dose).toFixed(2))
+            : null;
 
         let daysPostRoast: number | null = null;
         if (bean?.roastDate) {
@@ -392,8 +389,8 @@ export async function POST(request: NextRequest) {
           beanName: bean?.name ?? null,
           beanRoastLevel: bean?.roastLevel ?? null,
           beanRoastDate: bean?.roastDate ?? null,
-          doseGrams: shot.doseGrams,
-          yieldGrams: shot.yieldGrams,
+          doseGrams: shot.doseGrams ?? "",
+          yieldGrams: shot.yieldGrams ?? "",
           yieldActualGrams: shot.yieldActualGrams,
           brewRatio,
           grindLevel: shot.grindLevel ?? "",

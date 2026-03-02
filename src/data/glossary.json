@@ -240,10 +240,10 @@
     "slug": "intensity"
   },
   {
-    "term": "Lactart",
-    "definition": "Lactic acid, found in some fermented/natural processed coffees. Contributes creamy, yogurt-like acidity.",
+    "term": "Reference Shot",
+    "definition": "A previously logged espresso shot used as a target to recreate. You compare dose, yield, time, and taste against this baseline while dialing in a new shot.",
     "common": "★★☆☆☆",
-    "slug": "lactart"
+    "slug": "reference-shot"
   },
   {
     "term": "Latte",

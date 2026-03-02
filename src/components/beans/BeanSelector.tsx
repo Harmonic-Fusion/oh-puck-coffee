@@ -317,7 +317,7 @@ export function BeanSelector({ value, onChange, error, id }: BeanSelectorProps) 
 
 /* ── Shared Bean Form Modal ─────────────────────────────────────────── */
 
-interface BeanFormModalProps {
+export interface BeanFormModalProps {
   open: boolean;
   onClose: () => void;
   title: string;
@@ -346,7 +346,7 @@ interface BeanFormModalProps {
   onIsRoastDateBestGuessChange: (v: boolean) => void;
 }
 
-function BeanFormModal({
+export function BeanFormModal({
   open,
   onClose,
   title,

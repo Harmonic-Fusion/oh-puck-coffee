@@ -64,9 +64,12 @@ async function getSharedShot(uid: string) {
   if (!result) return null;
 
   // Compute derived fields
-  const dose = parseFloat(result.doseGrams);
-  const yieldG = parseFloat(result.yieldGrams);
-  const brewRatio = dose > 0 ? parseFloat((yieldG / dose).toFixed(2)) : null;
+  const dose = result.doseGrams ? parseFloat(result.doseGrams) : null;
+  const yieldG = result.yieldGrams ? parseFloat(result.yieldGrams) : null;
+  const brewRatio =
+    dose !== null && yieldG !== null && dose > 0
+      ? parseFloat((yieldG / dose).toFixed(2))
+      : null;
 
   let daysPostRoast: number | null = null;
   if (result.beanRoastDate) {

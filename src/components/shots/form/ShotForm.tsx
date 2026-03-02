@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createShotSchema, type CreateShot } from "@/shared/shots/schema";
 import { useCreateShot, useDeleteShot, useToggleReference, useToggleHidden, type ShotWithJoins } from "@/components/shots/hooks";
@@ -33,9 +33,10 @@ export function ShotForm() {
 
   // State for success modal
   const [successSummary, setSuccessSummary] = useState<ShotSummary | null>(null);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const methods = useForm<CreateShot>({
-    resolver: zodResolver(createShotSchema),
+    resolver: zodResolver(createShotSchema) as Resolver<CreateShot>,
     defaultValues: {
       beanId: "",
       grinderId: undefined,
@@ -50,7 +51,7 @@ export function ShotForm() {
       preInfusionDuration: undefined,
       brewPressure: 9,
       shotQuality: undefined,
-      rating: 1,
+      rating: undefined,
       flavors: undefined,
       bodyTexture: undefined,
       adjectives: undefined,
@@ -60,7 +61,7 @@ export function ShotForm() {
   });
 
   // Pre-populate form from URL params, sessionStorage, or last shot
-  const { previousShotId, resetPrePopulation } = useShotPrePopulation(methods);
+  const { previousShotId } = useShotPrePopulation(methods);
 
   // Warn before leaving when the user has entered results data
   const resultsFields = methods.watch([
@@ -91,6 +92,11 @@ export function ShotForm() {
   }, [hasResultsData]);
 
   const onSubmit = async (data: CreateShot) => {
+    if (successSummary && !methods.formState.isDirty) {
+      setIsSuccessModalOpen(true);
+      return;
+    }
+
     try {
       const shot = await createShot.mutateAsync(data);
       const bean = beans?.find((b) => b.id === data.beanId);
@@ -102,12 +108,10 @@ export function ShotForm() {
         return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
       };
 
-      methods.reset();
-      resetPrePopulation();
-      setSuccessSummary({
+      const summary: ShotSummary = {
         shotId: shot.id,
-        doseGrams: data.doseGrams,
-        yieldGrams: data.yieldGrams,
+        doseGrams: data.doseGrams ?? 0,
+        yieldGrams: data.yieldGrams ?? 0,
         yieldActualGrams: data.yieldActualGrams,
         brewTimeSecs: data.brewTimeSecs,
         shotQuality: data.shotQuality,
@@ -129,11 +133,18 @@ export function ShotForm() {
         flavors: data.flavors ?? null,
         bodyTexture: data.bodyTexture ?? null,
         adjectives: data.adjectives ?? null,
-      });
+      };
+
+      // Keep the same shot values in the form and mark it clean after successful log.
+      methods.reset(data);
+      setSuccessSummary(summary);
+      setIsSuccessModalOpen(true);
     } catch (error) {
       showToast("error", error instanceof Error ? error.message : "Failed to log shot");
     }
   };
+
+  const showSuccessButton = successSummary !== null && !methods.formState.isDirty;
 
   return (
     <FormProvider {...methods}>
@@ -164,20 +175,32 @@ export function ShotForm() {
               {methods.formState.errors.root.message}
             </p>
           )}
-          <Button
-            type="submit"
-            loading={createShot.isPending}
-            size="lg"
-            className="w-full py-4 text-lg"
-          >
-            Log Shot
-          </Button>
+          {showSuccessButton ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              className="w-full py-4 text-lg opacity-80"
+              onClick={() => setIsSuccessModalOpen(true)}
+            >
+              Show Shot
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              loading={createShot.isPending}
+              size="lg"
+              className="w-full py-4 text-lg"
+            >
+              Log Shot
+            </Button>
+          )}
         </div>
       </form>
 
       <ShotSuccessModal
-        open={!!successSummary}
-        onClose={() => setSuccessSummary(null)}
+        open={isSuccessModalOpen && !!successSummary}
+        onClose={() => setIsSuccessModalOpen(false)}
         summary={successSummary}
       />
 
