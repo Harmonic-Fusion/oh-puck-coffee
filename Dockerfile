@@ -69,3 +69,5 @@ ENV HOSTNAME="0.0.0.0"
 
 # Run migrations before starting the server
 CMD ["./scripts/start.sh"]
+
+# noop
