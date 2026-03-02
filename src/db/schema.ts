@@ -20,7 +20,10 @@ export const users = pgTable("users", {
   email: text("email").unique(),
   emailVerified: timestamp("email_verified", { mode: "date" }),
   image: text("image"),
-  role: text("role").$type<"member" | "admin">().default("member").notNull(),
+  role: text("role")
+    .$type<"member" | "admin" | "super-admin">()
+    .default("member")
+    .notNull(),
   isCustomName: boolean("is_custom_name").default(false).notNull(),
 });
 
@@ -43,7 +46,7 @@ export const accounts = pgTable(
   },
   (account) => [
     primaryKey({ columns: [account.provider, account.providerAccountId] }),
-  ]
+  ],
 );
 
 // NOTE: The sessions table is no longer used at runtime (JWT sessions
@@ -69,7 +72,7 @@ export const verificationTokens = pgTable(
     primaryKey({
       columns: [verificationToken.identifier, verificationToken.token],
     }),
-  ]
+  ],
 );
 
 // ============ Domain Tables ============
@@ -96,7 +99,9 @@ export const beans = pgTable("beans", {
   roastLevel: text("roast_level").notNull(),
   roastDate: timestamp("roast_date", { mode: "date" }),
   openBagDate: timestamp("open_bag_date", { mode: "date" }),
-  isRoastDateBestGuess: boolean("is_roast_date_best_guess").default(false).notNull(),
+  isRoastDateBestGuess: boolean("is_roast_date_best_guess")
+    .default(false)
+    .notNull(),
   userId: uuid("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -132,20 +137,27 @@ export const shots = pgTable("shots", {
   beanId: uuid("bean_id")
     .notNull()
     .references(() => beans.id, { onDelete: "cascade" }),
-  grinderId: uuid("grinder_id")
-    .references(() => grinders.id),
+  grinderId: uuid("grinder_id").references(() => grinders.id),
   machineId: uuid("machine_id").references(() => machines.id),
   // Recipe
   doseGrams: numeric("dose_grams", { precision: 5, scale: 1 }),
   yieldGrams: numeric("yield_grams", { precision: 5, scale: 1 }),
   grindLevel: numeric("grind_level", { precision: 6, scale: 2 }),
   brewTempC: numeric("brew_temp_c", { precision: 4, scale: 1 }),
-  preInfusionDuration: numeric("pre_infusion_duration", { precision: 5, scale: 1 }),
-  brewPressure: numeric("brew_pressure", { precision: 4, scale: 1 }).default("9"),
+  preInfusionDuration: numeric("pre_infusion_duration", {
+    precision: 5,
+    scale: 1,
+  }),
+  brewPressure: numeric("brew_pressure", { precision: 4, scale: 1 }).default(
+    "9",
+  ),
   // Results
   brewTimeSecs: numeric("brew_time_secs", { precision: 5, scale: 1 }),
   yieldActualGrams: numeric("yield_actual_grams", { precision: 5, scale: 1 }),
-  estimateMaxPressure: numeric("estimate_max_pressure", { precision: 4, scale: 1 }),
+  estimateMaxPressure: numeric("estimate_max_pressure", {
+    precision: 4,
+    scale: 1,
+  }),
   flowControl: numeric("flow_control", { precision: 4, scale: 1 }),
   // Computed (stored on write)
   flowRate: numeric("flow_rate", { precision: 5, scale: 2 }),

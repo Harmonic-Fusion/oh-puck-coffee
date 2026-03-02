@@ -50,6 +50,13 @@
       "when": 1735689600000,
       "tag": "0006_add_bitter_and_sour",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1772414673506,
+      "tag": "0007_icy_killraven",
+      "breakpoints": true
     }
   ]
 }

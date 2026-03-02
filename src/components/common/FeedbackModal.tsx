@@ -13,6 +13,48 @@ interface FeedbackModalProps {
   onClose: () => void;
 }
 
+function getBugTemplate(): string {
+  return `# Summary
+
+# Steps To Reproduce
+
+# Expected Outcome
+
+# Actual Outcome
+
+# Extra Details
+`;
+}
+
+function getFeatureTemplate(): string {
+  return `# What is the request?
+
+# What problem does this solve?
+
+# Who will this benefit?
+
+# How could this be accomplished?
+
+# Anything else?
+`;
+}
+
+function getTemplateForType(type: FeedbackType): string {
+  if (type === "bug") return getBugTemplate();
+  if (type === "feature") return getFeatureTemplate();
+  return "";
+}
+
+function getInstructionsForType(type: FeedbackType): string {
+  if (type === "bug") {
+    return "Please provide a summary, steps to reproduce, expected vs actual outcomes, and any extra details.";
+  }
+  if (type === "feature") {
+    return "Please describe your request, the problem it solves, who will benefit, how it could be accomplished, and any additional context.";
+  }
+  return "Please provide details about your feedback.";
+}
+
 export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
   const [type, setType] = useState<FeedbackType>("bug");
   const [subject, setSubject] = useState("");
@@ -61,6 +103,32 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
       onClose();
     }
   }
+
+  function handleUseTemplate() {
+    const template = getTemplateForType(type);
+    if (!template) return;
+
+    const maxLength = 5000;
+    const currentLength = message.length;
+    const templateLength = template.length;
+    const remainingSpace = maxLength - currentLength;
+
+    if (templateLength > remainingSpace) {
+      showToast(
+        "error",
+        `Not enough space. Template needs ${templateLength} characters but only ${remainingSpace} remaining.`
+      );
+      return;
+    }
+
+    const separator = message.trim() && !message.trim().endsWith("\n") ? "\n\n" : "";
+    setMessage((prev) => prev + separator + template);
+  }
+
+  const template = getTemplateForType(type);
+  const maxLength = 5000;
+  const remainingSpace = maxLength - message.length;
+  const canInsertTemplate = template ? template.length <= remainingSpace : false;
 
   return (
     <Modal
@@ -134,13 +202,32 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
           </p>
         </div>
 
-        <div>
+        <div className="space-y-2">
           <label
             htmlFor="feedback-message"
             className="mb-2 block text-sm font-medium text-stone-700 dark:text-stone-300"
           >
             Message
           </label>
+          <div className="my-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1">
+                <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
+                  {getInstructionsForType(type)}
+                </p>
+              </div>
+              {template && (
+                <button
+                  type="button"
+                  onClick={handleUseTemplate}
+                  disabled={submitFeedback.isPending || !canInsertTemplate}
+                  className="shrink-0 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+                >
+                  Insert template
+                </button>
+              )}
+            </div>
+          </div>
           <textarea
             id="feedback-message"
             value={message}

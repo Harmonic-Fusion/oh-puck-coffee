@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { AppRoutes } from "@/app/routes";
 import { SignInButton } from "@/components/auth/SignInButton";
 import { Button } from "@/components/common/Button";
+import { DashboardMetrics } from "@/components/landing/DashboardMetrics";
 import Link from "next/link";
 
 export default async function LandingPage() {
@@ -158,6 +159,9 @@ export default async function LandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Community Stats */}
+      <DashboardMetrics />
 
       {/* CTA Section */}
       <section className="bg-amber-700 dark:bg-amber-800">

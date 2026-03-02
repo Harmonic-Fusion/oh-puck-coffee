@@ -104,9 +104,10 @@ function saveRecipeVisibility(visibility: Record<RecipeStepId, boolean>): void {
 interface SectionRecipeProps {
   previousShotId?: string | null;
   onViewShot?: (shot: ShotWithJoins) => void;
+  showAllInputs?: boolean;
 }
 
-export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps) {
+export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = false }: SectionRecipeProps) {
   const {
     watch,
     setValue,
@@ -301,14 +302,15 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
     saveRecipeVisibility(newVisibility);
   }, []);
 
-  // Get ordered steps (all steps in order, visibility checked during render)
+  // Get ordered steps — when showAllInputs, use default order; otherwise use saved order
   const orderedSteps = useMemo(() => {
-    return recipeOrder.map((id) => DEFAULT_STEPS.find((s) => s.id === id)).filter((step): step is RecipeStepConfig => step !== undefined);
-  }, [recipeOrder]);
+    const order = showAllInputs ? DEFAULT_STEPS.map((s) => s.id) : recipeOrder;
+    return order.map((id) => DEFAULT_STEPS.find((s) => s.id === id)).filter((step): step is RecipeStepConfig => step !== undefined);
+  }, [recipeOrder, showAllInputs]);
 
   // Render a step component based on its ID
   const renderStep = (stepId: RecipeStepId) => {
-    if (!recipeVisibility[stepId]) return null;
+    if (!showAllInputs && !recipeVisibility[stepId]) return null;
 
     // Hide previous shot if no previousShotId
     if (stepId === "previousShot" && !previousShotId) return null;
@@ -614,52 +616,54 @@ export function SectionRecipe({ previousShotId, onViewShot }: SectionRecipeProps
               <InformationCircleIcon className="h-5 w-5" />
             </a>
           </div>
-          <div className="relative" ref={menuRef}>
-            <button
-              type="button"
-              onClick={() => setShowMenu(!showMenu)}
-              className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-              aria-label="Recipe menu"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+          {!showAllInputs && (
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setShowMenu(!showMenu)}
+                className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+                aria-label="Recipe menu"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                />
-              </svg>
-            </button>
-            {showMenu && (
-              <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowOrderModal(true);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  Edit Inputs
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowQRCode(true);
-                    setShowMenu(false);
-                  }}
-                  className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
-                >
-                  Recipe QR Code
-                </button>
-              </div>
-            )}
-          </div>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                  />
+                </svg>
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowOrderModal(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                  >
+                    Edit Inputs
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowQRCode(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                  >
+                    Recipe QR Code
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="space-y-7">

@@ -23,7 +23,10 @@ if (config.enableDebugging) {
   authLogger.debug("  useSecureCookies     =", useSecureCookies);
   authLogger.debug("  trustHost            =", config.trustHost);
   authLogger.debug("  NEXTAUTH_SECRET set? =", !!config.nextAuthSecret);
-  authLogger.debug("  SECRET length        =", config.nextAuthSecret?.length ?? 0);
+  authLogger.debug(
+    "  SECRET length        =",
+    config.nextAuthSecret?.length ?? 0,
+  );
   authLogger.debug("  NODE_ENV             =", process.env.NODE_ENV);
   authLogger.debug("  GOOGLE_CLIENT_ID set?=", !!config.googleClientId);
   authLogger.debug("  enableDebugging      =", config.enableDebugging);
@@ -40,12 +43,12 @@ function buildProviders(): Provider[] {
       Google({
         clientId: config.googleClientId,
         clientSecret: config.googleClientSecret,
-      })
+      }),
     );
   } else {
     authLogger.warn(
       "GOOGLE_CLIENT_ID and/or GOOGLE_CLIENT_SECRET are not set. " +
-        "Google OAuth will be unavailable."
+        "Google OAuth will be unavailable.",
     );
   }
 
@@ -72,14 +75,14 @@ if (!isBuildPhase) {
     throw new Error(
       "[auth] NEXTAUTH_SECRET is required. " +
         "Set it in your environment variables. " +
-        "Generate one with: openssl rand -base64 32"
+        "Generate one with: openssl rand -base64 32",
     );
   }
   if (config.nextAuthSecret.length < 32) {
     throw new Error(
       "[auth] NEXTAUTH_SECRET must be at least 32 characters long. " +
         `Current length: ${config.nextAuthSecret.length}. ` +
-        "Generate a secure secret with: openssl rand -base64 32"
+        "Generate a secure secret with: openssl rand -base64 32",
     );
   }
 }
@@ -101,15 +104,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: buildProviders(),
   callbacks: {
     async jwt({ token, user }) {
-      // On initial sign-in, `user` is the adapter's DB user
       if (user) {
         token.id = user.id;
+      }
+      // Always refresh role from DB so the cookie stays current if a role
+      // is changed after sign-in (avoids stale-token bugs in middleware).
+      const userId = (token.id ?? user?.id) as string | undefined;
+      if (userId) {
         const [dbUser] = await db
           .select({ role: users.role })
           .from(users)
-          .where(eq(users.id, user.id))
+          .where(eq(users.id, userId))
           .limit(1);
-        token.role = (dbUser?.role as "member" | "admin") ?? "member";
+        token.role =
+          (dbUser?.role as "member" | "admin" | "super-admin") ?? "member";
       }
       return token;
     },
@@ -142,7 +150,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // Sync name & image from Google profile on every login
       if (account?.provider === "google" && user.id && oauthProfile) {
         const googleName = (oauthProfile as { name?: string }).name ?? null;
-        const googleImage = (oauthProfile as { picture?: string }).picture ?? null;
+        const googleImage =
+          (oauthProfile as { picture?: string }).picture ?? null;
 
         const [dbUser] = await db
           .select({ isCustomName: users.isCustomName })
@@ -161,10 +170,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
 
         if (Object.keys(updates).length > 0) {
-          await db
-            .update(users)
-            .set(updates)
-            .where(eq(users.id, user.id));
+          await db.update(users).set(updates).where(eq(users.id, user.id));
 
           authLogger.debug("Synced Google profile →", {
             userId: user.id,
@@ -234,7 +240,7 @@ async function ensureDevUser(): Promise<void> {
               .from(users)
               .where(eq(users.email, DEV_USER_EMAIL))
               .limit(1);
-            
+
             if (conflictingUser) {
               authLogger.error("Dev user insert failed: email conflict", {
                 devUserId: DEV_USER_ID,
@@ -243,47 +249,53 @@ async function ensureDevUser(): Promise<void> {
               });
               throw new Error(
                 `Dev user (${DEV_USER_ID}) could not be created. ` +
-                `A user with email ${DEV_USER_EMAIL} already exists with ID ${conflictingUser.id}. ` +
-                `Please either delete that user or use a different email for the dev user. ` +
-                `You can run: pnpm ensure-dev-user to fix this automatically.`
+                  `A user with email ${DEV_USER_EMAIL} already exists with ID ${conflictingUser.id}. ` +
+                  `Please either delete that user or use a different email for the dev user. ` +
+                  `You can run: pnpm ensure-dev-user to fix this automatically.`,
               );
             }
-            
-            authLogger.error("Dev user insert failed with constraint error but user still doesn't exist", {
-              id: DEV_USER_ID,
-              error: insertError.message,
-            });
+
+            authLogger.error(
+              "Dev user insert failed with constraint error but user still doesn't exist",
+              {
+                id: DEV_USER_ID,
+                error: insertError.message,
+              },
+            );
             // Throw an error to prevent getSession() from returning a session with a non-existent user
             throw new Error(
               `Dev user (${DEV_USER_ID}) could not be created. ` +
-              `Database error: ${insertError instanceof Error ? insertError.message : String(insertError)}. ` +
-              `You can run: pnpm ensure-dev-user to fix this automatically.`
+                `Database error: ${insertError instanceof Error ? insertError.message : String(insertError)}. ` +
+                `You can run: pnpm ensure-dev-user to fix this automatically.`,
             );
           }
         } else {
           // Re-throw unexpected errors
           authLogger.error("Unexpected error creating dev user", {
             id: DEV_USER_ID,
-            error: insertError instanceof Error ? insertError.message : String(insertError),
+            error:
+              insertError instanceof Error
+                ? insertError.message
+                : String(insertError),
           });
           throw insertError;
         }
       }
     }
-    
+
     // Final verification: ensure the user actually exists before marking as ensured
     const [finalCheck] = await db
       .select({ id: users.id })
       .from(users)
       .where(eq(users.id, DEV_USER_ID))
       .limit(1);
-    
+
     if (!finalCheck) {
       throw new Error(
-        `Dev user (${DEV_USER_ID}) does not exist in database after ensure attempt`
+        `Dev user (${DEV_USER_ID}) does not exist in database after ensure attempt`,
       );
     }
-    
+
     devUserEnsured = true;
   } catch (error) {
     authLogger.error("Failed to ensure dev user", {
@@ -318,7 +330,7 @@ export async function getSession(): Promise<Session | null> {
   ) {
     throw new Error(
       "[auth] NEXTAUTH_SECRET is required. " +
-        "Set it in your environment variables."
+        "Set it in your environment variables.",
     );
   }
 

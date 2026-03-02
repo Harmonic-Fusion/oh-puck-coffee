@@ -115,15 +115,35 @@ const DropdownMenuContent = React.forwardRef<
     ref,
   ) => {
     const { open, setOpen, triggerRef } = useDropdownMenuContext();
-    const contentRef = React.useRef<HTMLDivElement>(null);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    // Combine refs for forwarded ref
+    const combinedRef = React.useCallback(
+      (node: HTMLDivElement | null) => {
+        containerRef.current = node;
+        if (typeof ref === "function") {
+          ref(node);
+        } else if (ref) {
+          ref.current = node;
+        }
+      },
+      [ref],
+    );
+
+    const [position, setPosition] = React.useState<{
+      top?: number;
+      bottom?: number;
+      left?: number;
+      right?: number;
+    }>({});
 
     React.useEffect(() => {
       if (!open) return;
 
       function handleClickOutside(event: MouseEvent) {
         if (
-          contentRef.current &&
-          !contentRef.current.contains(event.target as Node) &&
+          containerRef.current &&
+          !containerRef.current.contains(event.target as Node) &&
           triggerRef.current &&
           !triggerRef.current.contains(event.target as Node)
         ) {
@@ -131,78 +151,89 @@ const DropdownMenuContent = React.forwardRef<
         }
       }
 
+      function updatePosition() {
+        if (!triggerRef.current) return;
+
+        const triggerRect = triggerRef.current.getBoundingClientRect();
+        const newPosition: {
+          top?: number;
+          bottom?: number;
+          left?: number;
+          right?: number;
+        } = {};
+
+        if (side === "top") {
+          newPosition.bottom = window.innerHeight - triggerRect.top + sideOffset;
+        } else if (side === "bottom") {
+          newPosition.top = triggerRect.bottom + sideOffset;
+        } else if (side === "left") {
+          newPosition.right = window.innerWidth - triggerRect.left + sideOffset;
+        } else if (side === "right") {
+          newPosition.left = triggerRect.right + sideOffset;
+        }
+
+        if (side === "top" || side === "bottom") {
+          if (align === "end") {
+            newPosition.right = window.innerWidth - triggerRect.right;
+          } else if (align === "center") {
+            newPosition.left = triggerRect.left + triggerRect.width / 2;
+          } else {
+            newPosition.left = triggerRect.left;
+          }
+        } else {
+          if (align === "center") {
+            newPosition.top = triggerRect.top + triggerRect.height / 2;
+          } else if (align === "end") {
+            newPosition.bottom = window.innerHeight - triggerRect.bottom;
+          } else {
+            newPosition.top = triggerRect.top;
+          }
+        }
+
+        setPosition(newPosition);
+      }
+
+      updatePosition();
+      window.addEventListener("resize", updatePosition);
+      window.addEventListener("scroll", updatePosition, true);
       document.addEventListener("mousedown", handleClickOutside);
-      return () =>
+
+      return () => {
+        window.removeEventListener("resize", updatePosition);
+        window.removeEventListener("scroll", updatePosition, true);
         document.removeEventListener("mousedown", handleClickOutside);
-    }, [open, setOpen, triggerRef]);
+      };
+    }, [open, setOpen, triggerRef, side, align, sideOffset]);
 
     if (!open) return null;
 
-    // Calculate position based on side and sideOffset
-    const getPositionStyles = (): React.CSSProperties => {
-      const baseStyles: React.CSSProperties = {
-        position: "absolute",
-      };
-
-      if (side === "top") {
-        baseStyles.bottom = `calc(100% + ${sideOffset}px)`;
-        if (align === "center") {
-          baseStyles.left = "50%";
-          baseStyles.transform = "translateX(-50%)";
-        } else if (align === "end") {
-          baseStyles.right = "0";
-        } else {
-          baseStyles.left = "0";
-        }
-      } else if (side === "bottom") {
-        baseStyles.top = `calc(100% + ${sideOffset}px)`;
-        if (align === "center") {
-          baseStyles.left = "50%";
-          baseStyles.transform = "translateX(-50%)";
-        } else if (align === "end") {
-          baseStyles.right = "0";
-        } else {
-          baseStyles.left = "0";
-        }
-      } else if (side === "left") {
-        baseStyles.right = `calc(100% + ${sideOffset}px)`;
-        if (align === "center") {
-          baseStyles.top = "50%";
-          baseStyles.transform = "translateY(-50%)";
-        } else if (align === "end") {
-          baseStyles.bottom = "0";
-        } else {
-          baseStyles.top = "0";
-        }
-      } else if (side === "right") {
-        baseStyles.left = `calc(100% + ${sideOffset}px)`;
-        if (align === "center") {
-          baseStyles.top = "50%";
-          baseStyles.transform = "translateY(-50%)";
-        } else if (align === "end") {
-          baseStyles.bottom = "0";
-        } else {
-          baseStyles.top = "0";
-        }
-      }
-
-      return baseStyles;
+    // Build styles for positioning
+    const positionStyles: React.CSSProperties = {
+      position: "fixed",
+      ...position,
     };
+
+    // For centered alignment, we need to adjust with transform
+    if ((side === "top" || side === "bottom") && align === "center") {
+      positionStyles.transform = "translateX(-50%)";
+    } else if ((side === "left" || side === "right") && align === "center") {
+      positionStyles.transform = "translateY(-50%)";
+    }
 
     return (
       <div
-        ref={ref}
+        ref={combinedRef}
         className={cn(
-          "z-50 min-w-[8rem] overflow-hidden rounded-md border border-stone-200 bg-white p-1 text-stone-950 shadow-md dark:border-stone-800 dark:bg-stone-950 dark:text-stone-50",
+          "z-50 min-w-[8rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-md border border-stone-200 bg-white p-1 text-stone-950 shadow-md dark:border-stone-800 dark:bg-stone-950 dark:text-stone-50",
           className,
         )}
         style={{
-          ...getPositionStyles(),
+          ...positionStyles,
           ...props.style,
         }}
         {...props}
       >
-        <div ref={contentRef}>{props.children}</div>
+        {props.children}
       </div>
     );
   },

@@ -3,10 +3,10 @@ import { ReadonlyURLSearchParams } from "next/navigation";
 // Type definitions for route building
 type RouteSpec =
   | string
-  | { path: string; _is_public?: true; [key: string]: RouteSpec | true | undefined };
+  | { path: string; _is_public?: true; _require_super_admin?: true; [key: string]: RouteSpec | true | undefined };
 
 // Metadata keys — these are NOT child routes
-type RouteMetaKeys = "path" | "_is_public";
+type RouteMetaKeys = "path" | "_is_public" | "_require_super_admin";
 
 // Extract path parameters from a path string
 type ExtractParams<T extends string> =
@@ -28,6 +28,7 @@ type BuiltRouteObject<T extends RouteSpec> = T extends string
     ? {
         path: string;
         _is_public?: true;
+        _require_super_admin?: true;
       } & {
         [K in keyof Omit<T, RouteMetaKeys>]: BuiltRouteObject<T[K] & RouteSpec>;
       }
@@ -76,7 +77,7 @@ function buildRoutesRecursive<T extends RouteSpec>(
     }
     visited.add(spec);
 
-    const { path, _is_public, ...rest } = spec;
+    const { path, _is_public, _require_super_admin, ...rest } = spec;
     const fullPath = parentPath + path;
 
     const result: Record<string, BuiltRouteObject<RouteSpec> | string | true> = {
@@ -85,6 +86,10 @@ function buildRoutesRecursive<T extends RouteSpec>(
 
     if (_is_public) {
       result._is_public = true;
+    }
+
+    if (_require_super_admin) {
+      result._require_super_admin = true;
     }
 
     for (const [key, value] of Object.entries(rest)) {
@@ -174,6 +179,7 @@ export function resolvePath<T extends string>(
 export interface RouteEntry {
   path: string;
   _is_public?: true;
+  _require_super_admin?: true;
 }
 
 /**
@@ -192,10 +198,11 @@ export function buildRouteMap(
 
     const entry: RouteEntry = { path: record.path };
     if (record._is_public === true) entry._is_public = true;
+    if (record._require_super_admin === true) entry._require_super_admin = true;
     map.set(record.path, entry);
 
     for (const [key, value] of Object.entries(record)) {
-      if (key === "path" || key === "_is_public") continue;
+      if (key === "path" || key === "_is_public" || key === "_require_super_admin") continue;
       if (typeof value === "object" && value !== null) walk(value);
     }
   }

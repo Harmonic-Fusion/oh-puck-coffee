@@ -31,6 +31,7 @@ export function InfoTooltip({
 }: InfoTooltipProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState<"top" | "bottom">("bottom");
+  const [horizontalAlign, setHorizontalAlign] = useState<"left" | "center" | "right">("center");
   const triggerRef = useRef<HTMLButtonElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -61,12 +62,28 @@ export function InfoTooltip({
       const triggerRect = triggerRef.current.getBoundingClientRect();
       const tooltipRect = tooltipRef.current.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      const safeMargin = 16; // 1rem margin from edges
 
       // Check if tooltip would overflow bottom of viewport
       if (triggerRect.bottom + tooltipRect.height + 8 > viewportHeight) {
         setPosition("top");
       } else {
         setPosition("bottom");
+      }
+
+      // Check horizontal overflow
+      const tooltipWidth = 256; // w-64 = 256px
+      const centerX = triggerRect.left + triggerRect.width / 2;
+      const leftEdge = centerX - tooltipWidth / 2;
+      const rightEdge = centerX + tooltipWidth / 2;
+
+      if (leftEdge < safeMargin) {
+        setHorizontalAlign("left");
+      } else if (rightEdge > viewportWidth - safeMargin) {
+        setHorizontalAlign("right");
+      } else {
+        setHorizontalAlign("center");
       }
     }
   }, [isOpen]);
@@ -102,14 +119,26 @@ export function InfoTooltip({
           ref={tooltipRef}
           id="tooltip-content"
           role="tooltip"
-          className={`absolute z-50 w-64 rounded-lg bg-stone-800 px-3 py-2 text-xs leading-relaxed text-stone-100 shadow-lg dark:bg-stone-700 ${
+          className={`absolute z-50 w-64 max-w-[calc(100vw-2rem)] rounded-lg bg-stone-800 px-3 py-2 text-xs leading-relaxed text-stone-100 shadow-lg dark:bg-stone-700 ${
             position === "top" ? "bottom-full mb-2" : "top-full mt-2"
-          } left-1/2 -translate-x-1/2`}
+          } ${
+            horizontalAlign === "left"
+              ? "left-0"
+              : horizontalAlign === "right"
+              ? "right-0"
+              : "left-1/2 -translate-x-1/2"
+          }`}
           onKeyDown={handleKeyDown}
         >
           {helpText}
           <span
-            className={`absolute left-1/2 -translate-x-1/2 border-4 border-transparent ${
+            className={`absolute border-4 border-transparent ${
+              horizontalAlign === "left"
+                ? "left-4"
+                : horizontalAlign === "right"
+                ? "right-4"
+                : "left-1/2 -translate-x-1/2"
+            } ${
               position === "top"
                 ? "top-full border-t-stone-800 dark:border-t-stone-700"
                 : "bottom-full border-b-stone-800 dark:border-b-stone-700"

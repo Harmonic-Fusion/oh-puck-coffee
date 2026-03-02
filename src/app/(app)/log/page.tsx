@@ -70,7 +70,7 @@ export default function LogPage() {
   );
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto w-full max-w-2xl">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
           Espresso Log

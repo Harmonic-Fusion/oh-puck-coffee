@@ -142,6 +142,7 @@ export default function SettingsPage() {
   const displayName = profile?.name ?? session?.user?.name ?? "User";
   const email = profile?.email ?? session?.user?.email;
   const image = profile?.image ?? session?.user?.image;
+  const role = profile?.role ?? session?.user?.role ?? "member";
   const providers = profile?.linkedAccounts ?? [];
 
   return (
@@ -275,6 +276,14 @@ export default function SettingsPage() {
                 {email}
               </ProfileDetailRow>
             )}
+
+            <ProfileDetailRow label="Role">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-0.5 text-xs font-medium capitalize text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300">
+                  {role === "super-admin" ? "Super Admin" : role}
+                </span>
+              </span>
+            </ProfileDetailRow>
 
             {providers.length > 0 && (
               <ProfileDetailRow label="Sign-in">

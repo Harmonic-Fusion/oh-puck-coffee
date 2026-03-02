@@ -14,6 +14,7 @@ import {
 } from "@/components/shots/hooks";
 import { type ShotShareData } from "@/lib/share-text";
 import { ActionButtonBar } from "./ActionButtonBar";
+import { useShotActions } from "./useShotActions";
 import { SelectedBadges } from "@/components/flavor-wheel/SelectedBadges";
 import {
   FLAVOR_WHEEL_DATA,
@@ -32,10 +33,6 @@ import {
   ChevronUpIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  PencilSquareIcon,
-  PlusCircleIcon,
-  EyeSlashIcon,
-  BookmarkIcon,
 } from "@heroicons/react/24/outline";
 import {
   BookmarkIcon as BookmarkIconSolid,
@@ -93,6 +90,7 @@ interface ShotDetailProps {
   shots?: ShotWithJoins[];
   currentIndex?: number;
   onShotChange?: (shot: ShotWithJoins) => void;
+  initialEditMode?: boolean;
 }
 
 function DetailRow({
@@ -135,6 +133,7 @@ export function ShotDetail({
   shots,
   currentIndex,
   onShotChange,
+  initialEditMode = false,
 }: ShotDetailProps) {
   const router = useRouter();
   const [tempUnit] = useTempUnit();
@@ -145,9 +144,18 @@ export function ShotDetail({
     return m;
   }, [allTools]);
 
-  const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(initialEditMode);
   const [shareCopied, setShareCopied] = useState(false);
   const createShareLink = useCreateShareLink();
+
+  // Reset edit mode when modal closes or shot changes
+  useEffect(() => {
+    if (!open) {
+      setIsEditMode(false);
+    } else {
+      setIsEditMode(initialEditMode);
+    }
+  }, [open, initialEditMode]);
 
   // Touch swipe state
   const touchStartX = useRef<number | null>(null);
@@ -438,74 +446,34 @@ export function ShotDetail({
       ? parseFloat((yieldActual / dose).toFixed(2))
       : null;
 
+  const shotActions = useShotActions({
+    shot,
+    tempUnit,
+    shotShareData,
+    getShareUrl,
+    onShare: handleShare,
+    onEdit: !isEditMode ? () => setIsEditMode(true) : undefined,
+    onToggleReference: onToggleReference ? handleToggleReference : undefined,
+    onToggleHidden: onToggleHidden ? handleToggleHidden : undefined,
+    onDuplicate: handleDuplicate,
+    showEdit: !isEditMode,
+  });
+
   const footer = readOnly ? null : (
-    <ActionButtonBar
-      actions={[
-        ...(!isEditMode
-          ? [
-              {
-                key: "edit",
-                icon: PencilSquareIcon,
-                onClick: () => setIsEditMode(true),
-                title: "Edit shot",
-                variant: "default" as const,
-              },
-            ]
-          : []),
-        ...(onToggleReference
-          ? [
-              {
-                key: "reference",
-                icon: shot.isReferenceShot ? BookmarkIconSolid : BookmarkIcon,
-                onClick: handleToggleReference,
-                title: shot.isReferenceShot
-                  ? "Remove reference shot"
-                  : "Mark as reference shot",
-                variant: shot.isReferenceShot
-                  ? ("active" as const)
-                  : ("default" as const),
-              },
-            ]
-          : []),
-        ...(onToggleHidden
-          ? [
-              {
-                key: "hidden",
-                icon: shot.isHidden ? EyeSlashIcon : EyeIconSolid,
-                onClick: handleToggleHidden,
-                title: shot.isHidden ? "Show shot" : "Hide shot",
-                variant: shot.isHidden
-                  ? ("active" as const)
-                  : ("default" as const),
-              },
-            ]
-          : []),
-        {
-          key: "duplicate",
-          icon: PlusCircleIcon,
-          onClick: handleDuplicate,
-          title: "Duplicate shot",
-          variant: "default" as const,
-        },
-        ...(shotShareData
-          ? [
-              {
-                key: "share" as const,
-                shotData: shotShareData,
-                tempUnit,
-                getShareUrl,
-                onShare: handleShare,
-              },
-            ]
-          : []),
-      ]}
-    />
+    <ActionButtonBar actions={shotActions} />
   );
 
   // Custom header with navigation buttons
   const canNavigate = !!(shots && currentIndex !== undefined && onShotChange);
   const canGoPrevious = canNavigate && currentIndex! > 0;
   const canGoNext = canNavigate && currentIndex! < shots!.length - 1;
+
+  const handleClose = () => {
+    if (isEditMode) {
+      setIsEditMode(false);
+    }
+    onClose();
+  };
 
   const modalHeader = canNavigate ? (
     <div className="flex items-center justify-between w-full">
@@ -517,7 +485,7 @@ export function ShotDetail({
           {currentIndex! + 1} / {shots!.length}
         </span>
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="rounded-lg p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
         >
           <svg
@@ -566,7 +534,7 @@ export function ShotDetail({
   return (
     <Modal
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       title={canNavigate ? undefined : isEditMode ? "Edit Shot" : "Shot Detail"}
       header={modalHeader}
       footer={isEditMode ? null : footer}

@@ -92,7 +92,7 @@ export function Modal({ open, onClose, title, header, children, footer, fullHeig
           )}
         </div>
         {footer && (
-          <div className="border-t border-stone-200 bg-white px-6 py-4 dark:border-stone-700 dark:bg-stone-900">
+          <div className="border-t border-stone-200 bg-white px-6 py-2 dark:border-stone-700 dark:bg-stone-900">
             {footer}
           </div>
         )}

@@ -242,7 +242,11 @@ function saveTastingVisibility(
 
 // ── SectionResults Component ──
 
-export function SectionResults() {
+interface SectionResultsProps {
+  showAllInputs?: boolean;
+}
+
+export function SectionResults({ showAllInputs = false }: SectionResultsProps) {
   const {
     register,
     control,
@@ -359,20 +363,22 @@ export function SectionResults() {
 
   // Get ordered steps
   const orderedResultsSteps = useMemo(() => {
-    return resultsOrder
+    const order = showAllInputs ? DEFAULT_RESULTS_STEPS.map((s) => s.id) : resultsOrder;
+    return order
       .map((id) => DEFAULT_RESULTS_STEPS.find((s) => s.id === id))
       .filter((step): step is ResultsStepConfig => step !== undefined);
-  }, [resultsOrder]);
+  }, [resultsOrder, showAllInputs]);
 
   const orderedTastingSteps = useMemo(() => {
-    return tastingOrder
+    const order = showAllInputs ? DEFAULT_TASTING_STEPS.map((s) => s.id) : tastingOrder;
+    return order
       .map((id) => DEFAULT_TASTING_STEPS.find((s) => s.id === id))
       .filter((step): step is TastingStepConfig => step !== undefined);
-  }, [tastingOrder]);
+  }, [tastingOrder, showAllInputs]);
 
   // Render a Results step component based on its ID
   const renderResultsStep = (stepId: ResultsStepId) => {
-    if (!resultsVisibility[stepId]) return null;
+    if (!showAllInputs && !resultsVisibility[stepId]) return null;
 
     switch (stepId) {
       case "yieldActual":
@@ -534,7 +540,7 @@ export function SectionResults() {
 
   // Render a Tasting Notes step component based on its ID
   const renderTastingStep = (stepId: TastingStepId) => {
-    if (!tastingVisibility[stepId]) return null;
+    if (!showAllInputs && !tastingVisibility[stepId]) return null;
 
     switch (stepId) {
       case "flavors":
@@ -716,42 +722,44 @@ export function SectionResults() {
                 <InformationCircleIcon className="h-5 w-5" />
               </a>
             </div>
-            <div className="relative" ref={resultsMenuRef}>
-              <button
-                type="button"
-                onClick={() => setShowResultsMenu(!showResultsMenu)}
-                className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-                aria-label="Results menu"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            {!showAllInputs && (
+              <div className="relative" ref={resultsMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowResultsMenu(!showResultsMenu)}
+                  className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+                  aria-label="Results menu"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                  />
-                </svg>
-              </button>
-              {showResultsMenu && (
-                <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowResultsOrderModal(true);
-                      setShowResultsMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    Edit Inputs
-                  </button>
-                </div>
-              )}
-            </div>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                    />
+                  </svg>
+                </button>
+                {showResultsMenu && (
+                  <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowResultsOrderModal(true);
+                        setShowResultsMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                    >
+                      Edit Inputs
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-7">
@@ -778,42 +786,44 @@ export function SectionResults() {
                 <InformationCircleIcon className="h-5 w-5" />
               </a>
             </div>
-            <div className="relative" ref={tastingMenuRef}>
-              <button
-                type="button"
-                onClick={() => setShowTastingMenu(!showTastingMenu)}
-                className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-                aria-label="Tasting notes menu"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            {!showAllInputs && (
+              <div className="relative" ref={tastingMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowTastingMenu(!showTastingMenu)}
+                  className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+                  aria-label="Tasting notes menu"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                  />
-                </svg>
-              </button>
-              {showTastingMenu && (
-                <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowTastingOrderModal(true);
-                      setShowTastingMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
                   >
-                    Edit Inputs
-                  </button>
-                </div>
-              )}
-            </div>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                    />
+                  </svg>
+                </button>
+                {showTastingMenu && (
+                  <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowTastingOrderModal(true);
+                        setShowTastingMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
+                    >
+                      Edit Inputs
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="space-y-7">

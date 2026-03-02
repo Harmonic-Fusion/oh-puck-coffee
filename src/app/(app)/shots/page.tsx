@@ -29,6 +29,7 @@ import {
   ActionButtonBar,
   type ActionConfig,
 } from "@/components/shots/ActionButtonBar";
+import { useShotActions } from "@/components/shots/useShotActions";
 import { useToast } from "@/components/common/Toast";
 import { AppRoutes, resolvePath } from "@/app/routes";
 import { buildShareText, type ShotShareData } from "@/lib/share-text";
@@ -229,6 +230,7 @@ interface ShotCardProps {
   onToggleReference?: (id: string) => void;
   onToggleHidden?: (id: string) => void;
   onClick?: (shot: ShotWithJoins) => void;
+  onEdit?: (shot: ShotWithJoins) => void;
   onDuplicate?: (shot: ShotWithJoins) => void;
   onSelect?: (shot: ShotWithJoins) => void;
   isSelected?: boolean;
@@ -241,6 +243,7 @@ function ShotCard({
   onToggleReference,
   onToggleHidden,
   onClick,
+  onEdit,
   onDuplicate,
   onSelect,
   isSelected,
@@ -347,6 +350,19 @@ function ShotCard({
     [],
   );
 
+  const shotActions = useShotActions({
+    shot,
+    tempUnit,
+    shotShareData,
+    getShareUrl,
+    onShare: handleShareAction,
+    onEdit: onEdit ? () => onEdit(shot) : onClick ? () => onClick(shot) : undefined,
+    onToggleReference: onToggleReference ? () => onToggleReference(shot.id) : undefined,
+    onToggleHidden: onToggleHidden ? () => onToggleHidden(shot.id) : undefined,
+    onDuplicate: onDuplicate ? () => onDuplicate(shot) : undefined,
+    showEdit: true,
+  });
+
   return (
     <div
       onClick={() => {
@@ -365,7 +381,7 @@ function ShotCard({
           ? "border-amber-700 bg-amber-50/50 dark:border-amber-500 dark:bg-amber-900/10"
           : "border-stone-200 dark:border-stone-700",
         isSelected
-          ? "ring-2 ring-amber-700 border-amber-700 bg-amber-50/30 dark:ring-amber-500 dark:border-amber-500 dark:bg-amber-900/20"
+          ? " border-amber-700 bg-amber-50/30 dark:border-amber-500 dark:bg-amber-900/20"
           : "",
       )}
     >
@@ -428,65 +444,21 @@ function ShotCard({
       )}
 
       {/* Actions */}
-      {(onToggleReference || onToggleHidden || onDuplicate || onSelect) && (
+      {(onToggleReference || onToggleHidden || onDuplicate || onEdit || onSelect) && (
         <div
           className="mt-3 flex h-10 w-full items-center gap-2 border-t border-stone-100 pt-2 dark:border-stone-800"
           onClick={(e) => e.stopPropagation()}
         >
           {!isSelecting ? (
             <div className="flex-[0.9]">
-              <ActionButtonBar
-                actions={[
-                  ...(onToggleReference
-                    ? [
-                        {
-                          key: "reference",
-                          icon: isRef ? BookmarkIconSolid : BookmarkIcon,
-                          onClick: () => onToggleReference(shot.id),
-                          title: isRef ? "Unmark reference" : "Mark reference",
-                          variant: isRef
-                            ? ("active" as const)
-                            : ("default" as const),
-                        },
-                      ]
-                    : []),
-                  ...(onToggleHidden
-                    ? [
-                        {
-                          key: "hidden",
-                          icon: isHidden ? EyeSlashIcon : EyeIconSolid,
-                          onClick: () => onToggleHidden(shot.id),
-                          title: isHidden ? "Show" : "Hide",
-                          variant: isHidden
-                            ? ("active" as const)
-                            : ("default" as const),
-                        },
-                      ]
-                    : []),
-                  ...(onDuplicate
-                    ? [
-                        {
-                          key: "duplicate",
-                          icon: PlusCircleIcon,
-                          onClick: () => onDuplicate(shot),
-                          title: "Duplicate",
-                          variant: "default" as const,
-                        },
-                      ]
-                    : []),
-                  {
-                    key: "share" as const,
-                    shotData: shotShareData,
-                    tempUnit,
-                    getShareUrl,
-                    onShare: handleShareAction,
-                  },
-                ]}
-              />
+              <ActionButtonBar actions={shotActions} />
             </div>
           ) : (
             <div className="flex-[0.9]">
               <>
+                {onEdit && (
+                  <div className="h-10 flex-1" aria-hidden="true" />
+                )}
                 {onToggleReference && (
                   <div className="h-10 flex-1" aria-hidden="true" />
                 )}
@@ -879,6 +851,7 @@ export default function ShotsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
+  const [openInEditMode, setOpenInEditMode] = useState(false);
 
   const data = useMemo(() => shots ?? [], [shots]);
 
@@ -923,6 +896,11 @@ export default function ShotsPage() {
     },
     [deleteShot, selectedShot?.id],
   );
+
+  const handleEdit = useCallback((shot: ShotWithJoins) => {
+    setSelectedShot(shot);
+    setOpenInEditMode(true);
+  }, []);
 
   const handleDuplicate = useCallback(
     (shot: ShotWithJoins) => {
@@ -1558,6 +1536,7 @@ export default function ShotsPage() {
               onToggleReference={handleToggleReference}
               onToggleHidden={handleToggleHidden}
               onClick={setSelectedShot}
+              onEdit={handleEdit}
               onDuplicate={handleDuplicate}
               onSelect={handleSelect}
               isSelected={selectedIds.has(row.original.id)}
@@ -1575,7 +1554,10 @@ export default function ShotsPage() {
       <ShotDetail
         shot={selectedShot}
         open={!!selectedShot}
-        onClose={() => setSelectedShot(null)}
+        onClose={() => {
+          setSelectedShot(null);
+          setOpenInEditMode(false);
+        }}
         onDelete={handleDelete}
         onToggleReference={handleToggleReference}
         onToggleHidden={handleToggleHidden}
@@ -1585,7 +1567,11 @@ export default function ShotsPage() {
             ? filteredShots.findIndex((s) => s.id === selectedShot.id)
             : undefined
         }
-        onShotChange={setSelectedShot}
+        onShotChange={(shot) => {
+          setSelectedShot(shot);
+          setOpenInEditMode(false);
+        }}
+        initialEditMode={openInEditMode}
       />
     </div>
   );

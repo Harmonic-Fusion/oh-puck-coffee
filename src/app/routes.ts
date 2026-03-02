@@ -35,6 +35,20 @@ export const AppRoutes = routesBuilder({
       path: "/:uid",
     },
   },
+  puckingAdmin: {
+    path: "/pucking-admin",
+    _require_super_admin: true,
+    users: { path: "/users", _require_super_admin: true },
+    beans: { path: "/beans", _require_super_admin: true },
+    shots: { path: "/shots", _require_super_admin: true },
+    equipment: {
+      path: "/equipment",
+      _require_super_admin: true,
+      tools: { path: "/tools", _require_super_admin: true },
+      machines: { path: "/machines", _require_super_admin: true },
+      grinders: { path: "/grinders", _require_super_admin: true },
+    },
+  },
 });
 
 /** Flat path → route map for O(1) lookups (used by middleware). */
@@ -83,6 +97,7 @@ export const ApiRoutes = routesBuilder({
     path: "/api/stats",
     overview: "/overview",
     shotMetrics: "/shot-metrics",
+    dashboard: "/dashboard",
     byBean: {
       path: "/by-bean",
       beanId: {
@@ -93,6 +108,32 @@ export const ApiRoutes = routesBuilder({
       path: "/by-user",
       userId: {
         path: "/:userId",
+      },
+    },
+  },
+  // Admin (super-admin only)
+  admin: {
+    path: "/api/admin",
+    users: {
+      path: "/users",
+      userId: { path: "/:id" },
+    },
+    beans: { path: "/beans" },
+    shots: { path: "/shots" },
+    stats: { path: "/stats" },
+    equipment: {
+      path: "/equipment",
+      tools: {
+        path: "/tools",
+        toolId: { path: "/:id" },
+      },
+      machines: {
+        path: "/machines",
+        machineId: { path: "/:id" },
+      },
+      grinders: {
+        path: "/grinders",
+        grinderId: { path: "/:id" },
       },
     },
   },

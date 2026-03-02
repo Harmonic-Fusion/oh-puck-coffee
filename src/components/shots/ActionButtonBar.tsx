@@ -11,7 +11,7 @@ export type ActionButtonConfig = {
   icon: React.ComponentType<{ className?: string }>;
   onClick: () => void;
   title: string;
-  variant?: "default" | "active";
+  variant?: "default" | "active" | "danger" | "success";
   className?: string;
 };
 
@@ -37,10 +37,14 @@ function isShareConfig(config: ActionConfig): config is ShareButtonConfig {
   return config.key === "share" && "shotData" in config;
 }
 
-function getVariantClasses(variant?: "default" | "active"): string {
+function getVariantClasses(variant?: "default" | "active" | "danger" | "success"): string {
   switch (variant) {
     case "active":
       return "hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-500 fill-amber-500";
+    case "danger":
+      return "border-2 border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20";
+    case "success":
+      return "border-2 border-green-500 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20";
     case "default":
     default:
       return "hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-400 dark:text-stone-500";

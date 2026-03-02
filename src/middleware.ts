@@ -1,8 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { encode } from "next-auth/jwt";
+import { encode, decode } from "next-auth/jwt";
 import { AppRoutes, AppRouteMap } from "./app/routes";
-import { isPublicRoute } from "@/lib/routes-builder";
+import { isPublicRoute, getRoute } from "@/lib/routes-builder";
 import { config as appConfig } from "./shared/config";
 
 // ─────────────────────────────────────────────────────────────────────
@@ -32,6 +32,14 @@ function hasSessionCookie(request: NextRequest): boolean {
   return SESSION_COOKIES.some((name) => request.cookies.has(name));
 }
 
+function getSessionCookieValue(request: NextRequest): string | undefined {
+  for (const name of SESSION_COOKIES) {
+    const cookie = request.cookies.get(name);
+    if (cookie) return cookie.value;
+  }
+  return undefined;
+}
+
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -48,10 +56,7 @@ export default async function middleware(request: NextRequest) {
   // (cookie → jwt callback → session callback) is exercised normally.
   if (appConfig.enableDevUser && !hasSessionCookie(request)) {
     const secret = appConfig.nextAuthSecret;
-    if (!secret) {
-      // Can't mint a cookie without a secret — fall through to normal
-      // cookie check which will redirect to login.
-    } else {
+    if (secret) {
       const useSecure = request.nextUrl.protocol === "https:";
       const cookieName = useSecure
         ? "__Secure-authjs.session-token"
@@ -69,7 +74,7 @@ export default async function middleware(request: NextRequest) {
         salt: cookieName,
       });
 
-      const response = NextResponse.next();
+      const response = NextResponse.redirect(request.url); // Redirect to set cookie
       response.cookies.set(cookieName, token, {
         httpOnly: true,
         secure: useSecure,
@@ -89,6 +94,35 @@ export default async function middleware(request: NextRequest) {
     const url = new URL(AppRoutes.login.path, request.url);
     url.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(url);
+  }
+
+  // ── Super Admin Check ──────────────────────────────────────────
+  const route = getRoute(pathname, AppRouteMap);
+  if (route?._require_super_admin) {
+    const tokenValue = getSessionCookieValue(request);
+    const secret = appConfig.nextAuthSecret;
+
+    if (tokenValue && secret) {
+      try {
+        const decoded = await decode({
+          token: tokenValue,
+          secret,
+          salt: request.cookies.get("__Secure-authjs.session-token")
+            ? "__Secure-authjs.session-token"
+            : "authjs.session-token",
+        });
+
+        if (decoded?.role !== "super-admin") {
+          // Redirect to home or a 403 page if not super-admin
+          return NextResponse.redirect(new URL("/", request.url));
+        }
+      } catch (error) {
+        // If decoding fails, treat as unauthenticated
+        const url = new URL(AppRoutes.login.path, request.url);
+        url.searchParams.set("callbackUrl", pathname);
+        return NextResponse.redirect(url);
+      }
+    }
   }
 
   return NextResponse.next();

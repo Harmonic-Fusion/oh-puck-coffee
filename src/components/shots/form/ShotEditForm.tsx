@@ -1,17 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
 import { useForm, FormProvider, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createShotSchema, type CreateShot } from "@/shared/shots/schema";
 import { useUpdateShot, useDeleteShot } from "@/components/shots/hooks";
-import { Button } from "@/components/common/Button";
 import { SectionBasics } from "./SectionBasics";
 import { SectionRecipe } from "./SectionRecipe";
 import { SectionResults } from "./SectionResults";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { useToast } from "@/components/common/Toast";
 import { ValidationBanner } from "@/components/common/ValidationBanner";
+import { ActionButtonBar } from "@/components/shots/ActionButtonBar";
+import { TrashIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 
 interface ShotEditFormProps {
   shot: ShotWithJoins;
@@ -66,79 +66,89 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
     <FormProvider {...methods}>
       <form
         onSubmit={methods.handleSubmit(onSubmit)}
-        className="space-y-8"
+        className="flex min-h-full flex-col"
       >
-        {methods.formState.isSubmitted && (
-          <ValidationBanner errors={methods.formState.errors} />
-        )}
-
-        <SectionBasics />
-
-        <hr className="border-stone-200 dark:border-stone-700" />
-
-        <SectionRecipe />
-
-        <hr className="border-stone-200 dark:border-stone-700" />
-
-        <SectionResults />
-
-        <div className="flex flex-col gap-4 pt-4">
-          {(updateShot.isError || methods.formState.errors.root) && (
-            <div className="text-sm text-red-500">
-              {updateShot.isError && (
-                <p>{updateShot.error.message}</p>
-              )}
-              {methods.formState.errors.root && (
-                <p>{methods.formState.errors.root.message}</p>
-              )}
-            </div>
+        <div className="flex-1 space-y-8 pb-4">
+          {methods.formState.isSubmitted && (
+            <ValidationBanner errors={methods.formState.errors} />
           )}
-          <div className="flex items-center justify-between gap-4">
-            {onDelete ? (
-              <Button
-                type="button"
-                variant="danger"
-                size="lg"
-                onClick={() => {
-                  if (confirm("Delete this shot?")) {
-                    deleteShot.mutate(shot.id, {
-                      onSuccess: () => {
-                        showToast("success", "Shot deleted successfully!");
-                        if (onDelete) onDelete(shot.id);
-                        if (onSuccess) onSuccess();
-                      },
-                      onError: (error) => {
-                        showToast("error", error instanceof Error ? error.message : "Failed to delete shot");
-                      },
-                    });
-                  }
-                }}
-                loading={deleteShot.isPending}
-              >
-                Delete
-              </Button>
-            ) : (
-              <div />
+
+          <SectionBasics />
+
+          <hr className="border-stone-200 dark:border-stone-700" />
+
+          <SectionRecipe showAllInputs />
+
+          <hr className="border-stone-200 dark:border-stone-700" />
+
+          <SectionResults showAllInputs />
+        </div>
+
+        <div className="sticky -bottom-6 px-6 py-4 border-t border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900">
+        {/* <div className="sticky bottom-0 -mx-6 -mb-6 mt-auto border-t border-stone-200 bg-white px-6 py-4 dark:border-stone-700 dark:bg-stone-900"> */}
+          <div className="flex flex-col gap-4">
+            {(updateShot.isError || methods.formState.errors.root) && (
+              <div className="text-sm text-red-500">
+                {updateShot.isError && (
+                  <p>{updateShot.error.message}</p>
+                )}
+                {methods.formState.errors.root && (
+                  <p>{methods.formState.errors.root.message}</p>
+                )}
+              </div>
             )}
-            <div className="flex items-center gap-4">
-              {onCancel && (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="lg"
-                  onClick={onCancel}
-                >
-                  Cancel
-                </Button>
-              )}
-              <Button
-                type="submit"
-                loading={updateShot.isPending}
-                size="lg"
-              >
-                Save Changes
-              </Button>
-            </div>
+            <ActionButtonBar
+              actions={[
+                ...(onDelete
+                  ? [
+                      {
+                        key: "delete",
+                        icon: TrashIcon,
+                        onClick: () => {
+                          if (confirm("Delete this shot?")) {
+                            deleteShot.mutate(shot.id, {
+                              onSuccess: () => {
+                                showToast("success", "Shot deleted successfully!");
+                                if (onDelete) onDelete(shot.id);
+                                if (onSuccess) onSuccess();
+                              },
+                              onError: (error) => {
+                                showToast("error", error instanceof Error ? error.message : "Failed to delete shot");
+                              },
+                            });
+                          }
+                        },
+                        title: "Delete shot",
+                        variant: "danger" as const,
+                        className: deleteShot.isPending ? "opacity-50 cursor-not-allowed pointer-events-none" : "",
+                      },
+                    ]
+                  : []),
+                ...(onCancel
+                  ? [
+                      {
+                        key: "cancel",
+                        icon: XMarkIcon,
+                        onClick: onCancel,
+                        title: "Cancel",
+                        variant: "default" as const,
+                        className: updateShot.isPending || deleteShot.isPending ? "opacity-50 cursor-not-allowed pointer-events-none" : "",
+                      },
+                    ]
+                  : []),
+                {
+                  key: "save",
+                  icon: CheckIcon,
+                  onClick: () => {
+                    methods.handleSubmit(onSubmit)();
+                  },
+                  title: "Save changes",
+                  variant: "success" as const,
+                  className: updateShot.isPending || deleteShot.isPending ? "opacity-50 cursor-not-allowed pointer-events-none" : "",
+                },
+              ]}
+              className="w-full"
+            />
           </div>
         </div>
       </form>

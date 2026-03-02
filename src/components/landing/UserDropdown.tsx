@@ -1,9 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { AppRoutes } from "@/app/routes";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { FeedbackModal } from "@/components/common/FeedbackModal";
+import {
+  getDesktopUserMenuItems,
+  isNavItem,
+} from "@/components/layout/nav-items";
 
 type UserDropdownProps = {
   userName: string | null | undefined;
@@ -11,88 +25,86 @@ type UserDropdownProps = {
 };
 
 export function UserDropdown({ userName, userImage }: UserDropdownProps) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const { data: session } = useSession();
+  const router = useRouter();
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+  const userMenuItems = getDesktopUserMenuItems(session?.user?.role);
+
+  function handleMenuItemClick(item: typeof userMenuItems[0]) {
+    if (isNavItem(item)) {
+      router.push(item.href);
+    } else if (item.label === "Send Feedback") {
+      setFeedbackOpen(true);
+    } else if (item.label === "Sign Out") {
+      signOut({ callbackUrl: AppRoutes.login.path });
     }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }
 
   return (
-    <div ref={ref} className="relative z-50">
-      <button
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-2 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 shadow-sm transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
-      >
-        {userImage ? (
-          <img
-            src={userImage}
-            alt=""
-            className="h-6 w-6 rounded-full"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
-            {userName?.charAt(0)?.toUpperCase() ?? "?"}
-          </span>
-        )}
-        <span className="hidden sm:inline">{userName ?? "Account"}</span>
-        <svg
-          className={`h-4 w-4 text-stone-400 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth="2"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-        </svg>
-      </button>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="outline"
+            className="gap-2 rounded-lg border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 shadow-sm hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
+          >
+            {userImage ? (
+              <img
+                src={userImage}
+                alt=""
+                className="h-6 w-6 rounded-full"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                {userName?.charAt(0)?.toUpperCase() ?? "?"}
+              </span>
+            )}
+            <span className="hidden sm:inline">{userName ?? "Account"}</span>
+          </Button>
+        </DropdownMenuTrigger>
 
-      {open && (
-        <div className="absolute right-0 top-full z-[100] mt-2 w-48 origin-top-right rounded-xl border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-900">
-          <Link
-            href={AppRoutes.log.path}
-            onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
-          >
-            Log Shot
-          </Link>
-          <Link
-            href={AppRoutes.shots.path}
-            onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
-          >
-            Shots
-          </Link>
-          <Link
-            href={AppRoutes.dashboard.path}
-            onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href={AppRoutes.settings.path}
-            onClick={() => setOpen(false)}
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
-          >
-            Profile
-          </Link>
-          <div className="my-1 border-t border-stone-100 dark:border-stone-800" />
-          <button
-            onClick={() => signOut({ callbackUrl: AppRoutes.login.path })}
-            className="flex w-full items-center gap-3 px-4 py-2.5 text-sm text-stone-700 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
-          >
-            Sign Out
-          </button>
-        </div>
-      )}
-    </div>
+        <DropdownMenuContent
+          side="bottom"
+          align="end"
+          sideOffset={8}
+          className="w-48 border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900"
+        >
+          {userMenuItems.map((item, index) => {
+            const Icon = item.icon;
+            const isSignOut = item.label === "Sign Out";
+            const showSeparator = isSignOut && index > 0;
+
+            return (
+              <div key={isNavItem(item) ? item.href : item.label}>
+                {showSeparator && <DropdownMenuSeparator />}
+                <DropdownMenuItem
+                  onClick={() => handleMenuItemClick(item)}
+                  className={isNavItem(item) && item.href === AppRoutes.settings.path ? "gap-3 p-0" : "gap-3"}
+                >
+                  {isNavItem(item) && item.href === AppRoutes.settings.path ? (
+                    <Link
+                      href={item.href}
+                      className="flex w-full items-center gap-3 px-2 py-1.5"
+                    >
+                      <Icon className="h-4 w-4 text-stone-400 dark:text-stone-500" />
+                      {item.label}
+                    </Link>
+                  ) : (
+                    <>
+                      <Icon className="h-4 w-4 text-stone-400 dark:text-stone-500" />
+                      {item.label}
+                    </>
+                  )}
+                </DropdownMenuItem>
+              </div>
+            );
+          })}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
+    </>
   );
 }
