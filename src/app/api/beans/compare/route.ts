@@ -66,6 +66,8 @@ export async function GET(request: NextRequest) {
       sour: shots.sour,
       notes: shots.notes,
       flavors: shots.flavors,
+      bodyTexture: shots.bodyTexture,
+      adjectives: shots.adjectives,
       isReferenceShot: shots.isReferenceShot,
       isHidden: shots.isHidden,
       createdAt: shots.createdAt,
@@ -130,22 +132,38 @@ export async function GET(request: NextRequest) {
           )
         : null;
 
+    const avgRating =
+      ratedShots.length > 0
+        ? parseFloat(
+            (
+              ratedShots.reduce((acc, s) => acc + parseFloat(s.rating!), 0) /
+              ratedShots.length
+            ).toFixed(1),
+          )
+        : null;
+
     const firstShotDate = enrichedShots[0]?.createdAt ?? null;
     const lastShotDate = enrichedShots[enrichedShots.length - 1]?.createdAt ?? null;
 
-    // Calculate common flavors (from flavor wheel categories)
-    const flavorCounts: Record<string, number> = {};
+    // Calculate flavor stats with average rating per flavor
+    const flavorAgg: Record<string, { totalRating: number; count: number }> = {};
     for (const s of enrichedShots) {
-      if (s.flavors && Array.isArray(s.flavors)) {
-        for (const f of s.flavors) {
-          flavorCounts[f] = (flavorCounts[f] || 0) + 1;
-        }
+      if (!s.flavors || !Array.isArray(s.flavors)) continue;
+      const rating = s.rating ? parseFloat(s.rating) : null;
+      if (rating === null) continue;
+      for (const f of s.flavors) {
+        if (!flavorAgg[f]) flavorAgg[f] = { totalRating: 0, count: 0 };
+        flavorAgg[f].totalRating += rating;
+        flavorAgg[f].count += 1;
       }
     }
-    const commonFlavors = Object.entries(flavorCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([flavor]) => flavor);
+    const flavorStats = Object.entries(flavorAgg)
+      .map(([flavor, { totalRating, count }]) => ({
+        flavor,
+        avgRating: parseFloat((totalRating / count).toFixed(1)),
+        count,
+      }))
+      .sort((a, b) => b.avgRating - a.avgRating);
 
     return {
       id: bean.id,
@@ -164,10 +182,11 @@ export async function GET(request: NextRequest) {
         minShotNumber,
         maxShotNumber,
         bestRating,
+        avgRating,
         avgQuality,
         firstShotDate,
         lastShotDate,
-        commonFlavors,
+        flavorStats,
         shots: enrichedShots,
       },
     };

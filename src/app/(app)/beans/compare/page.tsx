@@ -24,10 +24,11 @@ const BEAN_FIELDS: CompareFieldConfig[] = [
 const STATS_FIELDS: CompareFieldConfig[] = [
   { field: "shotCount", label: "Total Shots", type: "number" },
   { field: "bestRating", label: "Best Rating", type: "rating", higherIsBetter: true },
+  { field: "avgRating", label: "Avg Rating", type: "rating", higherIsBetter: true },
   { field: "avgQuality", label: "Avg Quality", type: "number", higherIsBetter: true },
   { field: "firstShotDate", label: "First Shot", type: "date" },
   { field: "lastShotDate", label: "Last Shot", type: "date" },
-  { field: "commonFlavors", label: "Common Flavors", type: "tags" },
+  { field: "topFlavors", label: "Top Flavors", type: "tags" },
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -62,10 +63,13 @@ function flattenBean(b: BeanWithComparisons): Record<string, unknown> {
     // Stats fields (flattened from shotComparisons)
     shotCount: b.shotComparisons.shotCount,
     bestRating: b.shotComparisons.bestRating,
+    avgRating: b.shotComparisons.avgRating,
     avgQuality: b.shotComparisons.avgQuality,
     firstShotDate: b.shotComparisons.firstShotDate,
     lastShotDate: b.shotComparisons.lastShotDate,
-    commonFlavors: b.shotComparisons.commonFlavors,
+    topFlavors: b.shotComparisons.flavorStats.map(
+      (f) => `${f.flavor} (★${f.avgRating})`,
+    ),
   };
 }
 
@@ -140,6 +144,30 @@ function ShotHistoryTable({ beans }: { beans: BeanWithComparisons[] }) {
                             className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                           >
                             {flavor}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {shot.bodyTexture && shot.bodyTexture.length > 0 && (
+                      <div className="mt-1 flex flex-col gap-1 items-center">
+                        {shot.bodyTexture.map((bt, idx) => (
+                          <span
+                            key={idx}
+                            className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-400"
+                          >
+                            {bt}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {shot.adjectives && shot.adjectives.length > 0 && (
+                      <div className="mt-1 flex flex-col gap-1 items-center">
+                        {shot.adjectives.map((adj, idx) => (
+                          <span
+                            key={idx}
+                            className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                          >
+                            {adj}
                           </span>
                         ))}
                       </div>

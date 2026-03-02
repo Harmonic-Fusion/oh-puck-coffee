@@ -122,6 +122,8 @@ export interface BeanCompareShot {
   sour: string | null;
   notes: string | null;
   flavors: string[] | null;
+  bodyTexture: string[] | null;
+  adjectives: string[] | null;
   isReferenceShot: boolean;
   isHidden: boolean;
   createdAt: string;
@@ -136,10 +138,11 @@ export interface BeanWithComparisons extends Bean {
     minShotNumber: number;
     maxShotNumber: number;
     bestRating: number | null;
+    avgRating: number | null;
     avgQuality: number | null;
     firstShotDate: string | null;
     lastShotDate: string | null;
-    commonFlavors: string[];
+    flavorStats: { flavor: string; avgRating: number; count: number }[];
     shots: BeanCompareShot[];
   };
 }
