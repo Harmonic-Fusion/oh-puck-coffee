@@ -6,8 +6,8 @@
       "mcp__acp__Edit",
       "mcp__acp__Write",
       "Bash(git -C /Users/dylan/projects/coffee branch --show-current)",
-      "Bash(npx tsc --noEmit)",
-      "Bash(grep -rn '\"\"/api/admin\\\\|`/api/admin\\\\|api/stats/dashboard' /Users/dylan/projects/coffee/src --include=\"*.ts\" --include=\"*.tsx\")"
+      "Bash(git merge --squash 0013_super_admin)",
+      "Bash(git stash)"
     ]
   }
 }
