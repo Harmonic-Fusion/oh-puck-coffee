@@ -515,7 +515,11 @@ function ComparisonMatrix({
                     // Handle array fields (flavors, bodyTexture, adjectives) specially
                     const isArrayField = row.key === "flavors" || row.key === "bodyTexture" || row.key === "adjectives";
                     const arrayValue = isArrayField && !col.isEmpty && col.shot
-                      ? (col.shot[row.key] as string[] | null)
+                      ? (row.key === "flavors" 
+                          ? col.shot.flavors 
+                          : row.key === "bodyTexture" 
+                          ? col.shot.bodyTexture 
+                          : col.shot.adjectives)
                       : null;
                     
                     return (
