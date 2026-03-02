@@ -60,6 +60,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules/postgres ./node_modu
 # Make start script executable
 RUN chmod +x scripts/start.sh
 
+# Install wget for health checks
+RUN apk add --no-cache wget
+
 USER nextjs
 
 EXPOSE 3000
@@ -69,5 +72,9 @@ ENV HOSTNAME="0.0.0.0"
 
 # Run migrations before starting the server
 CMD ["./scripts/start.sh"]
+
+# Health check: verify both app and database are healthy
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 # noop
