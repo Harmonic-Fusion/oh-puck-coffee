@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { GenericDataTable, type ColumnDef } from "@/components/admin/GenericDataTable";
 import { NameForm } from "@/components/admin/forms/NameForm";
-import { ApiRoutes } from "@/app/routes";
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
+import { ApiRoutes, AppRoutes } from "@/app/routes";
+
+const { puckingAdmin } = AppRoutes;
+const appEquipment = puckingAdmin.equipment as typeof puckingAdmin.equipment & {
+  grinders: { path: string };
+};
 
 interface AdminGrinder {
   id: string;
@@ -33,10 +39,12 @@ export default function AdminGrindersPage() {
 
   return (
     <>
+      <AdminBreadcrumb segments={[{ label: "Grinders" }]} />
       <GenericDataTable<AdminGrinder>
         endpoint={ENDPOINT}
         columns={columns}
         title="Grinders"
+        rowHref={(row) => `${appEquipment.grinders.path}/${row.id}`}
         toolbar={
           <button
             onClick={() => setCreateOpen(true)}

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { GenericDataTable, type ColumnDef } from "@/components/admin/GenericDataTable";
 import { UserRoleForm } from "@/components/admin/forms/UserRoleForm";
-import { ApiRoutes } from "@/app/routes";
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
+import { ApiRoutes, AppRoutes } from "@/app/routes";
 
 interface AdminUser {
   id: string;
@@ -58,11 +59,13 @@ export default function AdminUsersPage() {
 
   return (
     <>
+      <AdminBreadcrumb segments={[{ label: "Users" }]} />
       <GenericDataTable<AdminUser>
         endpoint={ENDPOINT}
         columns={columns}
         title="Users"
         searchable
+        rowHref={(row) => `${AppRoutes.puckingAdmin.users.path}/${row.id}`}
         rowActions={(row) => (
           <button
             onClick={() => setEditTarget(row)}

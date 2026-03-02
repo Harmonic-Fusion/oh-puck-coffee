@@ -1,7 +1,8 @@
 "use client";
 
 import { GenericDataTable, type ColumnDef } from "@/components/admin/GenericDataTable";
-import { ApiRoutes } from "@/app/routes";
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
+import { ApiRoutes, AppRoutes } from "@/app/routes";
 
 interface AdminShot {
   id: string;
@@ -56,10 +57,14 @@ const columns: ColumnDef<AdminShot>[] = [
 
 export default function AdminShotsPage() {
   return (
-    <GenericDataTable<AdminShot>
-      endpoint={ApiRoutes.admin.shots.path}
-      columns={columns}
-      title="Shots"
-    />
+    <>
+      <AdminBreadcrumb segments={[{ label: "Shots" }]} />
+      <GenericDataTable<AdminShot>
+        endpoint={ApiRoutes.admin.shots.path}
+        columns={columns}
+        title="Shots"
+        rowHref={(row) => `${AppRoutes.puckingAdmin.shots.path}/${row.id}`}
+      />
+    </>
   );
 }

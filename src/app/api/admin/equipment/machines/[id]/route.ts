@@ -5,6 +5,26 @@ import { machines } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createMachineSchema } from "@/shared/equipment/schema";
 
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { error } = await requireSuperAdmin();
+  if (error) return error;
+
+  const { id } = await params;
+  const [machine] = await db
+    .select()
+    .from(machines)
+    .where(eq(machines.id, id))
+    .limit(1);
+
+  if (!machine) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  return NextResponse.json(machine);
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -1,9 +1,113 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/api-auth";
 import { db } from "@/db";
-import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { users, shots, beans } from "@/db/schema";
+import { eq, and, sql, count, desc, avg } from "drizzle-orm";
 import * as z from "zod";
+
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { error } = await requireSuperAdmin();
+  if (error) return error;
+
+  const { id } = await params;
+
+  // Fetch user
+  const [user] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, id))
+    .limit(1);
+
+  if (!user) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Fetch all user shots for stats
+  const userShots = await db
+    .select({
+      id: shots.id,
+      rating: shots.rating,
+      shotQuality: shots.shotQuality,
+      createdAt: shots.createdAt,
+    })
+    .from(shots)
+    .where(eq(shots.userId, id))
+    .orderBy(desc(shots.createdAt));
+
+  const shotCount = userShots.length;
+  const lastShot = userShots.length > 0 ? userShots[0].createdAt : null;
+
+  // Average rating & quality
+  const ratedShots = userShots.filter((s) => s.rating != null);
+  const avgRating = ratedShots.length > 0
+    ? parseFloat(
+        (ratedShots.reduce((acc, s) => acc + parseFloat(s.rating ?? "0"), 0) / ratedShots.length).toFixed(1)
+      )
+    : null;
+
+  const qualityShots = userShots.filter((s) => s.shotQuality != null);
+  const avgQuality = qualityShots.length > 0
+    ? parseFloat(
+        (qualityShots.reduce((acc, s) => acc + parseFloat(s.shotQuality ?? "0"), 0) / qualityShots.length).toFixed(1)
+      )
+    : null;
+
+  // Shots over time (daily counts, last 90 days)
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+  const shotsOverTime: Record<string, number> = {};
+  for (const shot of userShots) {
+    const d = new Date(shot.createdAt);
+    if (d >= ninetyDaysAgo) {
+      const dateStr = d.toISOString().slice(0, 10);
+      shotsOverTime[dateStr] = (shotsOverTime[dateStr] ?? 0) + 1;
+    }
+  }
+
+  // Fill in missing dates
+  const shotsPerDay: { date: string; shots: number }[] = [];
+  const cursor = new Date(ninetyDaysAgo);
+  const today = new Date();
+  while (cursor <= today) {
+    const dateStr = cursor.toISOString().slice(0, 10);
+    shotsPerDay.push({ date: dateStr, shots: shotsOverTime[dateStr] ?? 0 });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  // Day of week distribution
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const dayOfWeekCounts = [0, 0, 0, 0, 0, 0, 0];
+  for (const shot of userShots) {
+    const day = new Date(shot.createdAt).getDay();
+    dayOfWeekCounts[day]++;
+  }
+  const dayOfWeek = dayNames.map((name, i) => ({
+    day: name,
+    shots: dayOfWeekCounts[i],
+  }));
+
+  return NextResponse.json({
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      image: user.image,
+      emailVerified: user.emailVerified,
+      isCustomName: user.isCustomName,
+    },
+    shotCount,
+    lastShot,
+    avgRating,
+    avgQuality,
+    shotsPerDay,
+    dayOfWeek,
+  });
+}
 
 const updateUserSchema = z.object({
   role: z.enum(["member", "admin", "super-admin"]),

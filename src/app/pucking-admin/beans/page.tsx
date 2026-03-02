@@ -1,7 +1,8 @@
 "use client";
 
 import { GenericDataTable, type ColumnDef } from "@/components/admin/GenericDataTable";
-import { ApiRoutes } from "@/app/routes";
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
+import { ApiRoutes, AppRoutes } from "@/app/routes";
 
 interface AdminBean {
   id: string;
@@ -35,11 +36,15 @@ const columns: ColumnDef<AdminBean>[] = [
 
 export default function AdminBeansPage() {
   return (
-    <GenericDataTable<AdminBean>
-      endpoint={ApiRoutes.admin.beans.path}
-      columns={columns}
-      title="Beans"
-      searchable
-    />
+    <>
+      <AdminBreadcrumb segments={[{ label: "Beans" }]} />
+      <GenericDataTable<AdminBean>
+        endpoint={ApiRoutes.admin.beans.path}
+        columns={columns}
+        title="Beans"
+        searchable
+        rowHref={(row) => `${AppRoutes.puckingAdmin.beans.path}/${row.id}`}
+      />
+    </>
   );
 }

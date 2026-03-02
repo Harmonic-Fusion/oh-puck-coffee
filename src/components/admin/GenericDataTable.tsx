@@ -10,6 +10,7 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { useAdminData } from "./hooks";
+import Link from "next/link";
 import { ChevronLeftIcon, ChevronRightIcon, MagnifyingGlassIcon, ChevronUpDownIcon, ChevronUpIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -32,6 +33,7 @@ interface GenericDataTableProps<T extends Record<string, any>> {
   searchable?: boolean;
   toolbar?: React.ReactNode;
   rowActions?: (row: T) => React.ReactNode;
+  rowHref?: (row: T) => string;
 }
 
 function formatValue(value: unknown): React.ReactNode {
@@ -92,6 +94,7 @@ export function GenericDataTable<T extends Record<string, any>>({
   searchable = false,
   toolbar,
   rowActions,
+  rowHref,
 }: GenericDataTableProps<T>) {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(defaultPageSize);
@@ -255,25 +258,38 @@ export function GenericDataTable<T extends Record<string, any>>({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  sortedRows.map((row, rowIndex) => (
-                    <TableRow key={String(row.id ?? rowIndex)}>
-                      {columns.map((col) => {
-                        const value = row[col.key as keyof T];
-                        return (
-                          <TableCell key={String(col.key)} className={col.className}>
-                            {col.render
-                              ? col.render(value, row)
-                              : formatValue(value)}
+                  sortedRows.map((row, rowIndex) => {
+                    const href = rowHref?.(row);
+                    return (
+                      <TableRow
+                        key={String(row.id ?? rowIndex)}
+                        className={href ? "cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800/50" : undefined}
+                      >
+                        {columns.map((col) => {
+                          const value = row[col.key as keyof T];
+                          const cell = col.render
+                            ? col.render(value, row)
+                            : formatValue(value);
+                          return (
+                            <TableCell key={String(col.key)} className={col.className}>
+                              {href ? (
+                                <Link href={href} className="block">
+                                  {cell}
+                                </Link>
+                              ) : (
+                                cell
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                        {rowActions && (
+                          <TableCell className="text-right">
+                            {rowActions(row)}
                           </TableCell>
-                        );
-                      })}
-                      {rowActions && (
-                        <TableCell className="text-right">
-                          {rowActions(row)}
-                        </TableCell>
-                      )}
-                    </TableRow>
-                  ))
+                        )}
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { GenericDataTable, type ColumnDef } from "@/components/admin/GenericDataTable";
 import { ToolForm } from "@/components/admin/forms/ToolForm";
-import { ApiRoutes } from "@/app/routes";
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
+import { ApiRoutes, AppRoutes } from "@/app/routes";
+
+const { puckingAdmin } = AppRoutes;
+const appEquipment = puckingAdmin.equipment as typeof puckingAdmin.equipment & {
+  tools: { path: string };
+};
 
 interface AdminTool {
   id: string;
@@ -36,10 +42,12 @@ export default function AdminToolsPage() {
 
   return (
     <>
+      <AdminBreadcrumb segments={[{ label: "Tools" }]} />
       <GenericDataTable<AdminTool>
         endpoint={ENDPOINT}
         columns={columns}
         title="Tools"
+        rowHref={(row) => `${appEquipment.tools.path}/${row.id}`}
         toolbar={
           <button
             onClick={() => setCreateOpen(true)}

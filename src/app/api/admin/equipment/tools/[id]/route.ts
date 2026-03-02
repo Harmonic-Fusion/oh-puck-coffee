@@ -5,6 +5,26 @@ import { tools } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createToolSchema } from "@/shared/equipment/schema";
 
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { error } = await requireSuperAdmin();
+  if (error) return error;
+
+  const { id } = await params;
+  const [tool] = await db
+    .select()
+    .from(tools)
+    .where(eq(tools.id, id))
+    .limit(1);
+
+  if (!tool) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  return NextResponse.json(tool);
+}
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

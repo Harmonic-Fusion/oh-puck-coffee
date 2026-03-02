@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { GenericDataTable, type ColumnDef } from "@/components/admin/GenericDataTable";
 import { NameForm } from "@/components/admin/forms/NameForm";
-import { ApiRoutes } from "@/app/routes";
+import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
+import { ApiRoutes, AppRoutes } from "@/app/routes";
+
+const { puckingAdmin } = AppRoutes;
+const appEquipment = puckingAdmin.equipment as typeof puckingAdmin.equipment & {
+  machines: { path: string };
+};
 
 interface AdminMachine {
   id: string;
@@ -33,10 +39,12 @@ export default function AdminMachinesPage() {
 
   return (
     <>
+      <AdminBreadcrumb segments={[{ label: "Machines" }]} />
       <GenericDataTable<AdminMachine>
         endpoint={ENDPOINT}
         columns={columns}
         title="Machines"
+        rowHref={(row) => `${appEquipment.machines.path}/${row.id}`}
         toolbar={
           <button
             onClick={() => setCreateOpen(true)}
