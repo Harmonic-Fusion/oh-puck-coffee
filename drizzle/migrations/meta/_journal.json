@@ -57,6 +57,13 @@
       "when": 1772414673506,
       "tag": "0007_icy_killraven",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1772430355000,
+      "tag": "0008_make_dose_yield_optional",
+      "breakpoints": true
     }
   ]
 }
