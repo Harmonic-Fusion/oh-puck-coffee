@@ -1,5 +1,4 @@
 import {
-  BeakerIcon,
   ClipboardDocumentListIcon,
   ChartBarIcon,
   SparklesIcon,
@@ -10,6 +9,7 @@ import {
   ShieldCheckIcon,
 } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
+import { BeanIcon } from "@/components/common/BeanIcon";
 
 export type NavItem = {
   label: string;
@@ -38,6 +38,11 @@ export const navItems = {
     label: "Tasting",
     href: AppRoutes.tasting.path,
     icon: SparklesIcon,
+  },
+  beans: {
+    label: "Beans",
+    href: AppRoutes.beans.path,
+    icon: BeanIcon,
   },
   shots: {
     label: "Shots",
@@ -73,6 +78,7 @@ export const menuActions = {
  * Mobile main tabs (Shots, Stats, Add)
  */
 export const mobileMainTabs: NavItem[] = [
+  navItems.beans,
   navItems.shots,
   navItems.stats,
   navItems.add,
@@ -102,8 +108,9 @@ export function getMobileMenuItems(
  */
 export const desktopMainNav: NavItem[] = [
   navItems.add,
-  navItems.stats,
+  navItems.beans,
   navItems.shots,
+  navItems.stats,
   navItems.tasting,
 ];
 

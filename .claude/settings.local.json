@@ -7,7 +7,11 @@
       "mcp__acp__Write",
       "Bash(git -C /Users/dylan/projects/coffee branch --show-current)",
       "Bash(git merge --squash 0013_super_admin)",
-      "Bash(git stash)"
+      "Bash(git stash)",
+      "Bash(wc -l /Users/dylan/projects/coffee/src/app/\\\\\\(app\\\\\\)/shots/page.tsx)",
+      "Bash(ls /Users/dylan/projects/coffee/src/app/\\\\\\(app\\\\\\)/beans/)",
+      "Bash(ls /Users/dylan/projects/coffee/src/app/\\\\\\(app\\\\\\)/beans/[id]/)",
+      "Bash(npx tsc --noEmit)"
     ]
   }
 }

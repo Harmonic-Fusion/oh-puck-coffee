@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="24" height="24">
+  <!-- Bean outer shape: rotated ellipse -->
+  <ellipse cx="12" cy="12" rx="5.5" ry="8.5" rx="5.5" ry="8.5" transform="rotate(-30 12 12)" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Center crease: S-curve bisecting the bean -->
+  <path stroke-linecap="round" stroke-linejoin="round" d="M9.5 6.8 C10.8 8.5, 10.8 10, 12 12 C13.2 14, 13.2 15.5, 14.5 17.2"/>
+</svg>

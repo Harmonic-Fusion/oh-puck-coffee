@@ -11,6 +11,13 @@ export const AppRoutes = routesBuilder({
   home: { path: "/", _is_public: true },
   log: "/log",
   shots: "/shots",
+  beans: {
+    path: "/beans",
+    beanId: {
+      path: "/:id",
+    },
+    compare: "/compare",
+  },
   dashboard: "/dashboard",
   settings: {
     path: "/settings",
@@ -72,6 +79,7 @@ export const ApiRoutes = routesBuilder({
   beans: {
     path: "/api/beans",
     search: "/search",
+    compare: "/compare",
     beanId: {
       path: "/:id",
     },
@@ -98,6 +106,7 @@ export const ApiRoutes = routesBuilder({
     overview: "/overview",
     shotMetrics: "/shot-metrics",
     dashboard: "/dashboard",
+    flavors: "/flavors",
     byBean: {
       path: "/by-bean",
       beanId: {

@@ -80,3 +80,22 @@ export function useUserStats(userId: string | undefined) {
     enabled: !!userId,
   });
 }
+
+export interface FlavorStat {
+  flavor: string;
+  avgRating: number;
+  count: number;
+}
+
+export function useFlavorStats(beanId: string | undefined) {
+  return useQuery<{ flavors: FlavorStat[] }>({
+    queryKey: ["stats", "flavors", beanId],
+    queryFn: async () => {
+      const params = beanId ? `?beanId=${encodeURIComponent(beanId)}` : "";
+      const res = await fetch(`${ApiRoutes.stats.flavors.path}${params}`);
+      if (!res.ok) throw new Error("Failed to fetch flavor stats");
+      return res.json();
+    },
+    enabled: !!beanId,
+  });
+}
