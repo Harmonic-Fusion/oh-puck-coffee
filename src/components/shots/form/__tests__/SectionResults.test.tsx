@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FormProvider, useForm } from "react-hook-form";
-import { SectionResults } from "./SectionResults";
+import { SectionBrewing } from "../__components__/SectionBrewing";
+import { SectionTasting } from "../__components__/SectionTasting";
 import type { CreateShot } from "@/shared/shots/schema";
 import React from "react";
 
@@ -19,21 +20,48 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
   return <FormProvider {...methods}>{children}</FormProvider>;
 }
 
-describe("SectionResults", () => {
-  it("renders section titles", () => {
+describe("SectionBrewing", () => {
+  it("renders section title", () => {
     render(
       <TestWrapper>
-        <SectionResults />
+        <SectionBrewing />
       </TestWrapper>
     );
-    expect(screen.getByText("Results")).toBeInTheDocument();
+    expect(screen.getByText("Brewing")).toBeInTheDocument();
+  });
+
+  it("renders Shot Quality slider when visible", () => {
+    const resultsVisibility = {
+      yieldActual: true,
+      brewTime: true,
+      estimateMaxPressure: false,
+      shotQuality: true,
+    };
+    localStorage.setItem("coffee-results-visibility", JSON.stringify(resultsVisibility));
+
+    render(
+      <TestWrapper>
+        <SectionBrewing />
+      </TestWrapper>
+    );
+    expect(screen.getByText("Shot Quality")).toBeInTheDocument();
+  });
+});
+
+describe("SectionTasting", () => {
+  it("renders section title", () => {
+    render(
+      <TestWrapper>
+        <SectionTasting />
+      </TestWrapper>
+    );
     expect(screen.getByText("Tasting Notes")).toBeInTheDocument();
   });
 
   it("renders Notes textarea", () => {
     render(
       <TestWrapper>
-        <SectionResults />
+        <SectionTasting />
       </TestWrapper>
     );
     expect(screen.getByLabelText("Notes")).toBeInTheDocument();
@@ -43,7 +71,7 @@ describe("SectionResults", () => {
     const user = userEvent.setup();
     render(
       <TestWrapper>
-        <SectionResults />
+        <SectionTasting />
       </TestWrapper>
     );
 
@@ -66,7 +94,6 @@ describe("SectionResults", () => {
         },
       });
 
-      // Set an error manually for testing using useEffect to avoid infinite re-renders
       React.useEffect(() => {
         methods.setError("notes", { message: "Notes are required" });
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,35 +104,17 @@ describe("SectionResults", () => {
 
     render(
       <TestWrapperWithError>
-        <SectionResults />
+        <SectionTasting />
       </TestWrapperWithError>
     );
 
     expect(screen.getByText("Notes are required")).toBeInTheDocument();
   });
 
-  it("renders Shot Quality slider when visible", () => {
-    // "shotQuality" is hidden by default; set localStorage to make it visible
-    const resultsVisibility = {
-      yieldActual: true,
-      brewTime: true,
-      estimateMaxPressure: false,
-      shotQuality: true,
-    };
-    localStorage.setItem("coffee-results-visibility", JSON.stringify(resultsVisibility));
-
-    render(
-      <TestWrapper>
-        <SectionResults />
-      </TestWrapper>
-    );
-    expect(screen.getByText("Shot Quality")).toBeInTheDocument();
-  });
-
   it("has correct placeholder for Notes", () => {
     render(
       <TestWrapper>
-        <SectionResults />
+        <SectionTasting />
       </TestWrapper>
     );
     expect(
@@ -116,7 +125,7 @@ describe("SectionResults", () => {
   it("Notes textarea has rows attribute set to 4", () => {
     render(
       <TestWrapper>
-        <SectionResults />
+        <SectionTasting />
       </TestWrapper>
     );
     const notesTextarea = screen.getByLabelText("Notes");

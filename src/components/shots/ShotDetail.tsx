@@ -195,6 +195,7 @@ export function ShotDetail({
     if (shot.machineId) params.set("machineId", shot.machineId);
     if (shot.doseGrams) params.set("doseGrams", shot.doseGrams);
     if (shot.yieldGrams) params.set("yieldGrams", shot.yieldGrams);
+    if (shot.sizeOz) params.set("sizeOz", shot.sizeOz);
     if (shot.grindLevel) params.set("grindLevel", shot.grindLevel);
     if (shot.brewTempC) params.set("brewTempC", shot.brewTempC);
     if (shot.preInfusionDuration)
@@ -407,6 +408,7 @@ export function ShotDetail({
         machineId: shot.machineId || undefined,
         doseGrams: shot.doseGrams ? parseFloat(shot.doseGrams) : undefined,
         yieldGrams: shot.yieldGrams ? parseFloat(shot.yieldGrams) : undefined,
+        sizeOz: shot.sizeOz ? parseFloat(shot.sizeOz) : undefined,
         grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
         brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
         preInfusionDuration: shot.preInfusionDuration
@@ -650,6 +652,10 @@ export function ShotDetail({
                   label="Target Yield"
                   value={`${roundToOneDecimal(shot.yieldGrams)}g`}
                   subtitle={ratio ? `1:${ratio}` : "-/-"}
+                />
+                <DetailRow
+                  label="Size"
+                  value={shot.sizeOz ? `${roundToOneDecimal(shot.sizeOz)}oz` : null}
                 />
                 <DetailRow label="Grind Level" value={shot.grindLevel} />
                 <DetailRow

@@ -18,6 +18,7 @@ interface RecipeValues {
   toolsUsed?: string[];
   doseGrams?: number;
   yieldGrams?: number;
+  sizeOz?: number;
   grindLevel?: number;
   brewTempC?: number;
   preInfusionDuration?: number;
@@ -33,6 +34,7 @@ function shotToRecipeValues(shot: ShotWithJoins): RecipeValues {
     toolsUsed: shot.toolsUsed || undefined,
     doseGrams: shot.doseGrams ? parseFloat(shot.doseGrams) : undefined,
     yieldGrams: shot.yieldGrams ? parseFloat(shot.yieldGrams) : undefined,
+    sizeOz: shot.sizeOz ? parseFloat(shot.sizeOz) : undefined,
     grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
     brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
     preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
@@ -54,6 +56,7 @@ function applyRecipeToForm(
   // Recipe section
   if (values.doseGrams !== undefined) methods.setValue("doseGrams", values.doseGrams);
   if (values.yieldGrams !== undefined) methods.setValue("yieldGrams", values.yieldGrams);
+  if (values.sizeOz !== undefined) methods.setValue("sizeOz", values.sizeOz);
   if (values.grindLevel !== undefined) methods.setValue("grindLevel", values.grindLevel);
   if (values.brewTempC !== undefined) methods.setValue("brewTempC", values.brewTempC);
   if (values.preInfusionDuration !== undefined) methods.setValue("preInfusionDuration", values.preInfusionDuration);
@@ -84,6 +87,7 @@ function applyUrlParamsToForm(
   const numericFields = [
     "doseGrams",
     "yieldGrams",
+    "sizeOz",
     "grindLevel",
     "brewTempC",
     "preInfusionDuration",

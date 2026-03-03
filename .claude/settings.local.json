@@ -9,6 +9,7 @@
       "Bash(git stash)",
       "Bash(ls *)",
       "Bash(wc -l *)",
+      "Bash(wc -l)",
       "Bash(grep -r *)",
       "Bash(git add *)",
       "Bash(npx tsc --noEmit *)",
@@ -26,11 +27,7 @@
       "Bash(pnpm tsc --noEmit)",
       "Bash(git checkout main)"
     ],
-    "deny": [
-      "Read(./.env)"
-    ],
-    "ask": [
-      "Bash(git commit *)"
-    ]
+    "deny": ["Read(./.env)"],
+    "ask": ["Bash(git commit *)"]
   }
 }

@@ -1,104 +1,59 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { NumberStepper } from "@/components/common/NumberStepper";
-import { QRCode } from "@/components/common/QRCode";
-import { Modal } from "@/components/common/Modal";
 import { EditOrderModal } from "@/components/common/EditOrderModal";
 import { ToolSelector } from "@/components/equipment/ToolSelector";
 import { BeanSection } from "./BeanSection";
-import { Card } from "@/components/common/Card";
-import { InformationCircleIcon } from "@heroicons/react/24/outline";
-import { AppRoutes } from "@/app/routes";
+import { EditInputsButton } from "./EditInputsButton";
+import { CollapsibleSection } from "./CollapsibleSection";
 import type { CreateShot } from "@/shared/shots/schema";
 import { PreviousShotRow } from "./PreviousShotRow";
 import type { ShotWithJoins } from "@/components/shots/hooks";
+import { useBeans } from "@/components/beans/hooks";
 import { useGrinders } from "@/components/equipment/hooks";
 import { isSpecialGrinder } from "@/shared/equipment/constants";
 import { TEMP_UNIT_KEY, fToC, cToF } from "@/lib/format-numbers";
-import { getRequiredStepIds, type ReorderableStepConfig } from "./step-config";
-const RECIPE_ORDER_KEY = "coffee-recipe-order";
-const RECIPE_VISIBILITY_KEY = "coffee-recipe-visibility";
+import { getRequiredStepIds, type ReorderableStepConfig } from "../step-config";
+import { useReorderableSteps } from "../hooks/useReorderableSteps";
+
 const RATIO_OPTIONS = [1, 2, 3, 4] as const;
 const DOSE_OPTIONS = [16, 18, 20, 22] as const;
 const PRESSURE_OPTIONS = [6, 9, 12] as const;
+const SIZE_OPTIONS = [2, 8, 12, 16, 20] as const;
 const DEFAULT_BREW_TEMP_F = 200;
 
-type RecipeStepId = "beans" | "previousShot" | "dose" | "yield" | "grindLevel" | "brewTemp" | "brewPressure" | "preInfusion" | "toolsUsed";
+type RecipeStepId =
+  | "beans"
+  | "previousShot"
+  | "dose"
+  | "yield"
+  | "size"
+  | "grindLevel"
+  | "brewTemp"
+  | "brewPressure"
+  | "preInfusion"
+  | "toolsUsed";
 
-type RecipeStepConfig = ReorderableStepConfig<RecipeStepId>;
-
-/**
- * Default recipe section order:
- * 1. Previous Shot (visible by default when available)
- * 2. Beans (visible by default, required)
- * 3. Grind Level (hidden by default)
- * 4. Dose (visible by default)
- * 5. Target Yield (visible by default)
- * 6. Brew Temp (hidden by default)
- * 7. Brew Pressure (hidden by default)
- * 8. Pre-infusion (hidden by default)
- * 9. Tools Used (hidden by default)
- */
-const DEFAULT_STEPS: RecipeStepConfig[] = [
+const DEFAULT_STEPS: ReorderableStepConfig<RecipeStepId>[] = [
   { id: "previousShot", label: "Previous Shot", visible: true },
   { id: "beans", label: "Beans", visible: true, required: true },
   { id: "grindLevel", label: "Grind Level", visible: false },
   { id: "dose", label: "Dose", visible: false },
   { id: "yield", label: "Target Yield", visible: false },
+  { id: "size", label: "Size", visible: false },
   { id: "brewTemp", label: "Brew Temp", visible: false },
   { id: "brewPressure", label: "Brew Pressure", visible: false },
   { id: "preInfusion", label: "Pre-infusion", visible: false },
   { id: "toolsUsed", label: "Tools Used", visible: false },
 ];
-const REQUIRED_RECIPE_FIELDS: RecipeStepId[] = getRequiredStepIds(DEFAULT_STEPS);
+const REQUIRED_RECIPE_FIELDS: RecipeStepId[] =
+  getRequiredStepIds(DEFAULT_STEPS);
 
 function getSavedTempUnit(): "C" | "F" {
   if (typeof window === "undefined") return "F";
   return (localStorage.getItem(TEMP_UNIT_KEY) as "C" | "F") || "F";
-}
-
-function getSavedRecipeOrder(): RecipeStepId[] {
-  if (typeof window === "undefined") return DEFAULT_STEPS.map((s) => s.id);
-  const saved = localStorage.getItem(RECIPE_ORDER_KEY);
-  if (!saved) return DEFAULT_STEPS.map((s) => s.id);
-  try {
-    const parsed = JSON.parse(saved) as RecipeStepId[];
-    // Validate that all default steps are present
-    const defaultIds = DEFAULT_STEPS.map((s) => s.id);
-    const valid = defaultIds.every((id) => parsed.includes(id));
-    return valid ? parsed : DEFAULT_STEPS.map((s) => s.id);
-  } catch {
-    return DEFAULT_STEPS.map((s) => s.id);
-  }
-}
-
-function getSavedRecipeVisibility(): Record<RecipeStepId, boolean> {
-  if (typeof window === "undefined") {
-    return DEFAULT_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<RecipeStepId, boolean>);
-  }
-  const saved = localStorage.getItem(RECIPE_VISIBILITY_KEY);
-  if (!saved) {
-    return DEFAULT_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<RecipeStepId, boolean>);
-  }
-  try {
-    const parsed = JSON.parse(saved) as Record<string, boolean>;
-    // Merge with defaults to ensure all steps have visibility
-    return DEFAULT_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: parsed[step.id] ?? step.visible }), {} as Record<RecipeStepId, boolean>);
-  } catch {
-    return DEFAULT_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<RecipeStepId, boolean>);
-  }
-}
-
-function saveRecipeOrder(order: RecipeStepId[]): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(RECIPE_ORDER_KEY, JSON.stringify(order));
-}
-
-function saveRecipeVisibility(visibility: Record<RecipeStepId, boolean>): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(RECIPE_VISIBILITY_KEY, JSON.stringify(visibility));
 }
 
 interface SectionRecipeProps {
@@ -107,7 +62,11 @@ interface SectionRecipeProps {
   showAllInputs?: boolean;
 }
 
-export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = false }: SectionRecipeProps) {
+export function SectionRecipe({
+  previousShotId,
+  onViewShot,
+  showAllInputs = false,
+}: SectionRecipeProps) {
   const {
     watch,
     setValue,
@@ -121,36 +80,19 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
   const [activeRatio, setActiveRatio] = useState<number | null>(null);
   const [activeDose, setActiveDose] = useState<number | null>(null);
   const [activePressure, setActivePressure] = useState<number | null>(9);
-  const [showQRCode, setShowQRCode] = useState(false);
-  
-  // ── Recipe order and visibility ──
-  // Initialize with static defaults to avoid hydration mismatch (localStorage read happens in useEffect below)
-  const [recipeOrder, setRecipeOrder] = useState<RecipeStepId[]>(DEFAULT_STEPS.map((s) => s.id));
-  const [recipeVisibility, setRecipeVisibility] = useState<Record<RecipeStepId, boolean>>(
-    DEFAULT_STEPS.reduce((acc, step) => ({ ...acc, [step.id]: step.visible }), {} as Record<RecipeStepId, boolean>)
-  );
-  const [showMenu, setShowMenu] = useState(false);
-  const [showOrderModal, setShowOrderModal] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [activeSize, setActiveSize] = useState<number | null>(null);
 
-  // Hydrate from localStorage on mount
+  const steps = useReorderableSteps({
+    defaultSteps: DEFAULT_STEPS,
+    orderKey: "coffee-recipe-order",
+    visibilityKey: "coffee-recipe-visibility",
+    showAllInputs,
+  });
+
+  // Hydrate temp unit from localStorage
   useEffect(() => {
     setTempUnit(getSavedTempUnit());
-    setRecipeOrder(getSavedRecipeOrder());
-    setRecipeVisibility(getSavedRecipeVisibility());
   }, []);
-
-  // Handle click outside to close menu
-  useEffect(() => {
-    if (!showMenu) return;
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowMenu(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showMenu]);
 
   // Watch brewTempC early so it can be used in useEffect
   const brewTempC = watch("brewTempC");
@@ -172,17 +114,16 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
   const dose = watch("doseGrams");
   const yieldG = watch("yieldGrams");
   const grindLevel = watch("grindLevel");
-  const preInfusionDuration = watch("preInfusionDuration");
-  const brewPressure = watch("brewPressure");
-  const beanId = watch("beanId");
   const grinderId = watch("grinderId");
-  const machineId = watch("machineId");
-  const toolsUsed = watch("toolsUsed");
+  const beanId = watch("beanId");
 
   // Check if selected grinder is a special grinder (e.g., "Pre-ground")
   const { data: grinders } = useGrinders();
+  const { data: beans } = useBeans();
   const selectedGrinder = grinders?.find((g) => g.id === grinderId);
-  const isPreGround = selectedGrinder ? isSpecialGrinder(selectedGrinder.name) : false;
+  const isPreGround = selectedGrinder
+    ? isSpecialGrinder(selectedGrinder.name)
+    : false;
 
   // Clear grind level when switching to Pre-ground
   useEffect(() => {
@@ -193,39 +134,29 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
 
   const computedRatio = dose && yieldG ? (yieldG / dose).toFixed(2) : "—";
 
-  // Generate QR code URL for current recipe
-  const recipeQRUrl = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    
-    const params = new URLSearchParams();
-    if (beanId) params.set("beanId", beanId);
-    if (grinderId) params.set("grinderId", grinderId);
-    if (machineId) params.set("machineId", machineId);
-    if (dose) params.set("doseGrams", dose.toString());
-    if (yieldG) params.set("yieldGrams", yieldG.toString());
-    if (grindLevel) params.set("grindLevel", grindLevel.toString());
-    if (brewTempC) params.set("brewTempC", brewTempC.toString());
-    if (preInfusionDuration) params.set("preInfusionDuration", preInfusionDuration.toString());
-    if (brewPressure) params.set("brewPressure", brewPressure.toString());
-    if (toolsUsed && Array.isArray(toolsUsed) && toolsUsed.length > 0) {
-      params.set("toolsUsed", toolsUsed.join(","));
-    }
-    
-    return `${window.location.origin}${AppRoutes.log.path}?${params.toString()}`;
-  }, [beanId, grinderId, machineId, dose, yieldG, grindLevel, brewTempC, preInfusionDuration, brewPressure, toolsUsed]);
+  const beanName = useMemo(
+    () => beans?.find((b) => b.id === beanId)?.name ?? null,
+    [beans, beanId],
+  );
+
+  // ── Section summary for collapsed state ──
+  const summaryParts: string[] = [];
+  if (beanName) summaryParts.push(beanName);
+  if (dose) summaryParts.push(`In: ${dose}g`);
+  if (dose && yieldG) summaryParts.push(`1:${(yieldG / dose).toFixed(1)}`);
+  const summaryText = summaryParts.join(" · ");
 
   // ── Dose quick-select: set dose value ──
   const applyDose = useCallback(
     (doseValue: number) => {
       setActiveDose(doseValue);
       setValue("doseGrams", doseValue, { shouldValidate: true });
-      // If a ratio is active, recalculate yield
       if (activeRatio) {
         const computed = parseFloat((doseValue * activeRatio).toFixed(1));
         setValue("yieldGrams", computed, { shouldValidate: true });
       }
     },
-    [activeRatio, setValue]
+    [activeRatio, setValue],
   );
 
   // ── Ratio quick-select: set yield = dose × ratio ──
@@ -237,37 +168,45 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
         setValue("yieldGrams", computed, { shouldValidate: true });
       }
     },
-    [dose, setValue]
+    [dose, setValue],
   );
 
-  // When dose changes while a ratio button is active, recalculate yield
-  // If manually edited, deselect the dose button if it doesn't match a quick-select option
   const handleDoseChange = useCallback(
     (val: number | undefined) => {
       setValue("doseGrams", val as number, { shouldValidate: true });
-      // Check if the value matches any quick-select option
       if (val != null) {
         const matchingDose = DOSE_OPTIONS.find((d) => Math.abs(d - val) < 0.01);
         setActiveDose(matchingDose ?? null);
       } else {
         setActiveDose(null);
       }
-      // If a ratio is active, recalculate yield
       if (val && activeRatio) {
         const computed = parseFloat((val * activeRatio).toFixed(1));
         setValue("yieldGrams", computed, { shouldValidate: true });
       }
     },
-    [activeRatio, setValue]
+    [activeRatio, setValue],
   );
 
-  // If user manually edits yield, deselect the ratio button
   const handleYieldChange = useCallback(
     (val: number | undefined) => {
       setActiveRatio(null);
       setValue("yieldGrams", val as number, { shouldValidate: true });
     },
-    [setValue]
+    [setValue],
+  );
+
+  const handleSizeChange = useCallback(
+    (val: number | undefined) => {
+      setValue("sizeOz", val as number, { shouldValidate: true });
+      if (val != null) {
+        const match = SIZE_OPTIONS.find((s) => Math.abs(s - val) < 0.01);
+        setActiveSize(match ?? null);
+      } else {
+        setActiveSize(null);
+      }
+    },
+    [setValue],
   );
 
   // ── Temp unit toggle (persisted) ──
@@ -291,26 +230,12 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
         setValue("brewTempC", undefined, { shouldValidate: false });
       }
     },
-    [setValue]
+    [setValue],
   );
-
-  // ── Recipe order modal handlers ──
-  const handleOrderChange = useCallback((newOrder: RecipeStepId[], newVisibility: Record<RecipeStepId, boolean>) => {
-    setRecipeOrder(newOrder);
-    setRecipeVisibility(newVisibility);
-    saveRecipeOrder(newOrder);
-    saveRecipeVisibility(newVisibility);
-  }, []);
-
-  // Get ordered steps — when showAllInputs, use default order; otherwise use saved order
-  const orderedSteps = useMemo(() => {
-    const order = showAllInputs ? DEFAULT_STEPS.map((s) => s.id) : recipeOrder;
-    return order.map((id) => DEFAULT_STEPS.find((s) => s.id === id)).filter((step): step is RecipeStepConfig => step !== undefined);
-  }, [recipeOrder, showAllInputs]);
 
   // Render a step component based on its ID
   const renderStep = (stepId: RecipeStepId) => {
-    if (!showAllInputs && !recipeVisibility[stepId]) return null;
+    if (!steps.isStepVisible(stepId)) return null;
 
     // Hide previous shot if no previousShotId
     if (stepId === "previousShot" && !previousShotId) return null;
@@ -321,15 +246,15 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
     switch (stepId) {
       case "beans":
         return (
-          <BeanSection
-            key="beans"
-            error={errors.beanId?.message}
-            id="beanId"
-          />
+          <BeanSection key="beans" error={errors.beanId?.message} id="beanId" />
         );
       case "previousShot":
         return (
-          <PreviousShotRow key="previousShot" shotId={previousShotId!} onViewShot={onViewShot} />
+          <PreviousShotRow
+            key="previousShot"
+            shotId={previousShotId!}
+            onViewShot={onViewShot}
+          />
         );
       case "dose":
         return (
@@ -357,10 +282,11 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
                         type="button"
                         onClick={() => applyDose(d)}
                         tabIndex={-1}
-                        className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeDose === d
+                        className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                          activeDose === d
                             ? "bg-amber-600 text-white"
                             : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                          }`}
+                        }`}
                       >
                         {d}g
                       </button>
@@ -378,7 +304,8 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
             name="yieldGrams"
             control={control}
             render={({ field }) => {
-              const targetRatio = dose && field.value ? (field.value / dose).toFixed(2) : null;
+              const targetRatio =
+                dose && field.value ? (field.value / dose).toFixed(2) : null;
               return (
                 <NumberStepper
                   label="Target Yield"
@@ -400,10 +327,11 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
                           type="button"
                           onClick={() => applyRatio(r)}
                           tabIndex={-1}
-                          className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activeRatio === r
+                          className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                            activeRatio === r
                               ? "bg-amber-600 text-white"
                               : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                            }`}
+                          }`}
                         >
                           1:{r}
                         </button>
@@ -413,6 +341,50 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
                 />
               );
             }}
+          />
+        );
+      case "size":
+        return (
+          <Controller
+            key="size"
+            name="sizeOz"
+            control={control}
+            render={({ field }) => (
+              <NumberStepper
+                label="Size"
+                suffix="oz"
+                value={field.value ?? undefined}
+                onChange={handleSizeChange}
+                min={0}
+                max={256}
+                step={1}
+                placeholder="—"
+                error={errors.sizeOz?.message}
+                id="sizeOz"
+                labelExtra={
+                  <div className="flex items-center gap-1">
+                    {SIZE_OPTIONS.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => {
+                          setActiveSize(s);
+                          setValue("sizeOz", s, { shouldValidate: true });
+                        }}
+                        tabIndex={-1}
+                        className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                          activeSize === s
+                            ? "bg-amber-600 text-white"
+                            : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
+                        }`}
+                      >
+                        {s}oz
+                      </button>
+                    ))}
+                  </div>
+                }
+              />
+            )}
           />
         );
       case "grindLevel":
@@ -425,7 +397,11 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
               <NumberStepper
                 label="Grind Level"
                 value={field.value}
-                onChange={(val) => setValue("grindLevel", val as number, { shouldValidate: true })}
+                onChange={(val) =>
+                  setValue("grindLevel", val as number, {
+                    shouldValidate: true,
+                  })
+                }
                 min={0}
                 max={50}
                 step={0.1}
@@ -441,7 +417,9 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => { if (tempUnit !== "C") handleTempUnitToggle(); }}
+              onClick={() => {
+                if (tempUnit !== "C") handleTempUnitToggle();
+              }}
               tabIndex={-1}
               className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                 tempUnit === "C"
@@ -453,7 +431,9 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
             </button>
             <button
               type="button"
-              onClick={() => { if (tempUnit !== "F") handleTempUnitToggle(); }}
+              onClick={() => {
+                if (tempUnit !== "F") handleTempUnitToggle();
+              }}
               tabIndex={-1}
               className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                 tempUnit === "F"
@@ -475,9 +455,15 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
               <NumberStepper
                 label={`Brew Temp`}
                 suffix="°C"
-                secondarySuffix={field.value != null ? `${cToF(field.value).toFixed(1)}°F` : undefined}
+                secondarySuffix={
+                  field.value != null
+                    ? `${cToF(field.value).toFixed(1)}°F`
+                    : undefined
+                }
                 value={field.value ?? undefined}
-                onChange={(val) => setValue("brewTempC", val, { shouldValidate: true })}
+                onChange={(val) =>
+                  setValue("brewTempC", val, { shouldValidate: true })
+                }
                 min={50}
                 max={110}
                 step={0.5}
@@ -493,7 +479,9 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
             key="brewTemp"
             label={`Brew Temp`}
             suffix="°F"
-            secondarySuffix={brewTempC != null ? `${brewTempC.toFixed(1)}°C` : undefined}
+            secondarySuffix={
+              brewTempC != null ? `${brewTempC.toFixed(1)}°C` : undefined
+            }
             value={tempFValue}
             onChange={handleTempFChange}
             min={100}
@@ -520,7 +508,9 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
                 onChange={(val) => {
                   setValue("brewPressure", val, { shouldValidate: true });
                   if (val != null) {
-                    const match = PRESSURE_OPTIONS.find((p) => Math.abs(p - val) < 0.01);
+                    const match = PRESSURE_OPTIONS.find(
+                      (p) => Math.abs(p - val) < 0.01,
+                    );
                     setActivePressure(match ?? null);
                   } else {
                     setActivePressure(null);
@@ -543,10 +533,11 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
                           setValue("brewPressure", p, { shouldValidate: true });
                         }}
                         tabIndex={-1}
-                        className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${activePressure === p
+                        className={`h-8 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                          activePressure === p
                             ? "bg-amber-600 text-white"
                             : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-700 dark:text-stone-300 dark:hover:bg-stone-600"
-                          }`}
+                        }`}
                       >
                         {p} bar
                       </button>
@@ -568,7 +559,9 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
                 label="Pre-infusion"
                 suffix="sec"
                 value={field.value ?? undefined}
-                onChange={(val) => setValue("preInfusionDuration", val, { shouldValidate: true })}
+                onChange={(val) =>
+                  setValue("preInfusionDuration", val, { shouldValidate: true })
+                }
                 min={0}
                 max={30}
                 step={0.5}
@@ -599,118 +592,37 @@ export function SectionRecipe({ previousShotId, onViewShot, showAllInputs = fals
   };
 
   return (
-    <Card>
-      <section id="recipe" className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-              Recipe
-            </h2>
-            <a
-              href={`${AppRoutes.resources.shotLog.path}#Recipe`}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Recipe guide"
-              className="text-stone-400 transition-colors hover:text-amber-600 dark:text-stone-500 dark:hover:text-amber-400"
-            >
-              <InformationCircleIcon className="h-5 w-5" />
-            </a>
-          </div>
+    <CollapsibleSection
+      id="recipe"
+      title="Recipe"
+      guideAnchor="Recipe"
+      summaryText={summaryText}
+      isExpanded={steps.isExpanded}
+      onToggle={steps.setIsExpanded}
+      showAllInputs={showAllInputs}
+      footer={
+        <>
           {!showAllInputs && (
-            <div className="relative" ref={menuRef}>
-              <button
-                type="button"
-                onClick={() => setShowMenu(!showMenu)}
-                className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-                aria-label="Recipe menu"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                  />
-                </svg>
-              </button>
-              {showMenu && (
-                <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded-lg border border-stone-200 bg-white shadow-lg dark:border-stone-700 dark:bg-stone-800">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowOrderModal(true);
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
-                  >
-                    Edit Inputs
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowQRCode(true);
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-left text-base text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-700"
-                  >
-                    Recipe QR Code
-                  </button>
-                </div>
-              )}
-            </div>
+            <EditInputsButton onClick={() => steps.setShowOrderModal(true)} />
           )}
-        </div>
-
-        <div className="space-y-7">
-          {orderedSteps.map((step) => renderStep(step.id))}
-        </div>
-
-      {/* QR Code Modal */}
-      <Modal
-        open={showQRCode}
-        onClose={() => setShowQRCode(false)}
-        title="Recipe QR Code"
-      >
-        <div className="flex flex-col items-center gap-4">
-          <p className="text-center text-sm text-stone-500 dark:text-stone-400">
-            Scan this QR code to load this recipe on another device
-          </p>
-          {recipeQRUrl && (
-            <QRCode value={recipeQRUrl} size={250} title="Recipe QR Code" />
-          )}
-        </div>
-      </Modal>
-
-      {/* Recipe Order Modal */}
-      <EditOrderModal
-        open={showOrderModal}
-        onClose={() => setShowOrderModal(false)}
-        title="Change Recipe Inputs"
-        items={DEFAULT_STEPS}
-        order={recipeOrder}
-        visibility={recipeVisibility}
-        defaultOrder={DEFAULT_STEPS.map((s) => s.id)}
-        defaultVisibility={DEFAULT_STEPS.reduce(
-          (acc, step) => ({ ...acc, [step.id]: step.visible }),
-          {} as Record<RecipeStepId, boolean>
-        )}
-        onChange={handleOrderChange}
-        requiredFields={REQUIRED_RECIPE_FIELDS}
-        onReset={() => {
-          const defaultOrder = DEFAULT_STEPS.map((s) => s.id);
-          const defaultVisibility = DEFAULT_STEPS.reduce(
-            (acc, step) => ({ ...acc, [step.id]: step.visible }),
-            {} as Record<RecipeStepId, boolean>
-          );
-          handleOrderChange(defaultOrder, defaultVisibility);
-        }}
-      />
-      </section>
-    </Card>
+          <EditOrderModal
+            open={steps.showOrderModal}
+            onClose={() => steps.setShowOrderModal(false)}
+            title="Change Recipe Inputs"
+            items={DEFAULT_STEPS}
+            order={steps.order}
+            visibility={steps.visibility}
+            defaultOrder={DEFAULT_STEPS.map((s) => s.id)}
+            defaultVisibility={steps.defaultVisibility}
+            onChange={steps.handleOrderChange}
+            onSave={() => steps.setIsExpanded(true)}
+            requiredFields={REQUIRED_RECIPE_FIELDS}
+            onReset={steps.handleReset}
+          />
+        </>
+      }
+    >
+      {steps.orderedSteps.map((step) => renderStep(step.id))}
+    </CollapsibleSection>
   );
 }

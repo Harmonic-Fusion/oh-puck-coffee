@@ -6,17 +6,18 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createShotSchema, type CreateShot } from "@/shared/shots/schema";
 import { useCreateShot, useDeleteShot, useToggleReference, useToggleHidden, type ShotWithJoins } from "@/components/shots/hooks";
 import { Button } from "@/components/common/Button";
-import { SectionBasics } from "./SectionBasics";
-import { SectionRecipe } from "./SectionRecipe";
-import { SectionResults } from "./SectionResults";
-import { ShotSuccessModal } from "./ShotSuccessModal";
+import { SectionSetup } from "./__components__/SectionSetup";
+import { SectionRecipe } from "./__components__/SectionRecipe";
+import { SectionBrewing } from "./__components__/SectionBrewing";
+import { SectionTasting } from "./__components__/SectionTasting";
+import { ShotSuccessModal } from "./__components__/ShotSuccessModal";
 import { useBeans } from "@/components/beans/hooks";
 import { useGrinders, useMachines } from "@/components/equipment/hooks";
 import { useToast } from "@/components/common/Toast";
 import { ShotDetail } from "@/components/shots/ShotDetail";
 import { ValidationBanner } from "@/components/common/ValidationBanner";
 import { useShotPrePopulation } from "./hooks";
-import type { ShotSummary } from "./ShotSuccessModal";
+import type { ShotSummary } from "./__components__/ShotSuccessModal";
 
 export function ShotForm() {
   const createShot = useCreateShot();
@@ -43,6 +44,7 @@ export function ShotForm() {
       machineId: undefined,
       doseGrams: undefined,
       yieldGrams: undefined,
+      sizeOz: undefined,
       grindLevel: undefined,
       brewTempC: undefined,
       yieldActualGrams: undefined,
@@ -152,14 +154,16 @@ export function ShotForm() {
         onSubmit={methods.handleSubmit(onSubmit)}
         className="space-y-6"
       >
-        <SectionBasics />
+        <SectionSetup />
 
-        <SectionRecipe 
-          previousShotId={previousShotId} 
+        <SectionRecipe
+          previousShotId={previousShotId}
           onViewShot={(shot) => setSelectedShot(shot)}
         />
 
-        <SectionResults />
+        <SectionBrewing />
+
+        <SectionTasting />
 
         <div className="mt-8 flex flex-col items-center gap-3">
           {methods.formState.isSubmitted && (

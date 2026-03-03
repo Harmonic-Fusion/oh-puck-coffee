@@ -18,6 +18,7 @@ export interface ShotWithJoins {
   machineName: string | null;
   doseGrams: string;
   yieldGrams: string;
+  sizeOz: string | null;
   yieldActualGrams: string | null;
   grindLevel: string;
   brewTimeSecs: string | null;

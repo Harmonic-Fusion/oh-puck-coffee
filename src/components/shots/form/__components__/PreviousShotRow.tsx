@@ -131,15 +131,15 @@ function TruncatedNotes({ notes }: { notes: string }) {
 
 /**
  * Displays a reference shot that the user wants to recreate.
- * 
- * This component shows a "Previous Shot" which is actually a reference shot — any shot
+ *
+ * This component shows a "Previous" which is actually a reference shot — any shot
  * the user wants to base their new shot on, not just the most recent one. The reference
  * shot can come from:
  * - URL param `previousShotId` or `shotId`
  * - Session storage `duplicateShot`
  * - The last shot from the database (default)
- * 
- * The name "Previous Shot" is a UI label for clarity, not a constraint on which shot
+ *
+ * The name "Previous" is a UI label for clarity, not a constraint on which shot
  * can be selected.
  */
 export function PreviousShotRow({ shotId, onViewShot }: PreviousShotRowProps) {
@@ -158,7 +158,7 @@ export function PreviousShotRow({ shotId, onViewShot }: PreviousShotRowProps) {
       <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Previous Shot
+            Previous
           </h3>
         </div>
         <div className="text-sm text-stone-500 dark:text-stone-400">
@@ -170,7 +170,8 @@ export function PreviousShotRow({ shotId, onViewShot }: PreviousShotRowProps) {
 
   const dose = shot.doseGrams ? parseFloat(shot.doseGrams) : null;
   const yieldG = shot.yieldGrams ? parseFloat(shot.yieldGrams) : null;
-  const ratio = dose && dose > 0 && yieldG ? parseFloat((yieldG / dose).toFixed(2)) : null;
+  const ratio =
+    dose && dose > 0 && yieldG ? parseFloat((yieldG / dose).toFixed(2)) : null;
 
   // Collapsed state: show only label + chevron
   if (!isExpanded) {
@@ -178,13 +179,13 @@ export function PreviousShotRow({ shotId, onViewShot }: PreviousShotRowProps) {
       <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Previous Shot
+            Previous
           </h3>
           <button
             type="button"
             onClick={() => setIsExpanded(true)}
             className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-700 dark:hover:text-stone-300"
-            aria-label="Expand previous shot"
+            aria-label="Expand Previous"
           >
             <ChevronDownIcon className="h-5 w-5" />
           </button>
@@ -198,7 +199,7 @@ export function PreviousShotRow({ shotId, onViewShot }: PreviousShotRowProps) {
     <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-800">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-          Previous Shot
+          Previous
         </h3>
         <div className="flex items-center gap-2">
           {onViewShot && (
@@ -215,16 +216,19 @@ export function PreviousShotRow({ shotId, onViewShot }: PreviousShotRowProps) {
             type="button"
             onClick={() => setIsExpanded(false)}
             className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-700 dark:hover:text-stone-300"
-            aria-label="Collapse previous shot"
+            aria-label="Collapse Previous"
           >
             <ChevronUpIcon className="h-5 w-5" />
           </button>
         </div>
       </div>
 
-      {[shot.beanName, shot.grinderName, shot.machineName].filter(Boolean).length > 0 && (
+      {[shot.beanName, shot.grinderName, shot.machineName].filter(Boolean)
+        .length > 0 && (
         <p className="mb-2 text-sm text-stone-600 dark:text-stone-400">
-          {[shot.beanName, shot.grinderName, shot.machineName].filter(Boolean).join(" · ")}
+          {[shot.beanName, shot.grinderName, shot.machineName]
+            .filter(Boolean)
+            .join(" · ")}
         </p>
       )}
 
@@ -240,7 +244,6 @@ export function PreviousShotRow({ shotId, onViewShot }: PreviousShotRowProps) {
           <TruncatedNotes notes={shot.notes} />
         </div>
       )}
-
     </div>
   );
 }

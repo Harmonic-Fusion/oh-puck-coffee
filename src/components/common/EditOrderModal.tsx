@@ -38,6 +38,7 @@ interface EditOrderModalProps<T extends OrderItem, TId extends string = string> 
   defaultVisibility: Record<TId, boolean>;
   onChange: (order: TId[], visibility: Record<TId, boolean>) => void;
   onReset: () => void;
+  onSave?: () => void;
   requiredFields?: TId[];
 }
 
@@ -132,6 +133,7 @@ export function EditOrderModal<T extends OrderItem, TId extends string = string>
   defaultVisibility,
   onChange,
   onReset,
+  onSave,
   requiredFields = [],
 }: EditOrderModalProps<T, TId>) {
   const [localOrder, setLocalOrder] = useState<TId[]>(order);
@@ -187,6 +189,7 @@ export function EditOrderModal<T extends OrderItem, TId extends string = string>
       finalVisibility[fieldId] = true;
     }
     onChange(localOrder, finalVisibility);
+    onSave?.();
     onClose();
   };
 

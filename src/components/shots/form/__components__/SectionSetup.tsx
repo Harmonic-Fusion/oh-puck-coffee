@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useFormContext } from "react-hook-form";
 import { InformationCircleIcon, ChevronDownIcon, ChevronUpIcon } from "@heroicons/react/24/outline";
@@ -30,7 +30,7 @@ function SetupHeader({ onLinkClick }: { onLinkClick?: (e: React.MouseEvent) => v
   );
 }
 
-export function SectionBasics() {
+export function SectionSetup() {
   const {
     setValue,
     watch,
@@ -53,17 +53,7 @@ export function SectionBasics() {
     return machines.find((m) => m.id === machineId)?.name ?? null;
   }, [machineId, machines]);
 
-  // Auto-expand when no equipment selected, otherwise default to collapsed
   const [isExpanded, setIsExpanded] = useState(false);
-
-  useEffect(() => {
-    // Auto-expand if neither grinder nor machine is set
-    if (!grinderId && !machineId) {
-      setIsExpanded(true);
-    } else {
-      setIsExpanded(false);
-    }
-  }, [grinderId, machineId]);
 
   const hasEquipment = grinderName || machineName;
   const summaryText = [grinderName, machineName].filter(Boolean).join(" · ");

@@ -152,6 +152,7 @@ export const shots = pgTable("shots", {
   brewPressure: numeric("brew_pressure", { precision: 4, scale: 1 }).default(
     "9",
   ),
+  sizeOz: numeric("size_oz", { precision: 5, scale: 1 }),
   // Results
   brewTimeSecs: numeric("brew_time_secs", { precision: 5, scale: 1 }),
   yieldActualGrams: numeric("yield_actual_grams", { precision: 5, scale: 1 }),

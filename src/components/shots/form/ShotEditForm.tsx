@@ -4,9 +4,10 @@ import { useForm, FormProvider, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createShotSchema, type CreateShot } from "@/shared/shots/schema";
 import { useUpdateShot, useDeleteShot } from "@/components/shots/hooks";
-import { SectionBasics } from "./SectionBasics";
-import { SectionRecipe } from "./SectionRecipe";
-import { SectionResults } from "./SectionResults";
+import { SectionSetup } from "./__components__/SectionSetup";
+import { SectionRecipe } from "./__components__/SectionRecipe";
+import { SectionBrewing } from "./__components__/SectionBrewing";
+import { SectionTasting } from "./__components__/SectionTasting";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { useToast } from "@/components/common/Toast";
 import { ValidationBanner } from "@/components/common/ValidationBanner";
@@ -33,6 +34,7 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
       machineId: shot.machineId || undefined,
       doseGrams: shot.doseGrams ? parseFloat(shot.doseGrams) : undefined,
       yieldGrams: shot.yieldGrams ? parseFloat(shot.yieldGrams) : undefined,
+      sizeOz: shot.sizeOz ? parseFloat(shot.sizeOz) : undefined,
       grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
       brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
       preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
@@ -73,7 +75,7 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
             <ValidationBanner errors={methods.formState.errors} />
           )}
 
-          <SectionBasics />
+          <SectionSetup />
 
           <hr className="border-stone-200 dark:border-stone-700" />
 
@@ -81,7 +83,11 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
 
           <hr className="border-stone-200 dark:border-stone-700" />
 
-          <SectionResults showAllInputs />
+          <SectionBrewing showAllInputs />
+
+          <hr className="border-stone-200 dark:border-stone-700" />
+
+          <SectionTasting showAllInputs />
         </div>
 
         <div className="sticky -bottom-6 px-6 py-4 border-t border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900">
