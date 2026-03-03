@@ -140,6 +140,7 @@ function makeMockShot(overrides: Partial<ShotWithJoins> = {}): ShotWithJoins {
     machineId: "machine1",
     doseGrams: "18",
     yieldGrams: "36",
+    sizeOz: null,
     grindLevel: "5",
     brewTimeSecs: "30",
     brewTempC: "93",

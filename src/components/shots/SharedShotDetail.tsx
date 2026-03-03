@@ -59,6 +59,7 @@ export function SharedShotDetail({ shot }: SharedShotDetailProps) {
     machineName: shot.machineName,
     doseGrams: shot.doseGrams ?? "0",
     yieldGrams: shot.yieldGrams ?? "0",
+    sizeOz: null, // Not available in shared shot data
     yieldActualGrams: shot.yieldActualGrams,
     grindLevel: shot.grindLevel || "",
     brewTimeSecs: shot.brewTimeSecs,
