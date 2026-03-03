@@ -51,6 +51,7 @@ export const AppRoutes = routesBuilder({
     shots: { path: "/shots", _require_super_admin: true },
     subscriptions: { path: "/subscriptions", _require_super_admin: true },
     billing: { path: "/billing", _require_super_admin: true },
+    feedback: { path: "/feedback", _require_super_admin: true },
     equipment: {
       path: "/equipment",
       _require_super_admin: true,
@@ -140,6 +141,11 @@ export const ApiRoutes = routesBuilder({
     beans: { path: "/beans" },
     shots: { path: "/shots" },
     stats: { path: "/stats" },
+    feedback: {
+      path: "/feedback",
+      feedbackId: { path: "/:id" },
+      bulk: { path: "/bulk" },
+    },
     equipment: {
       path: "/equipment",
       tools: {

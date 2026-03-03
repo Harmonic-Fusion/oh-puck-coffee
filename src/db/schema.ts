@@ -213,6 +213,11 @@ export const feedback = pgTable("feedback", {
   type: text("type").$type<"bug" | "feature" | "other">().notNull(),
   subject: text("subject").notNull(),
   message: text("message").notNull(),
+  status: text("status")
+    .$type<"new" | "reviewed" | "in_progress" | "complete" | "wont_implement">()
+    .default("new")
+    .notNull(),
+  priority: integer("priority"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 

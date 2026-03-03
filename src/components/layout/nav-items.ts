@@ -30,7 +30,7 @@ export const navItems = {
     icon: ShieldCheckIcon,
   },
   profile: {
-    label: "Profile",
+    label: "Settings",
     href: AppRoutes.settings.path,
     icon: Cog6ToothIcon,
   },

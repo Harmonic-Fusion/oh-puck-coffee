@@ -62,7 +62,11 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
   const { showToast } = useToast();
 
   const submitFeedback = useMutation({
-    mutationFn: async (data: { type: FeedbackType; subject: string; message: string }) => {
+    mutationFn: async (data: {
+      type: FeedbackType;
+      subject: string;
+      message: string;
+    }) => {
       const res = await fetch(ApiRoutes.feedback.path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,7 +86,8 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
       onClose();
     },
     onError: (error: unknown) => {
-      const message = error instanceof Error ? error.message : "Failed to submit feedback";
+      const message =
+        error instanceof Error ? error.message : "Failed to submit feedback";
       showToast("error", message);
     },
   });
@@ -92,7 +97,11 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
       showToast("error", "Please fill in all fields");
       return;
     }
-    submitFeedback.mutate({ type, subject: subject.trim(), message: message.trim() });
+    submitFeedback.mutate({
+      type,
+      subject: subject.trim(),
+      message: message.trim(),
+    });
   }
 
   function handleClose() {
@@ -116,19 +125,22 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
     if (templateLength > remainingSpace) {
       showToast(
         "error",
-        `Not enough space. Template needs ${templateLength} characters but only ${remainingSpace} remaining.`
+        `Not enough space. Template needs ${templateLength} characters but only ${remainingSpace} remaining.`,
       );
       return;
     }
 
-    const separator = message.trim() && !message.trim().endsWith("\n") ? "\n\n" : "";
+    const separator =
+      message.trim() && !message.trim().endsWith("\n") ? "\n\n" : "";
     setMessage((prev) => prev + separator + template);
   }
 
   const template = getTemplateForType(type);
   const maxLength = 5000;
   const remainingSpace = maxLength - message.length;
-  const canInsertTemplate = template ? template.length <= remainingSpace : false;
+  const canInsertTemplate = template
+    ? template.length <= remainingSpace
+    : false;
 
   return (
     <Modal
@@ -148,7 +160,9 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={submitFeedback.isPending || !subject.trim() || !message.trim()}
+            disabled={
+              submitFeedback.isPending || !subject.trim() || !message.trim()
+            }
             className="h-12 rounded-xl border-2 border-amber-700 bg-amber-700 px-6 text-base font-medium text-white transition-colors hover:bg-amber-800 disabled:opacity-50"
           >
             {submitFeedback.isPending ? "Submitting..." : "Submit"}
@@ -210,7 +224,7 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
             Message
           </label>
           <div className="my-4">
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex flex-col items-start justify-between gap-2">
               <div className="flex-1">
                 <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
                   {getInstructionsForType(type)}

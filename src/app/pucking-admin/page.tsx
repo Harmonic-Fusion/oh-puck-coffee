@@ -1,40 +1,51 @@
 import Link from "next/link";
 import { AdminMetrics } from "@/components/admin/AdminMetrics";
+import { AppRoutes } from "@/app/routes";
+
+const { puckingAdmin } = AppRoutes;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pa = puckingAdmin as any;
 
 const adminSections = [
   {
     title: "Users",
-    href: "/pucking-admin/users",
+    href: puckingAdmin.users.path,
     description: "View and manage all registered users",
     icon: "👤",
   },
   {
+    title: "Feedback",
+    href: pa.feedback.path as string,
+    description: "Review and triage user feedback and feature requests",
+    icon: "💬",
+  },
+  {
     title: "Beans",
-    href: "/pucking-admin/beans",
+    href: puckingAdmin.beans.path,
     description: "View all coffee beans across all users",
     icon: "☕",
   },
   {
     title: "Shots",
-    href: "/pucking-admin/shots",
+    href: puckingAdmin.shots.path,
     description: "View all espresso shots logged",
     icon: "📊",
   },
   {
     title: "Grinders",
-    href: "/pucking-admin/equipment/grinders",
+    href: pa.equipment.grinders.path as string,
     description: "View all grinder equipment",
     icon: "⚙️",
   },
   {
     title: "Machines",
-    href: "/pucking-admin/equipment/machines",
+    href: pa.equipment.machines.path as string,
     description: "View all espresso machines",
     icon: "🔧",
   },
   {
     title: "Tools",
-    href: "/pucking-admin/equipment/tools",
+    href: pa.equipment.tools.path as string,
     description: "View all tools and accessories",
     icon: "🛠️",
   },

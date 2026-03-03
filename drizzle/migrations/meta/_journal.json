@@ -71,6 +71,13 @@
       "when": 1772473247105,
       "tag": "0009_worthless_hobgoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1772505850331,
+      "tag": "0010_optimal_beast",
+      "breakpoints": true
     }
   ]
 }

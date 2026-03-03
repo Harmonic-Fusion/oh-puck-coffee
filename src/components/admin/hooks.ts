@@ -13,6 +13,7 @@ export interface AdminQueryParams {
   limit?: number;
   offset?: number;
   search?: string;
+  extraParams?: Record<string, string>;
 }
 
 async function fetchAdminData<T>(
@@ -23,6 +24,11 @@ async function fetchAdminData<T>(
   if (params.limit !== undefined) url.searchParams.set("limit", String(params.limit));
   if (params.offset !== undefined) url.searchParams.set("offset", String(params.offset));
   if (params.search) url.searchParams.set("search", params.search);
+  if (params.extraParams) {
+    for (const [key, value] of Object.entries(params.extraParams)) {
+      if (value) url.searchParams.set(key, value);
+    }
+  }
 
   const res = await fetch(url.toString());
   if (!res.ok) {

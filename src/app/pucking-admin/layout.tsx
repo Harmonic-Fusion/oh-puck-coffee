@@ -4,22 +4,20 @@ import { AppRoutes } from "@/app/routes";
 import { AdminLayoutContent } from "./AdminLayoutContent";
 
 const { puckingAdmin } = AppRoutes;
-const equipment = puckingAdmin.equipment as typeof puckingAdmin.equipment & {
-  grinders: { path: string };
-  machines: { path: string };
-  tools: { path: string };
-};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pa = puckingAdmin as any;
 
 const adminNavLinks = [
   { href: puckingAdmin.path, label: "Overview" },
   { href: puckingAdmin.users.path, label: "Users" },
+  { href: pa.feedback.path as string, label: "Feedback" },
   { href: puckingAdmin.subscriptions.path, label: "Subscriptions" },
   { href: puckingAdmin.billing.path, label: "Billing & Sync" },
   { href: puckingAdmin.beans.path, label: "Beans" },
   { href: puckingAdmin.shots.path, label: "Shots" },
-  { href: equipment.grinders.path, label: "Grinders" },
-  { href: equipment.machines.path, label: "Machines" },
-  { href: equipment.tools.path, label: "Tools" },
+  { href: pa.equipment.grinders.path as string, label: "Grinders" },
+  { href: pa.equipment.machines.path as string, label: "Machines" },
+  { href: pa.equipment.tools.path as string, label: "Tools" },
 ];
 
 export default async function AdminLayout({
