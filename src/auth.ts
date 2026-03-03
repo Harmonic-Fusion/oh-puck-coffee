@@ -4,10 +4,11 @@ import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
-import { users, accounts, verificationTokens } from "./db/schema";
+import { users, accounts, verificationTokens, userEntitlements } from "./db/schema";
 import { authConfig } from "./auth.config";
 import { config } from "./shared/config";
 import { createLogger } from "./lib/logger";
+import { FreeEntitlementDefaults } from "./shared/entitlements";
 
 // Initialize logger early
 import "./lib/logger-init";
@@ -107,8 +108,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.id = user.id;
       }
-      // Always refresh role from DB so the cookie stays current if a role
-      // is changed after sign-in (avoids stale-token bugs in middleware).
+      // Always refresh role and entitlements from DB so the token stays
+      // current if role/subscription changes after sign-in.
       const userId = (token.id ?? user?.id) as string | undefined;
       if (userId) {
         const [dbUser] = await db
@@ -118,6 +119,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           .limit(1);
         token.role =
           (dbUser?.role as "member" | "admin" | "super-admin") ?? "member";
+
+        const entitlementRows = await db
+          .select({ lookupKey: userEntitlements.lookupKey })
+          .from(userEntitlements)
+          .where(eq(userEntitlements.userId, userId));
+        token.entitlements =
+          entitlementRows.length > 0
+            ? entitlementRows.map((r) => r.lookupKey)
+            : FreeEntitlementDefaults;
       }
       return token;
     },
@@ -125,6 +135,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+        session.user.entitlements = token.entitlements ?? [];
       }
       return session;
     },

@@ -28,6 +28,8 @@ src/
 │   └── seed.ts           # Seed script
 ├── lib/                  # Utility functions
 │   ├── api-auth.ts       # API authentication helpers
+│   ├── billing/          # Stripe billing helpers
+│   ├── entitlements.ts   # Feature gating via JWT entitlements
 │   ├── google-sheets.ts  # Google Sheets integration
 │   └── export-csv.ts     # Generic CSV export utility
 ├── shared/               # Shared schemas and constants
@@ -191,10 +193,14 @@ ALTER TABLE "my_table" DROP CONSTRAINT IF EXISTS "old_constraint";
 
 ## Authentication
 
-**Provider**: Auth.js v5 (next-auth) with Google OAuth  
-**Session**: Use `getSession()` from `@/auth.ts` in API routes (includes dev user fallback)  
-**Dev Mode**: Set `ENABLE_DEV_USER=true` to bypass OAuth  
+**Provider**: Auth.js v5 (next-auth) with Google OAuth
+**Session**: Use `getSession()` from `@/auth.ts` in API routes (includes dev user fallback)
+**Dev Mode**: Set `ENABLE_DEV_USER=true` to bypass OAuth
 **Middleware**: `src/middleware.ts` handles route protection
+
+## Billing & Entitlements
+
+Stripe subscriptions with JWT-embedded entitlements. Stripe webhook → `user_entitlements` table → JWT callback → `session.user.entitlements[]`. Free tier capped at `config.shotViewLimit` shots without `no-shot-view-limit` entitlement. Webhook route excluded from auth middleware. Local dev: `pnpm stripe:listen` (runs via Docker).
 
 ## API Routes
 
@@ -265,6 +271,6 @@ All endpoints require authentication (except `/api/auth/*`):
 ## Development
 
 See @`README.md` for:
-- Environment variable setup
+- Environment variable setup (`.env` example is embedded in the README)
 - Development setup steps
 - Deployment information

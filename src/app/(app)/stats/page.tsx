@@ -1,6 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { AppRoutes } from "@/app/routes";
+import { Entitlements, hasEntitlement } from "@/shared/entitlements";
 import { StatCard } from "@/components/stats/StatCard";
 import { FlavorProfileChart } from "@/components/stats/FlavorProfileChart";
 import { BeanComparisonTable } from "@/components/stats/BeanComparisonTable";
@@ -13,10 +17,59 @@ import { useOverviewStats } from "@/components/stats/hooks";
 import { useShots } from "@/components/shots/hooks";
 import { FeedbackModal } from "@/components/common/FeedbackModal";
 
-export default function DashboardPage() {
+function StatsUpgradeSplash() {
+  return (
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="mx-auto max-w-md text-center">
+        <div className="mb-6 text-5xl">📊</div>
+        <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
+          Unlock your espresso analytics
+        </h1>
+        <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+          Detailed analytics, trends, and insights across all your shots.
+        </p>
+        <ul className="mt-6 space-y-2 text-left text-sm text-stone-600 dark:text-stone-400">
+          <li className="flex items-center gap-2">
+            <span className="text-amber-600">&#10003;</span> Shot activity heatmap
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-amber-600">&#10003;</span> Quality trends over time
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-amber-600">&#10003;</span> Flavor profile breakdowns
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-amber-600">&#10003;</span> Dial-in progress tracking
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="text-amber-600">&#10003;</span> Bean comparison tables
+          </li>
+        </ul>
+        <Link
+          href={AppRoutes.settings.billing.path}
+          className="mt-8 inline-block rounded-lg bg-amber-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-700"
+        >
+          Upgrade to Pro
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+export default function StatsPage() {
+  const { data: session, status } = useSession();
+  const canViewStats = hasEntitlement(
+    session?.user.entitlements,
+    Entitlements.STATS_VIEW,
+  );
+
   const { data: stats, isLoading: statsLoading } = useOverviewStats();
   const { data: shots, isLoading: shotsLoading } = useShots({ limit: 100 });
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+
+  if (status === "loading") return null;
+
+  if (!canViewStats) return <StatsUpgradeSplash />;
 
   const isLoading = statsLoading || shotsLoading;
 
@@ -25,7 +78,7 @@ export default function DashboardPage() {
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-            Dashboard
+            Stats
           </h1>
           <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
             Your espresso analytics at a glance

@@ -18,10 +18,11 @@ export const AppRoutes = routesBuilder({
     },
     compare: "/compare",
   },
-  dashboard: "/dashboard",
+  stats: "/stats",
   settings: {
     path: "/settings",
     integrations: "/integrations",
+    billing: "/billing",
   },
   tasting: "/tasting",
   login: { path: "/login", _is_public: true },
@@ -48,6 +49,8 @@ export const AppRoutes = routesBuilder({
     users: { path: "/users", _require_super_admin: true },
     beans: { path: "/beans", _require_super_admin: true },
     shots: { path: "/shots", _require_super_admin: true },
+    subscriptions: { path: "/subscriptions", _require_super_admin: true },
+    billing: { path: "/billing", _require_super_admin: true },
     equipment: {
       path: "/equipment",
       _require_super_admin: true,
@@ -94,6 +97,7 @@ export const ApiRoutes = routesBuilder({
   // Shots
   shots: {
     path: "/api/shots",
+    count: "/count",
     shotId: {
       path: "/:id",
       reference: "/reference",
@@ -126,6 +130,12 @@ export const ApiRoutes = routesBuilder({
     users: {
       path: "/users",
       userId: { path: "/:id" },
+    },
+    subscriptions: { path: "/subscriptions" },
+    billing: {
+      path: "/billing",
+      catalog: { path: "/catalog" },
+      sync: { path: "/sync" },
     },
     beans: { path: "/beans" },
     shots: { path: "/shots" },
@@ -176,5 +186,18 @@ export const ApiRoutes = routesBuilder({
   // Feedback
   feedback: {
     path: "/api/feedback",
+  },
+  // Billing
+  billing: {
+    path: "/api/billing",
+    checkout: "/checkout",
+    portal: "/portal",
+    entitlements: "/entitlements",
+    plans: "/plans",
+  },
+  // Webhooks
+  webhooks: {
+    path: "/api/webhooks",
+    stripe: "/stripe",
   },
 });

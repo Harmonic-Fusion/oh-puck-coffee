@@ -137,6 +137,6 @@ export const config = {
   // - Static assets (favicon.ico, sw.js, manifest.json, icons/*, logos/*, images/*)
   matcher: [
     // Exclude: API auth, health check, share pages, Next.js internals, static assets
-    "/((?!api/auth|api/health|share|_next/static|_next/image|favicon.ico|sw.js|manifest.json|icons|logos|images).*)",
+    "/((?!api/auth|api/health|api/webhooks/stripe|share|_next/static|_next/image|favicon.ico|sw.js|manifest.json|icons|logos|images).*)",
   ],
 };

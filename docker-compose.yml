@@ -17,6 +17,16 @@ services:
       timeout: 3s
       retries: 5
 
+  stripe-cli:
+    image: stripe/stripe-cli
+    command: listen --forward-to http://host.docker.internal:8787/api/webhooks/stripe
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    profiles:
+      - stripe
+
   app:
     build: .
     ports:

@@ -98,7 +98,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
     {
       key: "stats",
       icon: ChartBarIcon,
-      onClick: () => router.push(AppRoutes.dashboard.path),
+      onClick: () => router.push(AppRoutes.stats.path),
       title: "Stats",
       variant: "default",
     },

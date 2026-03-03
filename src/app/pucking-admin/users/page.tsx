@@ -13,6 +13,9 @@ interface AdminUser {
   role: string;
   emailVerified: string | null;
   isCustomName: boolean;
+  subscriptionStatus: string | null;
+  cancelAtPeriodEnd: boolean | null;
+  entitlements: string[];
 }
 
 const ENDPOINT = ApiRoutes.admin.users.path;
@@ -42,6 +45,51 @@ export default function AdminUsersPage() {
         return (
           <span className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${colorMap[role] ?? colorMap.member}`}>
             {role}
+          </span>
+        );
+      },
+    },
+    {
+      key: "subscriptionStatus",
+      label: "Subscription",
+      render: (v, row) => {
+        if (!v) return <span className="text-stone-400">—</span>;
+        const status = v as string;
+        const colorMap: Record<string, string> = {
+          active: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+          trialing: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+          past_due: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+          incomplete: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+          canceled: "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400",
+        };
+        return (
+          <span className="flex items-center gap-1.5">
+            <span className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${colorMap[status] ?? colorMap.canceled}`}>
+              {status}
+            </span>
+            {row.cancelAtPeriodEnd && (
+              <span className="text-xs text-red-500" title="Cancels at period end">⏳</span>
+            )}
+          </span>
+        );
+      },
+    },
+    {
+      key: "entitlements",
+      label: "Entitlements",
+      render: (v) => {
+        const list = v as string[];
+        if (!list || list.length === 0) return <span className="text-stone-400">—</span>;
+        return (
+          <span className="flex flex-wrap gap-1">
+            {list.map((e) => (
+              <span
+                key={e}
+                className="inline-flex rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+              >
+                {e}
+              </span>
+            ))}
           </span>
         );
       },

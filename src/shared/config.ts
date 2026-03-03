@@ -9,19 +9,20 @@
  */
 function normalizeNextAuthUrl(): string {
   const url = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-  
+
   // If it already has a protocol, return as-is
   if (url.startsWith("http://") || url.startsWith("https://")) {
     return url;
   }
-  
+
   // Otherwise, assume https for production, http for development
-  const protocol = process.env.NODE_ENV === "production" ? "https://" : "http://";
+  const protocol =
+    process.env.NODE_ENV === "production" ? "https://" : "http://";
   const normalized = `${protocol}${url}`;
-  
+
   // Set it back in process.env so NextAuth can read it
   process.env.NEXTAUTH_URL = normalized;
-  
+
   return normalized;
 }
 
@@ -40,12 +41,14 @@ function determinePort(): number {
       return port;
     }
   }
-  
+
   // Try to extract port from NEXTAUTH_URL
   const nextAuthUrl = process.env.NEXTAUTH_URL;
   if (nextAuthUrl) {
     try {
-      const url = new URL(nextAuthUrl.startsWith("http") ? nextAuthUrl : `http://${nextAuthUrl}`);
+      const url = new URL(
+        nextAuthUrl.startsWith("http") ? nextAuthUrl : `http://${nextAuthUrl}`,
+      );
       if (url.port) {
         const port = parseInt(url.port, 10);
         if (!isNaN(port)) {
@@ -58,7 +61,7 @@ function determinePort(): number {
       // Invalid URL, fall through to default
     }
   }
-  
+
   // Default to 3000
   if (!process.env.PORT) {
     process.env.PORT = "3000";
@@ -67,7 +70,9 @@ function determinePort(): number {
 }
 
 function isRunningOnRailway(): boolean {
-  return !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_PUBLIC_DOMAIN;
+  return (
+    !!process.env.RAILWAY_ENVIRONMENT || !!process.env.RAILWAY_PUBLIC_DOMAIN
+  );
 }
 
 function sanitizeDatabaseUrlForLogs(rawUrl: string): string {
@@ -105,19 +110,20 @@ function readDatabaseUrl(): string | undefined {
     throw new Error(
       `[config] Invalid DATABASE_URL. Expected a valid URL like ` +
         `"postgresql://user:password@host:5432/db". Got: "${sanitizeDatabaseUrlForLogs(
-          databaseUrl
-        )}"`
+          databaseUrl,
+        )}"`,
     );
   }
 
   const isRailwayInternalHost =
-    hostname === "postgres.railway.internal" || hostname.endsWith(".railway.internal");
+    hostname === "postgres.railway.internal" ||
+    hostname.endsWith(".railway.internal");
 
   if (isRailwayInternalHost && !isRunningOnRailway()) {
     throw new Error(
       `[config] DATABASE_URL points to a Railway private hostname ("${hostname}") which is not reachable ` +
         `outside Railway. Use the Railway *public* Postgres connection string for local/dev or non-Railway ` +
-        `deployments, or run this app inside the same Railway project/environment as the Postgres service.`
+        `deployments, or run this app inside the same Railway project/environment as the Postgres service.`,
     );
   }
 
@@ -137,24 +143,24 @@ export const config = {
   /**
    * Trust host header. Required for Auth.js v5 in all environments.
    * Can be set via AUTH_TRUST_HOST or NEXTAUTH_TRUST_HOST environment variable.
-   * 
+   *
    * Defaults:
    * - true in development (Auth.js v5 requires this even for localhost)
    * - true in production or when running on Railway/Vercel (behind reverse proxy)
    */
   trustHost: (() => {
-    const explicit = process.env.AUTH_TRUST_HOST || process.env.NEXTAUTH_TRUST_HOST;
+    const explicit =
+      process.env.AUTH_TRUST_HOST || process.env.NEXTAUTH_TRUST_HOST;
     if (explicit === "true") return true;
     if (explicit === "false") return false;
-    
+
     // Auth.js v5 requires trustHost: true in development
-    const isDevelopment = 
-      process.env.NODE_ENV === "development" ||
-      !process.env.NODE_ENV;
-    
+    const isDevelopment =
+      process.env.NODE_ENV === "development" || !process.env.NODE_ENV;
+
     // Default to true in development
     if (isDevelopment) return true;
-    
+
     // In production, trust host if on Railway/Vercel or explicitly production
     const isProduction = process.env.NODE_ENV === "production";
     const isRailway = isRunningOnRailway();
@@ -193,10 +199,10 @@ export const config = {
   /**
    * Python-style logging configuration.
    * JSON object mapping module paths to log levels.
-   * 
+   *
    * Example:
    *   LOG_CONFIG='{"root":"info","auth":"debug","auth.middleware":"warn","api":"error"}'
-   * 
+   *
    * Module paths use dot notation (e.g., "auth.middleware" for nested contexts).
    * The "root" key sets the default log level (overrides LOG_LEVEL if set).
    * Falls back to root level if no module-specific level is set.
@@ -207,8 +213,9 @@ export const config = {
 
     try {
       const parsed = JSON.parse(envConfig) as Record<string, string>;
-      const moduleLevels: Record<string, "error" | "warn" | "info" | "debug"> = {};
-      
+      const moduleLevels: Record<string, "error" | "warn" | "info" | "debug"> =
+        {};
+
       for (const [path, level] of Object.entries(parsed)) {
         if (["error", "warn", "info", "debug"].includes(level)) {
           moduleLevels[path] = level as "error" | "warn" | "info" | "debug";
@@ -227,4 +234,16 @@ export const config = {
    * Defaults to true.
    */
   logFilteringEnabled: process.env.LOG_FILTERING_ENABLED !== "false",
+
+  /** Stripe */
+  stripeApiKey: process.env.STRIPE_API_KEY,
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+  stripeProPriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID,
+
+  /**
+   * Maximum number of shots a free-tier user can view from history.
+   * Defaults to 100.
+   */
+  shotViewLimit: parseInt(process.env.FEATURE_SHOT_VIEW_LIMIT ?? "100", 10),
 } as const;

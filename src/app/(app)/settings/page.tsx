@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppRoutes, ApiRoutes } from "@/app/routes";
+import { Entitlements, hasEntitlement } from "@/shared/entitlements";
 import { QRCode } from "@/components/common/QRCode";
 import { FeedbackModal } from "@/components/common/FeedbackModal";
 
@@ -272,9 +273,7 @@ export default function SettingsPage() {
           {/* Detail rows */}
           <dl className="space-y-3 border-t border-stone-100 pt-5 dark:border-stone-800">
             {email && (
-              <ProfileDetailRow label="Email">
-                {email}
-              </ProfileDetailRow>
+              <ProfileDetailRow label="Email">{email}</ProfileDetailRow>
             )}
 
             <ProfileDetailRow label="Role">
@@ -336,6 +335,9 @@ export default function SettingsPage() {
           Send Feedback
         </button>
 
+        {/* Billing link */}
+        <BillingCard />
+
         {/* Integrations link */}
         <Link
           href={AppRoutes.settings.integrations.path}
@@ -359,26 +361,6 @@ export default function SettingsPage() {
           </div>
         </Link>
 
-        {/* QR Code for espresso station access */}
-        {appUrl && (
-          <div className="rounded-xl border border-stone-200 bg-white p-6 dark:border-stone-700 dark:bg-stone-900">
-            <h2 className="mb-4 text-lg font-semibold text-stone-800 dark:text-stone-200">
-              Espresso Station Access
-            </h2>
-            <p className="mb-4 text-sm text-stone-500 dark:text-stone-400">
-              Scan this QR code at your espresso station to quickly access the app
-            </p>
-            <div className="flex flex-col items-center gap-4">
-              <QRCode value={appUrl} size={200} title="Espresso Station Access" />
-              <div className="text-center">
-                <p className="text-xs font-mono text-stone-400 dark:text-stone-500 break-all">
-                  {appUrl}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Sign out */}
         <button
           onClick={() => signOut({ callbackUrl: AppRoutes.login.path })}
@@ -393,5 +375,45 @@ export default function SettingsPage() {
         onClose={() => setIsFeedbackModalOpen(false)}
       />
     </div>
+  );
+}
+
+// ── Billing card with current plan ────────────────────────────────────
+
+function BillingCard() {
+  const { data: session } = useSession();
+  const isProUser = hasEntitlement(
+    session?.user.entitlements,
+    Entitlements.NO_SHOT_VIEW_LIMIT,
+  );
+
+  return (
+    <Link
+      href={AppRoutes.settings.billing.path}
+      className="block rounded-xl border border-stone-200 bg-white p-6 transition-colors hover:border-amber-300 hover:bg-amber-50/50 dark:border-stone-700 dark:bg-stone-900 dark:hover:border-amber-800 dark:hover:bg-amber-950/20"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+              Billing
+            </h2>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                isProUser
+                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                  : "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400"
+              }`}
+            >
+              {isProUser ? "Pro" : "Free"}
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+            Manage your subscription and plan
+          </p>
+        </div>
+        <span className="text-stone-400">&rarr;</span>
+      </div>
+    </Link>
   );
 }

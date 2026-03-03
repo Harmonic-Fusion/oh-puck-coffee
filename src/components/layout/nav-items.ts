@@ -51,7 +51,7 @@ export const navItems = {
   },
   stats: {
     label: "Stats",
-    href: AppRoutes.dashboard.path,
+    href: AppRoutes.stats.path,
     icon: ChartBarIcon,
   },
   add: {

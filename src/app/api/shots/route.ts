@@ -1,10 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { shots, beans, users, grinders, machines, tools, integrations } from "@/db/schema";
+import {
+  shots,
+  beans,
+  users,
+  grinders,
+  machines,
+  tools,
+  integrations,
+} from "@/db/schema";
 import { createShotSchema } from "@/shared/shots/schema";
-import { eq, desc, asc, and, gte, lte, inArray, SQL, sql, or } from "drizzle-orm";
+import {
+  eq,
+  desc,
+  asc,
+  and,
+  gte,
+  lte,
+  inArray,
+  SQL,
+  sql,
+  count,
+} from "drizzle-orm";
 import { appendShotRow } from "@/lib/google-sheets";
+import { config } from "@/shared/config";
+import { Entitlements, hasEntitlement } from "@/lib/entitlements";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -26,8 +47,10 @@ export async function GET(request: NextRequest) {
   const beanIds = searchParams.get("beanIds")?.split(",").filter(Boolean) || [];
   const isHidden = searchParams.get("isHidden");
   const isReferenceShot = searchParams.get("isReferenceShot");
-  const grinderIds = searchParams.get("grinderIds")?.split(",").filter(Boolean) || [];
-  const machineIds = searchParams.get("machineIds")?.split(",").filter(Boolean) || [];
+  const grinderIds =
+    searchParams.get("grinderIds")?.split(",").filter(Boolean) || [];
+  const machineIds =
+    searchParams.get("machineIds")?.split(",").filter(Boolean) || [];
   const ratingMin = searchParams.get("ratingMin");
   const ratingMax = searchParams.get("ratingMax");
   const bitterMin = searchParams.get("bitterMin");
@@ -37,14 +60,38 @@ export async function GET(request: NextRequest) {
   const shotQualityMin = searchParams.get("shotQualityMin");
   const shotQualityMax = searchParams.get("shotQualityMax");
   const flavors = searchParams.get("flavors")?.split(",").filter(Boolean) || [];
-  const bodyTexture = searchParams.get("bodyTexture")?.split(",").filter(Boolean) || [];
-  const adjectives = searchParams.get("adjectives")?.split(",").filter(Boolean) || [];
-  const toolsUsed = searchParams.get("toolsUsed")?.split(",").filter(Boolean) || [];
+  const bodyTexture =
+    searchParams.get("bodyTexture")?.split(",").filter(Boolean) || [];
+  const adjectives =
+    searchParams.get("adjectives")?.split(",").filter(Boolean) || [];
+  const toolsUsed =
+    searchParams.get("toolsUsed")?.split(",").filter(Boolean) || [];
   const ratioMin = searchParams.get("ratioMin");
   const ratioMax = searchParams.get("ratioMax");
 
+  // Check if the user has the entitlement to view unlimited shots
+  const hasUnlimitedShots =
+    session.user.role === "admin" ||
+    hasEntitlement(session.user.entitlements, Entitlements.NO_SHOT_VIEW_LIMIT);
+  const shotLimit = config.shotViewLimit;
+
+  // Clamp limit + offset so free-tier users cannot paginate past their cap
+  let effectiveLimit = limit;
+  let effectiveOffset = offset;
+  if (!hasUnlimitedShots) {
+    if (effectiveOffset >= shotLimit) {
+      // Entirely past the cap — return empty
+      return NextResponse.json([], {
+        headers: {
+          "X-Shot-View-Limit": String(shotLimit),
+        },
+      });
+    }
+    effectiveLimit = Math.min(effectiveLimit, shotLimit - effectiveOffset);
+  }
+
   const conditions: SQL[] = [];
-  
+
   // Members can only see their own shots
   if (session.user.role !== "admin") {
     conditions.push(eq(shots.userId, session.user.id));
@@ -52,7 +99,7 @@ export async function GET(request: NextRequest) {
     // Admins can filter by userId if provided
     conditions.push(eq(shots.userId, userId));
   }
-  
+
   // Legacy beanId support (single)
   if (beanId) {
     conditions.push(eq(shots.beanId, beanId));
@@ -61,7 +108,7 @@ export async function GET(request: NextRequest) {
   if (beanIds.length > 0) {
     conditions.push(inArray(shots.beanId, beanIds));
   }
-  
+
   if (dateFrom) conditions.push(gte(shots.createdAt, new Date(dateFrom)));
   if (dateTo) {
     // End of the day
@@ -122,8 +169,7 @@ export async function GET(request: NextRequest) {
   // Adjectives filter (JSONB array overlap) - handled post-query for safety
   // Tools used filter (JSONB array overlap) - handled post-query for safety
 
-  const whereClause =
-    conditions.length > 0 ? and(...conditions) : undefined;
+  const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
   // Determine sort column
   const sortColumn =
@@ -134,6 +180,17 @@ export async function GET(request: NextRequest) {
         : shots.createdAt;
 
   const orderFn = order === "asc" ? asc : desc;
+
+  // Fetch total count for the current user (ignoring limit/offset) for banner
+  let totalCount: number | null = null;
+  if (!hasUnlimitedShots) {
+    const userConditions: SQL[] = [eq(shots.userId, session.user.id)];
+    const [countRow] = await db
+      .select({ total: count() })
+      .from(shots)
+      .where(and(...userConditions));
+    totalCount = countRow?.total ?? 0;
+  }
 
   const results = await db
     .select({
@@ -180,8 +237,8 @@ export async function GET(request: NextRequest) {
     .leftJoin(machines, eq(shots.machineId, machines.id))
     .where(whereClause)
     .orderBy(orderFn(sortColumn))
-    .limit(limit)
-    .offset(offset);
+    .limit(effectiveLimit)
+    .offset(effectiveOffset);
 
   // Compute derived fields on read
   let enriched = results.map((row) => {
@@ -197,7 +254,7 @@ export async function GET(request: NextRequest) {
       const shotDate = new Date(row.createdAt);
       const roastDate = new Date(row.beanRoastDate);
       daysPostRoast = Math.floor(
-        (shotDate.getTime() - roastDate.getTime()) / (1000 * 60 * 60 * 24)
+        (shotDate.getTime() - roastDate.getTime()) / (1000 * 60 * 60 * 24),
       );
     }
 
@@ -209,10 +266,18 @@ export async function GET(request: NextRequest) {
   });
 
   // Apply post-query filters (for computed fields, JSONB arrays, and multi-range filters)
-  const needsPostFilter = ratingMin || ratingMax || shotQualityMin || shotQualityMax || 
-    ratioMin || ratioMax || flavors.length > 0 || bodyTexture.length > 0 || 
-    adjectives.length > 0 || toolsUsed.length > 0;
-  
+  const needsPostFilter =
+    ratingMin ||
+    ratingMax ||
+    shotQualityMin ||
+    shotQualityMax ||
+    ratioMin ||
+    ratioMax ||
+    flavors.length > 0 ||
+    bodyTexture.length > 0 ||
+    adjectives.length > 0 ||
+    toolsUsed.length > 0;
+
   if (needsPostFilter) {
     enriched = enriched.filter((row) => {
       // Rating filter (check if rating falls within any selected range)
@@ -273,7 +338,15 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  return NextResponse.json(enriched);
+  const responseHeaders: Record<string, string> = {};
+  if (!hasUnlimitedShots) {
+    responseHeaders["X-Shot-View-Limit"] = String(shotLimit);
+    if (totalCount !== null) {
+      responseHeaders["X-Shot-Total-Count"] = String(totalCount);
+    }
+  }
+
+  return NextResponse.json(enriched, { headers: responseHeaders });
 }
 
 export async function POST(request: NextRequest) {
@@ -288,7 +361,7 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Validation failed", details: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -297,7 +370,10 @@ export async function POST(request: NextRequest) {
   // Compute flow rate (stored on write) - use actual yield if available, otherwise target yield
   const yieldForFlow = data.yieldActualGrams ?? data.yieldGrams;
   const flowRate =
-    data.brewTimeSecs && data.brewTimeSecs > 0 && yieldForFlow && yieldForFlow > 0
+    data.brewTimeSecs &&
+    data.brewTimeSecs > 0 &&
+    yieldForFlow &&
+    yieldForFlow > 0
       ? parseFloat((yieldForFlow / data.brewTimeSecs).toFixed(2))
       : null;
 
@@ -314,10 +390,15 @@ export async function POST(request: NextRequest) {
         grindLevel: data.grindLevel ? String(data.grindLevel) : null,
         brewTempC: data.brewTempC ? String(data.brewTempC) : null,
         brewTimeSecs: data.brewTimeSecs ? String(data.brewTimeSecs) : null,
-        yieldActualGrams: data.yieldActualGrams != null ? String(data.yieldActualGrams) : null,
-        estimateMaxPressure: data.estimateMaxPressure ? String(data.estimateMaxPressure) : null,
+        yieldActualGrams:
+          data.yieldActualGrams != null ? String(data.yieldActualGrams) : null,
+        estimateMaxPressure: data.estimateMaxPressure
+          ? String(data.estimateMaxPressure)
+          : null,
         flowControl: data.flowControl ? String(data.flowControl) : null,
-        preInfusionDuration: data.preInfusionDuration ? String(data.preInfusionDuration) : null,
+        preInfusionDuration: data.preInfusionDuration
+          ? String(data.preInfusionDuration)
+          : null,
         brewPressure: data.brewPressure ? String(data.brewPressure) : null,
         flowRate: flowRate ? String(flowRate) : null,
         shotQuality: data.shotQuality ? String(data.shotQuality) : null,
@@ -334,109 +415,108 @@ export async function POST(request: NextRequest) {
 
     // Fire-and-forget: append to Google Sheet if integration active
     (async () => {
-    try {
-      const [integration] = await db
-        .select()
-        .from(integrations)
-        .where(
-          and(
-            eq(integrations.userId, session.user!.id!),
-            eq(integrations.isActive, true)
-          )
-        )
-        .limit(1);
-
-      if (integration?.spreadsheetId) {
-        // Get bean info for the row
-        const [bean] = await db
+      try {
+        const [integration] = await db
           .select()
-          .from(beans)
-          .where(eq(beans.id, data.beanId))
+          .from(integrations)
+          .where(
+            and(
+              eq(integrations.userId, session.user!.id!),
+              eq(integrations.isActive, true),
+            ),
+          )
           .limit(1);
 
-        // Resolve tool slugs to names for the spreadsheet
-        const toolSlugs = (shot.toolsUsed as string[] | null) ?? [];
-        let toolNames: string[] = [];
-        if (toolSlugs.length > 0) {
-          const toolRows = await db
-            .select({ slug: tools.slug, name: tools.name })
-            .from(tools)
-            .where(inArray(tools.slug, toolSlugs));
-          const slugToName = new Map(toolRows.map((t) => [t.slug, t.name]));
-          toolNames = toolSlugs.map((s) => slugToName.get(s) || s);
+        if (integration?.spreadsheetId) {
+          // Get bean info for the row
+          const [bean] = await db
+            .select()
+            .from(beans)
+            .where(eq(beans.id, data.beanId))
+            .limit(1);
+
+          // Resolve tool slugs to names for the spreadsheet
+          const toolSlugs = (shot.toolsUsed as string[] | null) ?? [];
+          let toolNames: string[] = [];
+          if (toolSlugs.length > 0) {
+            const toolRows = await db
+              .select({ slug: tools.slug, name: tools.name })
+              .from(tools)
+              .where(inArray(tools.slug, toolSlugs));
+            const slugToName = new Map(toolRows.map((t) => [t.slug, t.name]));
+            toolNames = toolSlugs.map((s) => slugToName.get(s) || s);
+          }
+
+          const dose = data.doseGrams;
+          const yieldG = data.yieldGrams;
+          const brewRatio =
+            dose !== undefined && yieldG !== undefined && dose > 0
+              ? parseFloat((yieldG / dose).toFixed(2))
+              : null;
+
+          let daysPostRoast: number | null = null;
+          if (bean?.roastDate) {
+            const shotDate = new Date(shot.createdAt);
+            const roastDate = new Date(bean.roastDate);
+            daysPostRoast = Math.floor(
+              (shotDate.getTime() - roastDate.getTime()) /
+                (1000 * 60 * 60 * 24),
+            );
+          }
+
+          await appendShotRow(session.user!.id!, integration.spreadsheetId, {
+            createdAt: shot.createdAt,
+            userName: session.user!.name ?? null,
+            beanName: bean?.name ?? null,
+            beanRoastLevel: bean?.roastLevel ?? null,
+            beanRoastDate: bean?.roastDate ?? null,
+            doseGrams: shot.doseGrams ?? "",
+            yieldGrams: shot.yieldGrams ?? "",
+            yieldActualGrams: shot.yieldActualGrams,
+            brewRatio,
+            grindLevel: shot.grindLevel ?? "",
+            brewTimeSecs: shot.brewTimeSecs,
+            brewTempC: shot.brewTempC,
+            preInfusionDuration: shot.preInfusionDuration,
+            brewPressure: shot.brewPressure,
+            flowRate: shot.flowRate,
+            shotQuality: shot.shotQuality ? parseFloat(shot.shotQuality) : null,
+            rating: shot.rating ? parseFloat(shot.rating) : null,
+            bitter: shot.bitter ? parseFloat(shot.bitter) : null,
+            sour: shot.sour ? parseFloat(shot.sour) : null,
+            flavors: shot.flavors,
+            bodyTexture: shot.bodyTexture,
+            adjectives: shot.adjectives,
+            toolsUsed: toolNames.length > 0 ? toolNames : null,
+            notes: shot.notes,
+            daysPostRoast,
+            isReferenceShot: shot.isReferenceShot,
+          });
         }
-
-        const dose = data.doseGrams;
-        const yieldG = data.yieldGrams;
-        const brewRatio =
-          dose !== undefined && yieldG !== undefined && dose > 0
-            ? parseFloat((yieldG / dose).toFixed(2))
-            : null;
-
-        let daysPostRoast: number | null = null;
-        if (bean?.roastDate) {
-          const shotDate = new Date(shot.createdAt);
-          const roastDate = new Date(bean.roastDate);
-          daysPostRoast = Math.floor(
-            (shotDate.getTime() - roastDate.getTime()) /
-              (1000 * 60 * 60 * 24)
-          );
-        }
-
-        await appendShotRow(session.user!.id!, integration.spreadsheetId, {
-          createdAt: shot.createdAt,
-          userName: session.user!.name ?? null,
-          beanName: bean?.name ?? null,
-          beanRoastLevel: bean?.roastLevel ?? null,
-          beanRoastDate: bean?.roastDate ?? null,
-          doseGrams: shot.doseGrams ?? "",
-          yieldGrams: shot.yieldGrams ?? "",
-          yieldActualGrams: shot.yieldActualGrams,
-          brewRatio,
-          grindLevel: shot.grindLevel ?? "",
-          brewTimeSecs: shot.brewTimeSecs,
-          brewTempC: shot.brewTempC,
-          preInfusionDuration: shot.preInfusionDuration,
-          brewPressure: shot.brewPressure,
-          flowRate: shot.flowRate,
-          shotQuality: shot.shotQuality ? parseFloat(shot.shotQuality) : null,
-          rating: shot.rating ? parseFloat(shot.rating) : null,
-          bitter: shot.bitter ? parseFloat(shot.bitter) : null,
-          sour: shot.sour ? parseFloat(shot.sour) : null,
-          flavors: shot.flavors,
-          bodyTexture: shot.bodyTexture,
-          adjectives: shot.adjectives,
-          toolsUsed: toolNames.length > 0 ? toolNames : null,
-          notes: shot.notes,
-          daysPostRoast,
-          isReferenceShot: shot.isReferenceShot,
-        });
+      } catch (err) {
+        console.error("Failed to append shot to Google Sheet:", err);
       }
-    } catch (err) {
-      console.error("Failed to append shot to Google Sheet:", err);
-    }
     })();
 
     return NextResponse.json(shot, { status: 201 });
   } catch (error) {
     console.error("Failed to create shot:", error);
-    
+
     // Handle database errors with user-friendly messages
     let errorMessage = "Failed to create shot";
     if (error instanceof Error) {
       // Check for specific database errors
       if (error.message.includes("numeric field overflow")) {
-        errorMessage = "Invalid data: one or more values are too large for the database field";
+        errorMessage =
+          "Invalid data: one or more values are too large for the database field";
       } else if (error.message.includes("foreign key")) {
-        errorMessage = "Invalid reference: one or more selected items no longer exist";
+        errorMessage =
+          "Invalid reference: one or more selected items no longer exist";
       } else {
         errorMessage = error.message;
       }
     }
 
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

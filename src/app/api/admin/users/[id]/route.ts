@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/api-auth";
 import { db } from "@/db";
-import { users, shots, beans } from "@/db/schema";
-import { eq, and, sql, count, desc, avg } from "drizzle-orm";
+import { users, shots, subscriptions, userEntitlements } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 import * as z from "zod";
 
 export async function GET(
@@ -25,17 +25,28 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Fetch all user shots for stats
-  const userShots = await db
-    .select({
-      id: shots.id,
-      rating: shots.rating,
-      shotQuality: shots.shotQuality,
-      createdAt: shots.createdAt,
-    })
-    .from(shots)
-    .where(eq(shots.userId, id))
-    .orderBy(desc(shots.createdAt));
+  // Fetch subscription and entitlements in parallel with shots
+  const [userShots, [subscription], entitlementRows] = await Promise.all([
+    db
+      .select({
+        id: shots.id,
+        rating: shots.rating,
+        shotQuality: shots.shotQuality,
+        createdAt: shots.createdAt,
+      })
+      .from(shots)
+      .where(eq(shots.userId, id))
+      .orderBy(desc(shots.createdAt)),
+    db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, id))
+      .limit(1),
+    db
+      .select({ lookupKey: userEntitlements.lookupKey })
+      .from(userEntitlements)
+      .where(eq(userEntitlements.userId, id)),
+  ]);
 
   const shotCount = userShots.length;
   const lastShot = userShots.length > 0 ? userShots[0].createdAt : null;
@@ -100,6 +111,17 @@ export async function GET(
       emailVerified: user.emailVerified,
       isCustomName: user.isCustomName,
     },
+    subscription: subscription
+      ? {
+          status: subscription.status,
+          stripeSubscriptionId: subscription.stripeSubscriptionId,
+          stripeProductId: subscription.stripeProductId,
+          currentPeriodEnd: subscription.currentPeriodEnd,
+          cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+          createdAt: subscription.createdAt,
+        }
+      : null,
+    entitlements: entitlementRows.map((r) => r.lookupKey),
     shotCount,
     lastShot,
     avgRating,

@@ -30,11 +30,11 @@ describe("routesBuilder", () => {
     const routes = routesBuilder({
       home: "/",
       login: "/login",
-      dashboard: "/dashboard",
+      stats: "/stats",
     });
     expect(routes.home.path).toBe("/");
     expect(routes.login.path).toBe("/login");
-    expect(routes.dashboard.path).toBe("/dashboard");
+    expect(routes.stats.path).toBe("/stats");
   });
 
   it("builds an object route with nested string children", () => {
@@ -75,7 +75,7 @@ describe("routesBuilder", () => {
   it("preserves _is_public metadata on built routes", () => {
     const routes = routesBuilder({
       home: { path: "/", _is_public: true },
-      dashboard: "/dashboard",
+      stats: "/stats",
       share: {
         path: "/share",
         _is_public: true,
@@ -87,7 +87,7 @@ describe("routesBuilder", () => {
     expect(routes.share._is_public).toBe(true);
 
     // Protected routes should not have _is_public
-    expect(routes.dashboard).not.toHaveProperty("_is_public");
+    expect(routes.stats).not.toHaveProperty("_is_public");
 
     // Nested child does not inherit _is_public
     expect(routes.share.uid).not.toHaveProperty("_is_public");

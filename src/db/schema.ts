@@ -25,6 +25,7 @@ export const users = pgTable("users", {
     .default("member")
     .notNull(),
   isCustomName: boolean("is_custom_name").default(false).notNull(),
+  stripeCustomerId: text("stripe_customer_id").unique(),
 });
 
 export const accounts = pgTable(
@@ -214,3 +215,38 @@ export const feedback = pgTable("feedback", {
   message: text("message").notNull(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
+
+// ============ Billing Tables ============
+
+export const subscriptions = pgTable("subscriptions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .unique()
+    .references(() => users.id, { onDelete: "cascade" }),
+  stripeSubscriptionId: text("stripe_subscription_id").unique(),
+  stripeProductId: text("stripe_product_id"),
+  stripePriceId: text("stripe_price_id"),
+  status: text("status")
+    .$type<"active" | "canceled" | "past_due" | "trialing" | "incomplete">()
+    .notNull(),
+  currentPeriodStart: timestamp("current_period_start", { mode: "date" }),
+  currentPeriodEnd: timestamp("current_period_end", { mode: "date" }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false).notNull(),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const userEntitlements = pgTable(
+  "user_entitlements",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    lookupKey: text("lookup_key").notNull(),
+    grantedAt: timestamp("granted_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.lookupKey] }),
+  ],
+);

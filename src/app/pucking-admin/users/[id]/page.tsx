@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
@@ -13,6 +13,7 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
+import { UserBillingForm } from "@/components/admin/forms/UserBillingForm";
 import { AppRoutes } from "@/app/routes";
 
 interface UserDetail {
@@ -25,6 +26,15 @@ interface UserDetail {
     emailVerified: string | null;
     isCustomName: boolean;
   };
+  subscription: {
+    status: string;
+    stripeSubscriptionId: string | null;
+    stripeProductId: string | null;
+    currentPeriodEnd: string | null;
+    cancelAtPeriodEnd: boolean;
+    createdAt: string;
+  } | null;
+  entitlements: string[];
   shotCount: number;
   lastShot: string | null;
   avgRating: number | null;
@@ -71,15 +81,38 @@ const roleColorMap: Record<string, string> = {
   member: "bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400",
 };
 
+const subStatusColorMap: Record<string, string> = {
+  active: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  trialing: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  past_due: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  incomplete: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+  canceled: "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400",
+};
+
+function SubscriptionBadge({ status, cancelAtPeriodEnd }: { status: string; cancelAtPeriodEnd: boolean }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${subStatusColorMap[status] ?? subStatusColorMap.canceled}`}>
+        {status}
+      </span>
+      {cancelAtPeriodEnd && (
+        <span className="text-xs text-red-500" title="Cancels at period end">⏳</span>
+      )}
+    </span>
+  );
+}
+
 export default function AdminUserDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const [billingOpen, setBillingOpen] = useState(false);
 
+  const queryKey = ["admin-user-detail", id];
   const { data, isLoading, isError } = useQuery<UserDetail>({
-    queryKey: ["admin-user-detail", id],
+    queryKey,
     queryFn: async () => {
       const res = await fetch(`/api/admin/users/${id}`);
       if (!res.ok) throw new Error("Failed to fetch user details");
@@ -141,6 +174,58 @@ export default function AdminUserDetailPage({
             >
               View Beans →
             </Link>
+          </div>
+
+          {/* Billing */}
+          <div className="mt-5 border-t border-stone-100 pt-5 dark:border-stone-800">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
+                Billing
+              </p>
+              <button
+                onClick={() => setBillingOpen(true)}
+                className="text-xs text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
+              >
+                Edit
+              </button>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {data.subscription ? (
+                <>
+                  <SubscriptionBadge
+                    status={data.subscription.status}
+                    cancelAtPeriodEnd={data.subscription.cancelAtPeriodEnd}
+                  />
+                  {data.subscription.currentPeriodEnd && (
+                    <span className="text-xs text-stone-500 dark:text-stone-400">
+                      {data.subscription.cancelAtPeriodEnd ? "Access until" : "Renews"}{" "}
+                      {new Date(data.subscription.currentPeriodEnd).toLocaleDateString(undefined, {
+                        year: "numeric", month: "short", day: "numeric",
+                      })}
+                    </span>
+                  )}
+                  {data.subscription.stripeSubscriptionId && (
+                    <span className="font-mono text-xs text-stone-400">
+                      {data.subscription.stripeSubscriptionId}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-xs text-stone-400">No subscription</span>
+              )}
+            </div>
+            {data.entitlements.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {data.entitlements.map((e) => (
+                  <span
+                    key={e}
+                    className="inline-flex rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
+                  >
+                    {e}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -215,6 +300,17 @@ export default function AdminUserDetailPage({
           </ResponsiveContainer>
         )}
       </div>
+
+      {data && billingOpen && (
+        <UserBillingForm
+          open
+          onClose={() => setBillingOpen(false)}
+          userId={id}
+          subscription={data.subscription}
+          entitlements={data.entitlements}
+          queryKey={queryKey}
+        />
+      )}
 
       {/* Day of Week */}
       <div className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-stone-900">

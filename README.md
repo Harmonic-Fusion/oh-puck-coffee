@@ -71,6 +71,20 @@ ENABLE_DEBUGGING=
 # NEXTAUTH_TRUST_HOST is also accepted as an alias
 AUTH_TRUST_HOST=
 
+# ── Stripe Billing ────────────────────────────────────────────────────────
+# Stripe API key (from https://dashboard.stripe.com/apikeys)
+STRIPE_API_KEY=sk_test_...
+
+# Stripe webhook signing secret (from https://dashboard.stripe.com/webhooks)
+# Run `stripe listen --forward-to localhost:8787/api/webhooks/stripe` locally
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Stripe publishable key (safe to expose to the client)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
+
+# Maximum number of shots a free-tier user can view from history (default: 100)
+# FEATURE_SHOT_VIEW_LIMIT=100
+
 # ── Logging Configuration ──────────────────────────────────────────────────
 
 # Log level: "error" | "warn" | "info" | "debug"
@@ -93,6 +107,25 @@ LOG_CONFIG=
 # Server-side: LOG_FILTERING_ENABLED
 # Client-side: NEXT_PUBLIC_LOG_FILTERING_ENABLED
 LOG_FILTERING_ENABLED=
+```
+
+### Stripe Setup (optional)
+
+To enable billing locally, set your Stripe test keys in `.env` and forward webhooks to the dev server.
+
+**One-time setup** — get your local webhook signing secret:
+
+```bash
+pnpm stripe:listen
+# prints: Your webhook signing secret is whsec_...
+```
+
+Copy that `whsec_...` value into `.env` as `STRIPE_WEBHOOK_SECRET`.
+
+**Running during development:**
+
+```bash
+pnpm stripe:listen
 ```
 
 ### Google OAuth Setup

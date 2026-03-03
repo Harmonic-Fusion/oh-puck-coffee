@@ -13,6 +13,8 @@ const equipment = puckingAdmin.equipment as typeof puckingAdmin.equipment & {
 const adminNavLinks = [
   { href: puckingAdmin.path, label: "Overview" },
   { href: puckingAdmin.users.path, label: "Users" },
+  { href: puckingAdmin.subscriptions.path, label: "Subscriptions" },
+  { href: puckingAdmin.billing.path, label: "Billing & Sync" },
   { href: puckingAdmin.beans.path, label: "Beans" },
   { href: puckingAdmin.shots.path, label: "Shots" },
   { href: equipment.grinders.path, label: "Grinders" },

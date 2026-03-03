@@ -12,6 +12,7 @@ export interface CompareFieldConfig {
   label: string;
   type: CompareFieldType;
   unit?: string;
+  description?: string;
   higherIsBetter?: boolean;
 }
 
@@ -34,14 +35,20 @@ export interface CompareItemsProps<T extends Record<string, unknown>> {
 
 // ── Value formatting ──────────────────────────────────────────────────
 
-function formatValue(value: unknown, type: CompareFieldType, unit?: string): string {
+function formatValue(
+  value: unknown,
+  type: CompareFieldType,
+  unit?: string,
+): string {
   if (value === null || value === undefined || value === "") return "—";
 
   switch (type) {
     case "number": {
       const n = typeof value === "string" ? parseFloat(value) : Number(value);
       if (isNaN(n)) return "—";
-      const formatted = Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
+      const formatted = Number.isInteger(n)
+        ? String(n)
+        : n.toFixed(2).replace(/\.?0+$/, "");
       return unit ? `${formatted} ${unit}` : formatted;
     }
     case "date": {
@@ -60,7 +67,7 @@ function formatValue(value: unknown, type: CompareFieldType, unit?: string): str
     }
     case "tags": {
       if (!Array.isArray(value)) return String(value);
-      return value.length > 0 ? value.join("\n") : "—";
+      return value.length > 0 ? value.join(", ") : "—";
     }
     case "text":
     default:
@@ -120,7 +127,10 @@ export function CompareItems<T extends Record<string, unknown>>({
 
             {/* Item columns */}
             {items.map((item, i) => (
-              <th key={i} className="min-w-[160px] border-l-2 border-amber-400 px-4 py-3 text-center align-top first:border-l-0 dark:border-amber-500">
+              <th
+                key={i}
+                className="min-w-[160px] border-l border-stone-200 px-4 py-3 text-center align-top first:border-l-0 dark:border-stone-700"
+              >
                 {renderItemHeader ? (
                   <div className="relative">
                     {renderItemHeader(item, i)}
@@ -131,8 +141,17 @@ export function CompareItems<T extends Record<string, unknown>>({
                         className="absolute -right-2 -top-2 rounded-full bg-stone-200 p-0.5 text-stone-500 hover:bg-stone-300 hover:text-stone-700 dark:bg-stone-700 dark:text-stone-400 dark:hover:bg-stone-600"
                         aria-label="Remove"
                       >
-                        <svg className="h-3 w-3" viewBox="0 0 12 12" fill="currentColor">
-                          <path d="M9 3L6 6m0 0L3 9m3-3L9 9M6 6L3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                        <svg
+                          className="h-3 w-3"
+                          viewBox="0 0 12 12"
+                          fill="currentColor"
+                        >
+                          <path
+                            d="M9 3L6 6m0 0L3 9m3-3L9 9M6 6L3 3"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                          />
                         </svg>
                       </button>
                     )}
@@ -149,7 +168,14 @@ export function CompareItems<T extends Record<string, unknown>>({
                         className="rounded-full p-0.5 text-stone-400 hover:bg-stone-200 hover:text-stone-600 dark:hover:bg-stone-700 dark:hover:text-stone-300"
                         aria-label="Remove"
                       >
-                        <svg className="h-3.5 w-3.5" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <svg
+                          className="h-3.5 w-3.5"
+                          viewBox="0 0 14 14"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                        >
                           <path d="M2 2l10 10M12 2L2 12" />
                         </svg>
                       </button>
@@ -170,13 +196,31 @@ export function CompareItems<T extends Record<string, unknown>>({
 
         <tbody className="divide-y divide-stone-100 dark:divide-stone-800">
           {config.map((field) => (
-            <tr key={field.field} className="hover:bg-stone-50 dark:hover:bg-stone-800/30">
+            <tr
+              key={field.field}
+              className="hover:bg-stone-50 dark:hover:bg-stone-800/30"
+            >
               {/* Field label */}
-              <td className="px-4 py-2.5 text-xs font-medium text-stone-500 dark:text-stone-400">
-                {field.label}
-                {field.unit && (
-                  <span className="ml-1 text-stone-400 dark:text-stone-600">{field.unit}</span>
-                )}
+              <td className="px-4 py-2.5">
+                <div className="flex items-center gap-1 text-xs font-medium text-stone-500 dark:text-stone-400">
+                  {field.label}
+                  {field.unit && (
+                    <span className="ml-1 text-stone-400 dark:text-stone-600">
+                      {field.unit}
+                    </span>
+                  )}
+                  {field.description && (
+                    <span className="relative ml-0.5 inline-flex group/tip">
+                      <svg className="h-3 w-3 shrink-0 text-stone-300 dark:text-stone-600" viewBox="0 0 16 16" fill="currentColor">
+                        <path fillRule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0-9a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 6zm0-1.5a.875.875 0 1 0 0-1.75.875.875 0 0 0 0 1.75z" clipRule="evenodd" />
+                      </svg>
+                      <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 w-44 -translate-x-1/2 rounded-md bg-stone-800 px-2.5 py-1.5 text-[10px] leading-snug text-stone-100 opacity-0 shadow-lg transition-opacity group-hover/tip:opacity-100 dark:bg-stone-700">
+                        {field.description}
+                        <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-stone-800 dark:border-t-stone-700" />
+                      </span>
+                    </span>
+                  )}
+                </div>
               </td>
 
               {/* Values */}
@@ -194,41 +238,28 @@ export function CompareItems<T extends Record<string, unknown>>({
                   <td
                     key={i}
                     className={cn(
-                      "border-l-2 border-amber-400 px-4 py-2.5 text-center first:border-l-0 dark:border-amber-500",
-                      field.type === "text"
+                      "border-l border-stone-200 px-4 py-2.5 text-center first:border-l-0 dark:border-stone-700",
+                      field.type === "text" || field.type === "tags"
                         ? "max-w-[200px] truncate text-xs text-stone-600 dark:text-stone-400"
-                        : field.type === "tags"
-                          ? "max-w-[200px] text-xs text-stone-600 dark:text-stone-400"
-                          : field.type === "rating"
-                            ? "text-sm"
-                            : "font-mono text-sm",
+                        : field.type === "rating"
+                          ? "text-sm"
+                          : "font-mono text-sm",
                       isBest
-                        ? "font-semibold text-amber-600 dark:text-amber-400"
+                        ? "font-semibold text-stone-900 dark:text-stone-100"
                         : "text-stone-700 dark:text-stone-300",
                       display === "—" && "text-stone-300 dark:text-stone-600",
                     )}
                   >
-                    {field.type === "tags" && Array.isArray(raw) && raw.length > 0 ? (
-                      <div className="flex flex-col gap-1">
-                        {raw.map((tag, idx) => (
-                          <span
-                            key={idx}
-                            className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      display
-                    )}
+                    {display}
                   </td>
                 );
               })}
 
               {/* Empty add-item cells */}
               {showAddSlot && (
-                <td className="px-4 py-2.5 text-center text-stone-300 dark:text-stone-700">—</td>
+                <td className="px-4 py-2.5 text-center text-stone-300 dark:text-stone-700">
+                  —
+                </td>
               )}
             </tr>
           ))}

@@ -64,6 +64,13 @@
       "when": 1772430355000,
       "tag": "0008_make_dose_yield_optional",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1772473247105,
+      "tag": "0009_worthless_hobgoblin",
+      "breakpoints": true
     }
   ]
 }

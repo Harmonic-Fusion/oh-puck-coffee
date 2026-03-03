@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import {
   useReactTable,
   getCoreRowModel,
@@ -24,6 +25,7 @@ import {
   useCreateShareLink,
   type ShotWithJoins,
 } from "@/components/shots/hooks";
+import { ShotLimitBanner } from "@/components/billing/ShotLimitBanner";
 import { ShotDetail } from "@/components/shots/ShotDetail";
 import {
   ActionButtonBar,
@@ -31,7 +33,7 @@ import {
 } from "@/components/shots/ActionButtonBar";
 import { useShotActions } from "@/components/shots/useShotActions";
 import { useToast } from "@/components/common/Toast";
-import { AppRoutes, resolvePath } from "@/app/routes";
+import { AppRoutes, ApiRoutes, resolvePath } from "@/app/routes";
 import { buildShareText, type ShotShareData } from "@/lib/share-text";
 import { useTempUnit } from "@/lib/use-temp-unit";
 import { cn } from "@/lib/utils";
@@ -837,6 +839,15 @@ export default function ShotsPage() {
   const router = useRouter();
   const { data: shots, isLoading } = useShots();
   const deleteShot = useDeleteShot();
+
+  const { data: shotCountData } = useQuery<{ total: number; limit: number | null }>({
+    queryKey: ["shots", "count"],
+    queryFn: async () => {
+      const res = await fetch(ApiRoutes.shots.count.path);
+      if (!res.ok) throw new Error("Failed to fetch shot count");
+      return res.json();
+    },
+  });
   const toggleReference = useToggleReference();
   const toggleHidden = useToggleHidden();
   const createShareLink = useCreateShareLink();
@@ -1245,6 +1256,14 @@ export default function ShotsPage() {
 
   return (
     <div className="space-y-4">
+      {/* Shot limit banner for free-tier users */}
+      {shotCountData?.limit != null && (
+        <ShotLimitBanner
+          totalCount={shotCountData.total}
+          limit={shotCountData.limit}
+        />
+      )}
+
       {/* Sticky header area on mobile */}
       <div className="sticky top-0 z-10 space-y-4 bg-white pb-4 dark:bg-stone-950 sm:static sm:bg-transparent dark:sm:bg-transparent sm:pb-0">
         {/* Header */}

@@ -1,17 +1,34 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:dailycoffeenews.com)",
       "mcp__acp__Bash",
       "mcp__acp__Edit",
       "mcp__acp__Write",
       "Bash(git -C /Users/dylan/projects/coffee branch --show-current)",
-      "Bash(git merge --squash 0013_super_admin)",
+      "Bash(git merge *)",
       "Bash(git stash)",
-      "Bash(wc -l /Users/dylan/projects/coffee/src/app/\\\\\\(app\\\\\\)/shots/page.tsx)",
-      "Bash(ls /Users/dylan/projects/coffee/src/app/\\\\\\(app\\\\\\)/beans/)",
-      "Bash(ls /Users/dylan/projects/coffee/src/app/\\\\\\(app\\\\\\)/beans/[id]/)",
+      "Bash(ls *)",
+      "Bash(wc -l *)",
+      "Bash(grep -r *)",
+      "Bash(git add *)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(head *)",
+      "Bash(pnpm tsc --noEmit *)",
+      "Bash(pnpm lint)",
+      "Bash(docker-compose ps *)",
+      "Bash(docker-compose run --rm stripe-cli products *)",
+      "Bash(docker-compose run --rm stripe-cli product_features *)",
+      "Bash(docker-compose run --rm stripe-cli entitlements *)",
+      "Bash(docker-compose run --rm stripe-cli prices *)",
+      "Bash(pnpm build)",
+      "Bash(npm run build)",
       "Bash(npx tsc --noEmit)"
+    ],
+    "deny": [
+      "Read(./.env)"
+    ],
+    "ask": [
+      "Bash(git commit *)"
     ]
   }
 }

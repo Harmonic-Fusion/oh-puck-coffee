@@ -225,11 +225,22 @@ async function runMigrations() {
     let client: postgres.Sql | null = null;
 
     try {
-      client = postgres(databaseUrl, { max: 1 });
+      client = postgres(databaseUrl, { max: 1, connect_timeout: 5 });
       const db = drizzle(client);
 
-      console.log("✅ Database connection established");
-      
+      // Health check: verify DB is reachable before running migrations
+      try {
+        await client`SELECT 1`;
+        console.log("✅ Database connection established");
+      } catch {
+        const { hostname, port } = new URL(databaseUrl);
+        console.error(`❌ Cannot connect to database at ${hostname}:${port}`);
+        console.error("💡 Make sure the database is running:");
+        console.error("   docker-compose up db -d");
+        await client.end();
+        process.exit(1);
+      }
+
       // Ensure drizzle schema exists (Drizzle migrator requires it)
       try {
         await db.execute(sql`CREATE SCHEMA IF NOT EXISTS drizzle`);
