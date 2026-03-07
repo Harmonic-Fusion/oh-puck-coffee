@@ -113,11 +113,6 @@ function ShotFormInner({ methods, previousShotId, hasResultsData }: ShotFormInne
   }, [hasResultsData]);
 
   const onSubmit = async (data: CreateShot) => {
-    if (successSummary && !methods.formState.isDirty) {
-      setIsSuccessModalOpen(true);
-      return;
-    }
-
     try {
       const shot = await createShot.mutateAsync(data);
       const bean = beans?.find((b) => b.id === data.beanId);
@@ -165,7 +160,11 @@ function ShotFormInner({ methods, previousShotId, hasResultsData }: ShotFormInne
     }
   };
 
-  const showSuccessButton = successSummary !== null && !methods.formState.isDirty;
+  const handleSuccessModalClose = () => {
+    setIsSuccessModalOpen(false);
+    setSuccessSummary(null);
+    methods.reset();
+  };
 
   return (
     <FormProvider {...methods}>
@@ -198,32 +197,20 @@ function ShotFormInner({ methods, previousShotId, hasResultsData }: ShotFormInne
               {methods.formState.errors.root.message}
             </p>
           )}
-          {showSuccessButton ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="lg"
-              className="w-full py-4 text-lg opacity-80"
-              onClick={() => setIsSuccessModalOpen(true)}
-            >
-              Show Shot
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              loading={createShot.isPending}
-              size="lg"
-              className="w-full py-4 text-lg"
-            >
-              Log Shot
-            </Button>
-          )}
+          <Button
+            type="submit"
+            loading={createShot.isPending}
+            size="lg"
+            className="w-full py-4 text-lg"
+          >
+            Log Shot
+          </Button>
         </div>
       </form>
 
       <ShotSuccessModal
         open={isSuccessModalOpen && !!successSummary}
-        onClose={() => setIsSuccessModalOpen(false)}
+        onClose={handleSuccessModalClose}
         summary={successSummary}
       />
 

@@ -17,7 +17,7 @@ import type { FlavorNode } from "@/shared/flavor-wheel/types";
 import { formatRating } from "@/lib/format-rating";
 import { formatTemp, roundToOneDecimal } from "@/lib/format-numbers";
 import { useTempUnit } from "@/lib/use-temp-unit";
-import { ChartBarIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
+import { DocumentTextIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
 
 export interface ShotSummary extends ShotShareData {
   shotId: string;
@@ -97,10 +97,10 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
   const flavors = summary.flavors || [];
   const actionConfigs: ActionConfig[] = [
     {
-      key: "stats",
-      icon: ChartBarIcon,
-      onClick: () => router.push(AppRoutes.stats.path),
-      title: "Stats",
+      key: "shotDetails",
+      icon: DocumentTextIcon,
+      onClick: () => router.push(resolvePath(AppRoutes.shot.id, { id: summary.shotId })),
+      title: "Shot Details",
       variant: "default",
     },
     {
