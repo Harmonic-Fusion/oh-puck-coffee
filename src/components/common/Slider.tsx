@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useCallback, useMemo, useState } from "react";
+import Image from "next/image";
 
 interface SliderProps {
   value?: number;
@@ -150,10 +151,11 @@ export function Slider({
               />
             ) : (
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-lg dark:bg-stone-800">
-                <img
+                <Image
                   src="/logos/logo_complex.png"
                   alt=""
-                  className="h-16 w-16"
+                  width={64}
+                  height={64}
                 />
               </div>
             )}

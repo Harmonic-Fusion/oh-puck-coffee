@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback, type Dispatch, type SetStateAction } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -29,13 +30,11 @@ import { ShotLimitBanner } from "@/components/billing/ShotLimitBanner";
 import { ShotDetail } from "@/components/shots/ShotDetail";
 import {
   ActionButtonBar,
-  type ActionConfig,
 } from "@/components/shots/ActionButtonBar";
 import { useShotActions } from "@/components/shots/useShotActions";
 import { useToast } from "@/components/common/Toast";
 import { AppRoutes, ApiRoutes, resolvePath } from "@/app/routes";
 import { buildShareText, type ShotShareData } from "@/lib/share-text";
-import { useTempUnit } from "@/lib/use-temp-unit";
 import { cn } from "@/lib/utils";
 import {
   ChevronUpIcon,
@@ -47,7 +46,6 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   XMarkIcon,
-  BookmarkIcon,
   EyeIcon,
   EyeSlashIcon,
   PlusCircleIcon,
@@ -55,7 +53,6 @@ import {
 } from "@heroicons/react/24/outline";
 import {
   BookmarkIcon as BookmarkIconSolid,
-  EyeIcon as EyeIconSolid,
 } from "@heroicons/react/24/solid";
 import { ArrowDownTrayIcon } from "@heroicons/react/16/solid";
 import {
@@ -65,6 +62,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { exportToCsv, type CSVColumn } from "@/lib/export-csv";
+import { useTempUnit } from "@/lib/use-temp-unit";
 
 // ── Filter function helpers ────────────────────────────────────────
 
@@ -259,12 +257,11 @@ function ShotCard({
   });
   const ratio = shot.brewRatio != null ? `1:${shot.brewRatio}` : "—";
   const isRef = shot.isReferenceShot;
-  const isHidden = shot.isHidden;
 
   // ── Long-press share setup ──────────────────────────────────────
   const createShareLink = useCreateShareLink();
   const shotIdRef = useRef(shot.id);
-  shotIdRef.current = shot.id;
+  useEffect(() => { shotIdRef.current = shot.id; }, [shot.id]);
 
   const shotShareData = useMemo<ShotShareData>(
     () => ({
@@ -522,7 +519,6 @@ function MultiSelectFilter({
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  const selected = (column.getFilterValue() as string[] | undefined) ?? [];
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -533,6 +529,11 @@ function MultiSelectFilter({
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  const selected = useMemo(
+    () => (column.getFilterValue() as string[] | undefined) ?? [],
+    [column]
+  );
 
   const toggle = useCallback(
     (value: string) => {
@@ -833,6 +834,56 @@ function FilterBar({
   );
 }
 
+// ── Table hook (isolated so useReactTable's unstable API doesn't block memoization of ShotsPage) ──
+
+function useShotsTable({
+  data,
+  sorting,
+  setSorting,
+  columnFilters,
+  setColumnFilters,
+  globalFilter,
+  setGlobalFilter,
+}: {
+  data: ShotWithJoins[];
+  sorting: SortingState;
+  setSorting: Dispatch<SetStateAction<SortingState>>;
+  columnFilters: ColumnFiltersState;
+  setColumnFilters: Dispatch<SetStateAction<ColumnFiltersState>>;
+  globalFilter: string;
+  setGlobalFilter: Dispatch<SetStateAction<string>>;
+}) {
+  "use no memo";
+  // eslint-disable-next-line react-hooks/incompatible-library
+  return useReactTable({
+    data,
+    columns,
+    state: { sorting, columnFilters, globalFilter },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onGlobalFilterChange: setGlobalFilter,
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const q = String(filterValue).toLowerCase().trim();
+      if (!q) return true;
+      const s = row.original;
+      return [
+        s.beanName,
+        s.grinderName,
+        s.machineName,
+        s.userName,
+        s.notes,
+      ].some((f) => f != null && f.toLowerCase().includes(q));
+    },
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    getRowId: (row) => row.id,
+  });
+}
+
 // ── Page ───────────────────────────────────────────────────────────
 
 export default function ShotsPage() {
@@ -860,7 +911,7 @@ export default function ShotsPage() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isSelecting, setIsSelecting] = useState(false);
+  const isSelecting = selectedIds.size > 0;
   const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
   const [openInEditMode, setOpenInEditMode] = useState(false);
 
@@ -1036,17 +1087,7 @@ export default function ShotsPage() {
 
   const handleDeselectAll = useCallback(() => {
     setSelectedIds(new Set());
-    setIsSelecting(false);
   }, []);
-
-  // Auto-toggle selection mode
-  useEffect(() => {
-    if (selectedIds.size > 0 && !isSelecting) {
-      setIsSelecting(true);
-    } else if (selectedIds.size === 0 && isSelecting) {
-      setIsSelecting(false);
-    }
-  }, [selectedIds.size, isSelecting]);
 
   const handleBulkDelete = useCallback(
     (ids: string[]) => {
@@ -1072,32 +1113,14 @@ export default function ShotsPage() {
     [shots, toggleHidden],
   );
 
-  const table = useReactTable({
+  const table = useShotsTable({
     data,
-    columns,
-    state: { sorting, columnFilters, globalFilter },
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    onGlobalFilterChange: setGlobalFilter,
-    globalFilterFn: (row, _columnId, filterValue) => {
-      const q = String(filterValue).toLowerCase().trim();
-      if (!q) return true;
-      const s = row.original;
-      return [
-        s.beanName,
-        s.grinderName,
-        s.machineName,
-        s.userName,
-        s.notes,
-      ].some((f) => f != null && f.toLowerCase().includes(q));
-    },
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getRowId: (row) => row.id,
+    sorting,
+    setSorting,
+    columnFilters,
+    setColumnFilters,
+    globalFilter,
+    setGlobalFilter,
   });
 
   const filteredRows = table.getFilteredRowModel().rows;
@@ -1248,6 +1271,13 @@ export default function ShotsPage() {
         <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
           Log your first espresso shot to see it here.
         </p>
+        <Link
+          href={AppRoutes.log.path}
+          className="mt-6 inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 hover:bg-amber-800 bg-amber-700"
+        >
+          <PlusCircleIcon className="h-5 w-5" />
+          Add a shot
+        </Link>
       </div>
     );
   }

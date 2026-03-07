@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback, type Dispatch, type SetStateAction } from "react";
 import { useRouter } from "next/navigation";
 import {
   useReactTable,
@@ -13,7 +13,10 @@ import {
   type SortingState,
   type ColumnFiltersState,
 } from "@tanstack/react-table";
-import { useBeansList, type BeanWithCounts } from "@/components/beans/hooks";
+import { useBeansList, useBeans, useCreateBean, usePublicBeansSearch, useAddBeanToCollection, type BeanWithCounts, type PublicBeanSummary } from "@/components/beans/hooks";
+import { BeanFormModal } from "@/components/beans/BeanSelector";
+import { BeanShareInvitesBanner } from "@/components/beans/BeanShareInvitesBanner";
+import { ROAST_LEVELS, PROCESSING_METHODS } from "@/shared/beans/constants";
 import { AppRoutes, resolvePath } from "@/app/routes";
 import { cn } from "@/lib/utils";
 import {
@@ -24,7 +27,6 @@ import {
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
   MagnifyingGlassIcon,
-  XMarkIcon,
   ArrowsUpDownIcon,
 } from "@heroicons/react/24/outline";
 import { ArrowDownTrayIcon } from "@heroicons/react/16/solid";
@@ -210,7 +212,7 @@ function MobileSortBar({
             className={cn(
               "inline-flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
               isActive
-                ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+                ? "border-stone-400 bg-stone-100 text-stone-800 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
                 : "border-stone-200 text-stone-600 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800",
             )}
           >
@@ -253,7 +255,7 @@ function BeanCard({ bean, onClick, onSelect, isSelected, isSelecting }: BeanCard
         "relative rounded-xl border bg-white p-4 transition-colors dark:bg-stone-900",
         "cursor-pointer active:bg-stone-50 dark:active:bg-stone-800",
         isSelected
-          ? "border-amber-400 bg-amber-50/30 dark:border-amber-500 dark:bg-amber-900/20"
+          ? "border-stone-400 bg-stone-50 dark:border-stone-600 dark:bg-stone-800/50"
           : "border-stone-200 dark:border-stone-700",
         muted && "opacity-50",
       )}
@@ -297,7 +299,7 @@ function BeanCard({ bean, onClick, onSelect, isSelected, isSelecting }: BeanCard
                 onSelect(bean);
               }}
               onClick={(e) => e.stopPropagation()}
-              className="h-5 w-5 shrink-0 cursor-pointer rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
+              className="h-5 w-5 shrink-0 cursor-pointer rounded border-stone-300 text-stone-600 focus:ring-stone-500 dark:border-stone-600 dark:focus:ring-stone-500"
             />
           )}
         </div>
@@ -342,6 +344,52 @@ function BeanCard({ bean, onClick, onSelect, isSelected, isSelecting }: BeanCard
 
 // ── Pagination button ──────────────────────────────────────────────
 
+function PublicBeanRow({
+  bean,
+  onAdd,
+  isAdding,
+  inCollection,
+}: {
+  bean: PublicBeanSummary;
+  onAdd: () => void;
+  isAdding: boolean;
+  inCollection?: boolean;
+}) {
+  const subtitle = [bean.origin, bean.roaster, bean.roastLevel]
+    .filter(Boolean)
+    .join(" · ");
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 dark:border-stone-700 dark:bg-stone-800">
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-medium text-stone-800 dark:text-stone-200">
+          {bean.name}
+        </p>
+        {subtitle && (
+          <p className="truncate text-xs text-stone-500 dark:text-stone-400">
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {inCollection ? (
+        <span className="shrink-0 text-xs font-medium text-stone-500 dark:text-stone-400">
+          In your collection
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={onAdd}
+          disabled={isAdding}
+          className="shrink-0 rounded-lg border border-amber-700 bg-amber-700 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-800 disabled:opacity-60 dark:border-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700"
+        >
+          {isAdding ? "Adding…" : "Add"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ── Pagination button ──────────────────────────────────────────────
+
 function PaginationButton({
   onClick,
   disabled,
@@ -363,23 +411,28 @@ function PaginationButton({
   );
 }
 
-// ── Page ───────────────────────────────────────────────────────────
+// ── Table hook (isolated so useReactTable's unstable API doesn't block memoization of BeansPage) ──
 
-export default function BeansPage() {
-  const router = useRouter();
-  const { data: beans, isLoading } = useBeansList();
-
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: "lastShotAt", desc: true },
-  ]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [globalFilter, setGlobalFilter] = useState("");
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isSelecting, setIsSelecting] = useState(false);
-
-  const data = useMemo(() => beans ?? [], [beans]);
-
-  const table = useReactTable({
+function useBeansTable({
+  data,
+  sorting,
+  setSorting,
+  columnFilters,
+  setColumnFilters,
+  globalFilter,
+  setGlobalFilter,
+}: {
+  data: BeanWithCounts[];
+  sorting: SortingState;
+  setSorting: Dispatch<SetStateAction<SortingState>>;
+  columnFilters: ColumnFiltersState;
+  setColumnFilters: Dispatch<SetStateAction<ColumnFiltersState>>;
+  globalFilter: string;
+  setGlobalFilter: Dispatch<SetStateAction<string>>;
+}) {
+  "use no memo";
+  // eslint-disable-next-line react-hooks/incompatible-library
+  return useReactTable({
     data,
     columns,
     state: { sorting, columnFilters, globalFilter },
@@ -399,6 +452,128 @@ export default function BeansPage() {
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getRowId: (row) => row.id,
+  });
+}
+
+// ── Page ───────────────────────────────────────────────────────────
+
+export default function BeansPage() {
+  const router = useRouter();
+  const { data: beans, isLoading } = useBeansList();
+  const { data: beansForSuggestions } = useBeans();
+  const createBean = useCreateBean();
+
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "lastShotAt", desc: true },
+  ]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [globalFilter, setGlobalFilter] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const isSelecting = selectedIds.size > 0;
+
+  // Create-bean dialog (used in empty state)
+  const [showCreate, setShowCreate] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newOrigin, setNewOrigin] = useState("");
+  const [newRoaster, setNewRoaster] = useState("");
+  const [newProcessing, setNewProcessing] = useState("");
+  const [newRoast, setNewRoast] = useState<string>(ROAST_LEVELS[2]);
+  const [newRoastDate, setNewRoastDate] = useState("");
+  const [newOpenBagDate, setNewOpenBagDate] = useState("");
+  const [newOriginDetails, setNewOriginDetails] = useState("");
+  const [newIsRoastDateBestGuess, setNewIsRoastDateBestGuess] = useState(false);
+
+  const [publicSearchQuery, setPublicSearchQuery] = useState("");
+  const addToCollection = useAddBeanToCollection();
+
+  const { data: publicBeans = [], isLoading: publicBeansLoading } =
+    usePublicBeansSearch(publicSearchQuery.trim() || undefined, 15);
+
+  const originSuggestions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (beansForSuggestions ?? [])
+            .map((b) => b.origin)
+            .filter(Boolean) as string[],
+        ),
+      ).sort(),
+    [beansForSuggestions],
+  );
+  const roasterSuggestions = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          (beansForSuggestions ?? [])
+            .map((b) => b.roaster)
+            .filter(Boolean) as string[],
+        ),
+      ).sort(),
+    [beansForSuggestions],
+  );
+
+  const resetCreateForm = useCallback(() => {
+    setNewName("");
+    setNewOrigin("");
+    setNewRoaster("");
+    setNewProcessing("");
+    setNewRoast(ROAST_LEVELS[2]);
+    setNewRoastDate("");
+    setNewOpenBagDate("");
+    setNewOriginDetails("");
+    setNewIsRoastDateBestGuess(false);
+  }, []);
+
+  const handleCreateBean = useCallback(async () => {
+    if (!newName.trim()) return;
+    try {
+      await createBean.mutateAsync({
+        name: newName.trim(),
+        origin: newOrigin.trim() || undefined,
+        roaster: newRoaster.trim() || undefined,
+        originDetails: newOriginDetails.trim() || undefined,
+        processingMethod: newProcessing
+          ? (newProcessing as (typeof PROCESSING_METHODS)[number])
+          : undefined,
+        roastLevel: newRoast as (typeof ROAST_LEVELS)[number],
+        roastDate: newRoastDate ? new Date(newRoastDate) : undefined,
+        openBagDate: newOpenBagDate ? new Date(newOpenBagDate) : undefined,
+        isRoastDateBestGuess: newIsRoastDateBestGuess,
+      });
+      setShowCreate(false);
+      resetCreateForm();
+    } catch {
+      // Error handled by mutation
+    }
+  }, [
+    newName,
+    newOrigin,
+    newRoaster,
+    newOriginDetails,
+    newProcessing,
+    newRoast,
+    newRoastDate,
+    newOpenBagDate,
+    newIsRoastDateBestGuess,
+    createBean,
+    resetCreateForm,
+  ]);
+
+  const handleCancelCreate = useCallback(() => {
+    setShowCreate(false);
+    resetCreateForm();
+  }, [resetCreateForm]);
+
+  const data = useMemo(() => beans ?? [], [beans]);
+
+  const table = useBeansTable({
+    data,
+    sorting,
+    setSorting,
+    columnFilters,
+    setColumnFilters,
+    globalFilter,
+    setGlobalFilter,
   });
 
   const filteredRows = table.getFilteredRowModel().rows;
@@ -424,7 +599,6 @@ export default function BeansPage() {
 
   const handleDeselectAll = useCallback(() => {
     setSelectedIds(new Set());
-    setIsSelecting(false);
   }, []);
 
   const handleCompare = useCallback(() => {
@@ -481,63 +655,131 @@ export default function BeansPage() {
     exportToCsv(filename, filteredRows, columns);
   }, [table]);
 
-  // Auto-toggle selection mode
-  useEffect(() => {
-    if (selectedIds.size > 0 && !isSelecting) {
-      setIsSelecting(true);
-    } else if (selectedIds.size === 0 && isSelecting) {
-      setIsSelecting(false);
-    }
-  }, [selectedIds.size, isSelecting]);
-
-  // ── Loading ──────────────────────────────────────────────────────
-
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-          Beans
-        </h1>
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className="h-16 animate-pulse rounded-lg border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800"
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Empty ────────────────────────────────────────────────────────
-
-  if (data.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center">
-        <BeanIcon className="h-10 w-10 text-stone-300 dark:text-stone-600" />
-        <h3 className="mt-4 text-lg font-medium text-stone-700 dark:text-stone-300">
-          No beans yet
-        </h3>
-        <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-          Add a bean when logging your first shot.
-        </p>
-      </div>
-    );
-  }
-
   // ── Render ───────────────────────────────────────────────────────
 
   return (
     <div className="space-y-4">
-      {/* Sticky header */}
-      <div className="sticky top-0 z-10 space-y-3 bg-white pb-2 dark:bg-stone-950 sm:static sm:bg-transparent dark:sm:bg-transparent sm:pb-0">
-        {/* Title + export */}
-        <div className="flex items-center justify-between pt-4 sm:pt-0">
+      <BeanShareInvitesBanner />
+
+      {isLoading ? (
+        <>
           <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
             Beans
           </h1>
-          <div className="relative">
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-16 animate-pulse rounded-lg border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800"
+              />
+            ))}
+          </div>
+        </>
+      ) : data.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <BeanIcon className="h-10 w-10 text-stone-300 dark:text-stone-600" />
+          <h3 className="mt-4 text-lg font-medium text-stone-700 dark:text-stone-300">
+            No beans yet
+          </h3>
+          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+            Add a bean when logging your first shot, or add one here.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl border-2 border-amber-700 bg-amber-700 px-5 py-2.5 text-base font-medium text-white transition-colors hover:bg-amber-800 dark:border-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700"
+          >
+            Add beans
+          </button>
+
+          <div className="mt-12 w-full max-w-md">
+            <p className="text-sm font-medium text-stone-600 dark:text-stone-400">
+              Or find a public or shared bean to add
+            </p>
+            <div className="relative mt-2">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+              <input
+                type="text"
+                placeholder="Search by name, origin, roaster…"
+                value={publicSearchQuery}
+                onChange={(e) => setPublicSearchQuery(e.target.value)}
+                className="h-10 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder-stone-400 outline-none transition-colors focus:border-stone-400 focus:ring-1 focus:ring-stone-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:placeholder-stone-500 dark:focus:border-stone-500 dark:focus:ring-stone-500"
+              />
+            </div>
+            <div className="mt-3 max-h-64 space-y-2 overflow-y-auto rounded-lg border border-stone-200 bg-stone-50/50 p-2 dark:border-stone-700 dark:bg-stone-900/50">
+              {publicBeansLoading ? (
+                <p className="py-4 text-center text-sm text-stone-500 dark:text-stone-400">
+                  Searching…
+                </p>
+              ) : publicBeans.length === 0 ? (
+                <p className="py-4 text-center text-sm text-stone-500 dark:text-stone-400">
+                  {publicSearchQuery.trim()
+                    ? "No public or shared beans match your search."
+                    : "No public or shared beans to show yet. Add your first bean above and share it to make it public."}
+                </p>
+              ) : (
+                publicBeans.map((bean) => (
+                  <PublicBeanRow
+                    key={bean.id}
+                    bean={bean}
+                    onAdd={() => addToCollection.mutate(bean.id)}
+                    isAdding={
+                      addToCollection.isPending &&
+                      addToCollection.variables === bean.id
+                    }
+                    inCollection={bean.inCollection}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+
+          <BeanFormModal
+            open={showCreate}
+            onClose={handleCancelCreate}
+            title="New Bean"
+            submitLabel={createBean.isPending ? "Creating..." : "Create"}
+            onSubmit={handleCreateBean}
+            isSubmitting={createBean.isPending}
+            name={newName}
+            onNameChange={setNewName}
+            origin={newOrigin}
+            onOriginChange={setNewOrigin}
+            originSuggestions={originSuggestions}
+            originDetails={newOriginDetails}
+            onOriginDetailsChange={setNewOriginDetails}
+            roaster={newRoaster}
+            onRoasterChange={setNewRoaster}
+            roasterSuggestions={roasterSuggestions}
+            processing={newProcessing}
+            onProcessingChange={setNewProcessing}
+            roast={newRoast}
+            onRoastChange={setNewRoast}
+            roastDate={newRoastDate}
+            onRoastDateChange={setNewRoastDate}
+            openBagDate={newOpenBagDate}
+            onOpenBagDateChange={setNewOpenBagDate}
+            isRoastDateBestGuess={newIsRoastDateBestGuess}
+            onIsRoastDateBestGuessChange={setNewIsRoastDateBestGuess}
+          />
+        </div>
+      ) : (
+        <>
+      {/* Sticky header */}
+      <div className="sticky top-0 z-10 space-y-3 bg-white pb-2 dark:bg-stone-950 sm:static sm:bg-transparent dark:sm:bg-transparent sm:pb-0">
+        {/* Title + Add beans + export */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 sm:pt-0">
+          <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
+            Beans
+          </h1>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-amber-700 bg-amber-700 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-amber-800 dark:border-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700"
+            >
+              Add beans
+            </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -564,15 +806,15 @@ export default function BeansPage() {
 
         {/* Selection bar */}
         {isSelecting && (
-          <div className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
-            <span className="text-sm font-medium text-amber-800 dark:text-amber-200">
+          <div className="flex items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 dark:border-stone-700 dark:bg-stone-800/50">
+            <span className="text-sm font-medium text-stone-700 dark:text-stone-300">
               {selectedIds.size} {selectedIds.size === 1 ? "bean" : "beans"} selected
             </span>
             <div className="ml-auto flex items-center gap-2">
               {selectedIds.size >= 2 && (
                 <button
                   onClick={handleCompare}
-                  className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-amber-700"
+                  className="rounded-md bg-stone-700 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-stone-800 dark:bg-stone-600 dark:hover:bg-stone-500"
                 >
                   Compare
                 </button>
@@ -595,7 +837,7 @@ export default function BeansPage() {
             placeholder="Search beans, roasters, origins…"
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder-stone-400 outline-none transition-colors focus:border-amber-400 focus:ring-1 focus:ring-amber-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:placeholder-stone-500 dark:focus:border-amber-500 dark:focus:ring-amber-500"
+            className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder-stone-400 outline-none transition-colors focus:border-stone-400 focus:ring-1 focus:ring-stone-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:placeholder-stone-500 dark:focus:border-stone-500 dark:focus:ring-stone-500"
           />
           {globalFilter && (
             <button
@@ -620,7 +862,7 @@ export default function BeansPage() {
             <thead className="border-b border-stone-200 bg-stone-50 text-xs font-medium uppercase tracking-wider text-stone-500 dark:border-stone-700 dark:bg-stone-800/50 dark:text-stone-400">
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={headerGroup.id}>
-                  <th className="whitespace-nowrap px-3 py-2">
+                    <th className="whitespace-nowrap px-3 py-2">
                     <input
                       type="checkbox"
                       checked={selectedIds.size === filteredRows.length && filteredRows.length > 0}
@@ -631,7 +873,7 @@ export default function BeansPage() {
                           setSelectedIds(new Set(filteredRows.map((r) => r.id)));
                         }
                       }}
-                      className="h-4 w-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
+                      className="h-4 w-4 rounded border-stone-300 text-stone-600 focus:ring-stone-500 dark:border-stone-600 dark:focus:ring-stone-500"
                     />
                   </th>
                   {headerGroup.headers.map((header) => (
@@ -672,7 +914,7 @@ export default function BeansPage() {
                       className={cn(
                         "cursor-pointer transition-colors hover:bg-stone-50 dark:hover:bg-stone-800/50",
                         selectedIds.has(bean.id)
-                          ? "bg-amber-50/40 dark:bg-amber-900/10"
+                          ? "bg-stone-100 dark:bg-stone-800/50"
                           : "bg-white dark:bg-stone-900",
                         muted && "opacity-50",
                       )}
@@ -685,7 +927,7 @@ export default function BeansPage() {
                           type="checkbox"
                           checked={selectedIds.has(bean.id)}
                           onChange={() => handleSelect(bean)}
-                          className="h-4 w-4 rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
+                          className="h-4 w-4 rounded border-stone-300 text-stone-600 focus:ring-stone-500 dark:border-stone-600 dark:focus:ring-stone-500"
                         />
                       </td>
                       {row.getVisibleCells().map((cell) => (
@@ -775,6 +1017,83 @@ export default function BeansPage() {
           </p>
         )}
       </div>
+
+      {/* ── Find more beans (public + shared with you) ─────────────── */}
+      <div className="rounded-xl border border-stone-200 bg-stone-50/50 p-4 dark:border-stone-700 dark:bg-stone-900/30">
+        <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
+          Find more beans
+        </p>
+        <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
+          Search public beans and beans shared with you. Add any to your collection.
+        </p>
+        <div className="relative mt-3">
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+          <input
+            type="text"
+            placeholder="Search by name, origin, roaster…"
+            value={publicSearchQuery}
+            onChange={(e) => setPublicSearchQuery(e.target.value)}
+            className="h-10 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder-stone-400 outline-none transition-colors focus:border-stone-400 focus:ring-1 focus:ring-stone-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:placeholder-stone-500 dark:focus:border-stone-500 dark:focus:ring-stone-500"
+          />
+        </div>
+        <div className="mt-3 max-h-64 space-y-2 overflow-y-auto rounded-lg border border-stone-200 bg-white p-2 dark:border-stone-700 dark:bg-stone-900">
+          {publicBeansLoading ? (
+            <p className="py-4 text-center text-sm text-stone-500 dark:text-stone-400">
+              Searching…
+            </p>
+          ) : publicBeans.length === 0 ? (
+            <p className="py-4 text-center text-sm text-stone-500 dark:text-stone-400">
+              {publicSearchQuery.trim()
+                ? "No beans match your search."
+                : "No public or shared beans to show yet."}
+            </p>
+          ) : (
+            publicBeans.map((bean) => (
+              <PublicBeanRow
+                key={bean.id}
+                bean={bean}
+                onAdd={() => addToCollection.mutate(bean.id)}
+                isAdding={
+                  addToCollection.isPending &&
+                  addToCollection.variables === bean.id
+                }
+                inCollection={bean.inCollection}
+              />
+            ))
+          )}
+        </div>
+      </div>
+
+      <BeanFormModal
+        open={showCreate}
+        onClose={handleCancelCreate}
+        title="New Bean"
+        submitLabel={createBean.isPending ? "Creating..." : "Create"}
+        onSubmit={handleCreateBean}
+        isSubmitting={createBean.isPending}
+        name={newName}
+        onNameChange={setNewName}
+        origin={newOrigin}
+        onOriginChange={setNewOrigin}
+        originSuggestions={originSuggestions}
+        originDetails={newOriginDetails}
+        onOriginDetailsChange={setNewOriginDetails}
+        roaster={newRoaster}
+        onRoasterChange={setNewRoaster}
+        roasterSuggestions={roasterSuggestions}
+        processing={newProcessing}
+        onProcessingChange={setNewProcessing}
+        roast={newRoast}
+        onRoastChange={setNewRoast}
+        roastDate={newRoastDate}
+        onRoastDateChange={setNewRoastDate}
+        openBagDate={newOpenBagDate}
+        onOpenBagDateChange={setNewOpenBagDate}
+        isRoastDateBestGuess={newIsRoastDateBestGuess}
+        onIsRoastDateBestGuessChange={setNewIsRoastDateBestGuess}
+      />
+        </>
+      )}
     </div>
   );
 }

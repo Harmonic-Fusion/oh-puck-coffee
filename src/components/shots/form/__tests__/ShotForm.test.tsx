@@ -50,6 +50,7 @@ vi.mock("@/components/shots/hooks", () => ({
   useDeleteShot: () => ({ mutate: vi.fn(), mutateAsync: vi.fn() }),
   useToggleReference: () => ({ mutate: vi.fn() }),
   useToggleHidden: () => ({ mutate: vi.fn() }),
+  useCreateShareLink: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
 }));
 
 // ---------------------------------------------------------------------------
@@ -57,6 +58,8 @@ vi.mock("@/components/shots/hooks", () => ({
 // ---------------------------------------------------------------------------
 vi.mock("@/components/beans/hooks", () => ({
   useBeans: () => ({ data: [] }),
+  useCreateBean: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateBean: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 
 vi.mock("@/components/equipment/hooks", () => ({
@@ -71,11 +74,7 @@ vi.mock("@/components/common/Toast", () => ({
 // ---------------------------------------------------------------------------
 // Mock child components – SectionRecipe exposes previousShotId + form values
 // ---------------------------------------------------------------------------
-vi.mock("../SectionBasics", () => ({
-  SectionBasics: () => <div data-testid="section-basics" />,
-}));
-
-vi.mock("../SectionRecipe", async () => {
+vi.mock("../__components__/SectionRecipe", async () => {
   const { useFormContext } = await import("react-hook-form");
   return {
     SectionRecipe: function MockSectionRecipe({
@@ -98,11 +97,7 @@ vi.mock("../SectionRecipe", async () => {
   };
 });
 
-vi.mock("../SectionResults", () => ({
-  SectionResults: () => <div data-testid="section-results" />,
-}));
-
-vi.mock("../ShotSuccessModal", () => ({
+vi.mock("../__components__/ShotSuccessModal", () => ({
   ShotSuccessModal: () => null,
 }));
 

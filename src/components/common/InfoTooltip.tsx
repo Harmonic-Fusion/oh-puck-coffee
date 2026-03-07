@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 
 interface InfoTooltipProps {
@@ -35,6 +35,31 @@ export function InfoTooltip({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
+  // Compute position via callback ref when tooltip mounts (avoids setState in effect)
+  const tooltipCallbackRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      (tooltipRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      if (!node || !isOpen || !triggerRef.current) return;
+      const triggerRect = triggerRef.current.getBoundingClientRect();
+      const tooltipRect = node.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const viewportWidth = window.innerWidth;
+      const safeMargin = 16;
+      const newPosition: "top" | "bottom" =
+        triggerRect.bottom + tooltipRect.height + 8 > viewportHeight ? "top" : "bottom";
+      const tooltipWidth = 256;
+      const centerX = triggerRect.left + triggerRect.width / 2;
+      const leftEdge = centerX - tooltipWidth / 2;
+      const rightEdge = centerX + tooltipWidth / 2;
+      let newAlign: "left" | "center" | "right" = "center";
+      if (leftEdge < safeMargin) newAlign = "left";
+      else if (rightEdge > viewportWidth - safeMargin) newAlign = "right";
+      setPosition(newPosition);
+      setHorizontalAlign(newAlign);
+    },
+    [isOpen],
+  );
+
   // Handle click outside to close
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -53,38 +78,6 @@ export function InfoTooltip({
       return () => {
         document.removeEventListener("mousedown", handleClickOutside);
       };
-    }
-  }, [isOpen]);
-
-  // Calculate tooltip position
-  useEffect(() => {
-    if (isOpen && triggerRef.current && tooltipRef.current) {
-      const triggerRect = triggerRef.current.getBoundingClientRect();
-      const tooltipRect = tooltipRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const viewportWidth = window.innerWidth;
-      const safeMargin = 16; // 1rem margin from edges
-
-      // Check if tooltip would overflow bottom of viewport
-      if (triggerRect.bottom + tooltipRect.height + 8 > viewportHeight) {
-        setPosition("top");
-      } else {
-        setPosition("bottom");
-      }
-
-      // Check horizontal overflow
-      const tooltipWidth = 256; // w-64 = 256px
-      const centerX = triggerRect.left + triggerRect.width / 2;
-      const leftEdge = centerX - tooltipWidth / 2;
-      const rightEdge = centerX + tooltipWidth / 2;
-
-      if (leftEdge < safeMargin) {
-        setHorizontalAlign("left");
-      } else if (rightEdge > viewportWidth - safeMargin) {
-        setHorizontalAlign("right");
-      } else {
-        setHorizontalAlign("center");
-      }
     }
   }, [isOpen]);
 
@@ -116,7 +109,7 @@ export function InfoTooltip({
 
       {isOpen && (
         <div
-          ref={tooltipRef}
+          ref={tooltipCallbackRef}
           id="tooltip-content"
           role="tooltip"
           className={`absolute z-50 w-64 max-w-[calc(100vw-2rem)] rounded-lg bg-stone-800 px-3 py-2 text-xs leading-relaxed text-stone-100 shadow-lg dark:bg-stone-700 ${

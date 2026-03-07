@@ -2,11 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppRoutes, ApiRoutes } from "@/app/routes";
-import { Entitlements, hasEntitlement } from "@/shared/entitlements";
-import { QRCode } from "@/components/common/QRCode";
 import { FeedbackModal } from "@/components/common/FeedbackModal";
 
 interface LinkedAccount {
@@ -55,13 +54,20 @@ function ProfileDetailRow({
 export default function SettingsPage() {
   const { data: session, update: updateSession } = useSession();
   const queryClient = useQueryClient();
-  const [appUrl, setAppUrl] = useState<string>("");
 
+  // Debug: log JWT-derived session payload
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setAppUrl(window.location.origin);
+    if (session?.user) {
+      console.log("[Settings] JWT payload (session.user)", {
+        id: session.user.id,
+        role: session.user.role,
+        entitlements: session.user.entitlements,
+        subType: session.user.subType,
+        email: session.user.email,
+        name: session.user.name,
+      });
     }
-  }, []);
+  }, [session]);
 
   // Fetch full profile (includes isCustomName + linkedAccounts)
   const { data: profile } = useQuery<UserProfile>({
@@ -77,12 +83,6 @@ export default function SettingsPage() {
   const [nameInput, setNameInput] = useState("");
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
-  // Sync input when profile loads
-  useEffect(() => {
-    if (profile) {
-      setNameInput(profile.name ?? "");
-    }
-  }, [profile]);
 
   const saveName = useMutation({
     mutationFn: async (name: string) => {
@@ -160,10 +160,12 @@ export default function SettingsPage() {
           {/* Avatar + name header */}
           <div className="mb-6 flex items-center gap-5">
             {image ? (
-              <img
+              <Image
                 src={image}
                 alt={displayName}
-                className="h-20 w-20 rounded-full border-2 border-stone-200 dark:border-stone-700"
+                width={80}
+                height={80}
+                className="rounded-full border-2 border-stone-200 dark:border-stone-700"
               />
             ) : (
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 text-2xl font-bold text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
@@ -361,6 +363,21 @@ export default function SettingsPage() {
           </div>
         </Link>
 
+        {/* Advance link */}
+        <Link
+          href={AppRoutes.settings.advance.path}
+          className="block rounded-xl border border-stone-200 bg-white p-6 transition-colors hover:border-stone-300 dark:border-stone-700 dark:bg-stone-900 dark:hover:border-stone-600"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
+                Advance
+              </h2>
+            </div>
+            <span className="text-stone-400">→</span>
+          </div>
+        </Link>
+
         {/* Sign out */}
         <button
           onClick={() => signOut({ callbackUrl: AppRoutes.login.path })}
@@ -382,10 +399,7 @@ export default function SettingsPage() {
 
 function BillingCard() {
   const { data: session } = useSession();
-  const isProUser = hasEntitlement(
-    session?.user.entitlements,
-    Entitlements.NO_SHOT_VIEW_LIMIT,
-  );
+  const isPro = session?.user?.subType === "pro";
 
   return (
     <Link
@@ -400,12 +414,12 @@ function BillingCard() {
             </h2>
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                isProUser
+                isPro
                   ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
                   : "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400"
               }`}
             >
-              {isProUser ? "Pro" : "Free"}
+              {isPro ? "Pro" : "Free"}
             </span>
           </div>
           <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">

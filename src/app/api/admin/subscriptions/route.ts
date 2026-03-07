@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/api-auth";
 import { db } from "@/db";
-import { subscriptions, users } from "@/db/schema";
-import { desc, count, ilike, and, eq, SQL } from "drizzle-orm";
+import { subscriptions, users, userEntitlements } from "@/db/schema";
+import { desc, count, ilike, and, eq, SQL, inArray } from "drizzle-orm";
+import { Entitlements } from "@/shared/entitlements";
 
 export async function GET(request: NextRequest) {
-  const { session, error } = await requireSuperAdmin();
+  const { error } = await requireSuperAdmin();
   if (error) return error;
 
   const { searchParams } = new URL(request.url);
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   }
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const [data, [{ total }]] = await Promise.all([
+  const [rows, [{ total }]] = await Promise.all([
     db
       .select({
         id: subscriptions.id,
@@ -46,6 +47,29 @@ export async function GET(request: NextRequest) {
       .innerJoin(users, eq(subscriptions.userId, users.id))
       .where(whereClause),
   ]);
+
+  const userIds = rows.map((r) => r.userId);
+  const proUserIds = new Set(
+    userIds.length === 0
+      ? []
+      : await db
+          .select({ userId: userEntitlements.userId })
+          .from(userEntitlements)
+          .where(
+            and(
+              inArray(userEntitlements.userId, userIds),
+              eq(userEntitlements.lookupKey, Entitlements.NO_SHOT_VIEW_LIMIT),
+            ),
+          )
+          .then((list) => list.map((r) => r.userId)),
+  );
+
+  const isActiveStatus = (s: string) => s === "active" || s === "trialing";
+  const data = rows.map((row) => ({
+    ...row,
+    entitlementMismatch:
+      isActiveStatus(row.status) && !proUserIds.has(row.userId),
+  }));
 
   return NextResponse.json({ data, total, limit, offset });
 }

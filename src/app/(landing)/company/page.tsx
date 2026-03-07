@@ -1,6 +1,3 @@
-import Link from "next/link";
-import { AppRoutes } from "@/app/routes";
-
 export default function CompanyPage() {
   return (
     <>
@@ -17,10 +14,10 @@ export default function CompanyPage() {
               Our Mission
             </h2>
             <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-              We believe that perfect espresso is not an art—it's a science. Coffee Tracker was born from the frustration of trying to remember that one magical shot you pulled three weeks ago. You know the one: 18.5g in, 36.2g out, grind setting 12, 94°C, 28 seconds, and it tasted like liquid gold.
+              We believe that perfect espresso is not an art—it&apos;s a science. Coffee Tracker was born from the frustration of trying to remember that one magical shot you pulled three weeks ago. You know the one: 18.5g in, 36.2g out, grind setting 12, 94°C, 28 seconds, and it tasted like liquid gold.
             </p>
             <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-              Our mission is simple: eliminate the guesswork, eliminate the "I think it was..." moments, and give you the data-driven insights you need to consistently dial in perfection. Every shot logged is a data point. Every data point is a step closer to your perfect cup.
+              Our mission is simple: eliminate the guesswork, eliminate the &quot;I think it was...&quot; moments, and give you the data-driven insights you need to consistently dial in perfection. Every shot logged is a data point. Every data point is a step closer to your perfect cup.
             </p>
           </section>
 
@@ -30,10 +27,10 @@ export default function CompanyPage() {
               The Philosophy
             </h2>
             <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-              We're not here to replace your palate—we're here to augment it. The best baristas combine sensory experience with quantitative data. That's why Coffee Tracker tracks everything: from the precise grind setting to the subjective flavor notes on the SCA Flavors.
+              We&apos;re not here to replace your palate—we&apos;re here to augment it. The best baristas combine sensory experience with quantitative data. That&apos;s why Coffee Tracker tracks everything: from the precise grind setting to the subjective flavor notes on the SCA Flavors.
             </p>
             <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-              We believe in <strong className="text-stone-900 dark:text-stone-100">open data</strong>. Your shots are yours. Export to Google Sheets, analyze in your own way, share with your team. We're just the platform that makes it all possible.
+              We believe in <strong className="text-stone-900 dark:text-stone-100">open data</strong>. Your shots are yours. Export to Google Sheets, analyze in your own way, share with your team. We&apos;re just the platform that makes it all possible.
             </p>
           </section>
 
@@ -46,7 +43,7 @@ export default function CompanyPage() {
               Ready to turn your coffee routine into a data-driven pursuit of perfection? Start tracking your shots today and join a community of coffee enthusiasts who believe that the best cup is the one you can consistently reproduce.
             </p>
             <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-              Because in the end, it's not just about coffee—it's about the pursuit of excellence, one shot at a time.
+              Because in the end, it&apos;s not just about coffee—it&apos;s about the pursuit of excellence, one shot at a time.
             </p>
           </section>
         </div>

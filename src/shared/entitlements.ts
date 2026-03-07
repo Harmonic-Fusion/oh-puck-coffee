@@ -5,6 +5,7 @@
 export const Entitlements = {
   NO_SHOT_VIEW_LIMIT: "no-shot-view-limit",
   STATS_VIEW: "stats-view",
+  BEAN_SHARE: "bean-share",
 } as const;
 
 export type EntitlementKey = (typeof Entitlements)[keyof typeof Entitlements];
@@ -12,7 +13,8 @@ export type EntitlementKey = (typeof Entitlements)[keyof typeof Entitlements];
 /** Entitlements granted to all users on the free tier. */
 export const FreeEntitlementDefaults: EntitlementKey[] = [
   Entitlements.NO_SHOT_VIEW_LIMIT,
-  Entitlements.STATS_VIEW,
+  // Entitlements.STATS_VIEW,
+  Entitlements.BEAN_SHARE,
 ];
 
 /**

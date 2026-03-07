@@ -3,7 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-export interface CommandProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type CommandProps = React.HTMLAttributes<HTMLDivElement>;
 
 const Command = React.forwardRef<HTMLDivElement, CommandProps>(
   ({ className, ...props }, ref) => (
@@ -19,8 +19,7 @@ const Command = React.forwardRef<HTMLDivElement, CommandProps>(
 );
 Command.displayName = "Command";
 
-export interface CommandInputProps
-  extends React.InputHTMLAttributes<HTMLInputElement> {}
+export type CommandInputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
 const CommandInput = React.forwardRef<HTMLInputElement, CommandInputProps>(
   ({ className, ...props }, ref) => (
@@ -38,8 +37,7 @@ const CommandInput = React.forwardRef<HTMLInputElement, CommandInputProps>(
 );
 CommandInput.displayName = "CommandInput";
 
-export interface CommandListProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+export type CommandListProps = React.HTMLAttributes<HTMLDivElement>;
 
 const CommandList = React.forwardRef<HTMLDivElement, CommandListProps>(
   ({ className, ...props }, ref) => (
@@ -52,8 +50,7 @@ const CommandList = React.forwardRef<HTMLDivElement, CommandListProps>(
 );
 CommandList.displayName = "CommandList";
 
-export interface CommandEmptyProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+export type CommandEmptyProps = React.HTMLAttributes<HTMLDivElement>;
 
 const CommandEmpty = React.forwardRef<HTMLDivElement, CommandEmptyProps>(
   ({ className, ...props }, ref) => (
@@ -66,8 +63,7 @@ const CommandEmpty = React.forwardRef<HTMLDivElement, CommandEmptyProps>(
 );
 CommandEmpty.displayName = "CommandEmpty";
 
-export interface CommandGroupProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+export type CommandGroupProps = React.HTMLAttributes<HTMLDivElement>;
 
 const CommandGroup = React.forwardRef<HTMLDivElement, CommandGroupProps>(
   ({ className, ...props }, ref) => (

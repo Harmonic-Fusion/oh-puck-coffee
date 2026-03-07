@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 import {
@@ -19,6 +19,7 @@ import {
   isRouteActive,
   isNavItem,
 } from "./nav-items";
+import { useShareInvites } from "@/components/beans/hooks";
 import { FeedbackModal } from "@/components/common/FeedbackModal";
 
 export function NavBar() {
@@ -28,6 +29,10 @@ export function NavBar() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const menuItems = getMobileMenuItems(session?.user?.role);
+
+  const { data: invites } = useShareInvites();
+  const pendingInviteCount = invites?.filter((i) => i.id).length ?? 0;
+  const showBeansBadge = pendingInviteCount > 0;
 
   function handleMenuItemClick(item: typeof menuItems[0]) {
     if (isNavItem(item)) {
@@ -86,17 +91,28 @@ export function NavBar() {
         {mobileMainTabs.map((item) => {
           const Icon = item.icon;
           const active = isRouteActive(pathname, item.href);
+          const isBeans = item.href === AppRoutes.beans.path;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium transition-colors ${
+              className={`relative flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-xs font-medium transition-colors ${
                 active
                   ? "text-amber-700 dark:text-amber-400"
                   : "text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-300"
               }`}
             >
-              <Icon className="h-5 w-5" />
+              <span className="relative">
+                <Icon className="h-5 w-5" />
+                {isBeans && showBeansBadge && (
+                  <span
+                    className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white"
+                    aria-label={`${pendingInviteCount} pending invite${pendingInviteCount !== 1 ? "s" : ""}`}
+                  >
+                    {pendingInviteCount > 9 ? "9+" : pendingInviteCount}
+                  </span>
+                )}
+              </span>
               <span>{item.label}</span>
             </Link>
           );

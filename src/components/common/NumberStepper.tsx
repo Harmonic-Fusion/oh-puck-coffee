@@ -17,7 +17,7 @@ function usePressRepeat(callback: () => void, disabled: boolean) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const accelRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cbRef = useRef(callback);
-  cbRef.current = callback;
+  useEffect(() => { cbRef.current = callback; }, [callback]);
 
   const stop = useCallback(() => {
     if (timeoutRef.current) {
@@ -143,13 +143,6 @@ export function NumberStepper({
     (v: number) => Math.max(min, Math.min(max, v)),
     [min, max]
   );
-
-  // Sync display value from prop when input is not focused
-  useEffect(() => {
-    if (!isFocused) {
-      setLocalValue(value != null ? formatValue(value) : "");
-    }
-  }, [value, isFocused, formatValue]);
 
   // The text currently shown in the input (used for auto-sizing)
   const displayText = isFocused

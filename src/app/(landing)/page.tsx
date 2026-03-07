@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { AppRoutes } from "@/app/routes";
+import Image from "next/image";
 import { SignInButton } from "@/components/auth/SignInButton";
 import { Button } from "@/components/common/Button";
 import { DashboardMetrics } from "@/components/landing/DashboardMetrics";
@@ -199,10 +200,11 @@ export default async function LandingPage() {
           <div className="xl:grid xl:grid-cols-3 xl:gap-8">
             <div className="space-y-8">
               <div className="flex items-center gap-2">
-                <img
+                <Image
                   src="/logos/logo_complex.png"
                   alt="Coffee Tracker Logo"
-                  className="h-8 w-8"
+                  width={32}
+                  height={32}
                 />
                 <span className="text-xl font-bold text-stone-900 dark:text-stone-100">
                   Coffee Tracker

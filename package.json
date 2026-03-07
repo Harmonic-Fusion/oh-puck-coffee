@@ -7,9 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:run": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx scripts/tests.ts",
+    "test:verbose": "vitest run --reporter=verbose",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "ensure-dev-user": "tsx scripts/ensure-dev-user.ts",
+    "stripe:listen": "docker-compose --profile stripe up stripe-cli -d",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:push": "drizzle-kit push",
@@ -17,9 +22,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:check": "tsx scripts/check-migrations.ts",
     "db:psql": "set -a; [ -f .env ] && . .env; set +a; psql \"$DATABASE_URL\"",
-    "db:export": "tsx scripts/db-export.ts",
-    "ensure-dev-user": "tsx scripts/ensure-dev-user.ts",
-    "stripe:listen": "docker-compose --profile stripe up stripe-cli -d"
+    "db:dump-schema": "docker-compose exec db pg_dump -U ${DB_USER:-coffee} ${DB_NAME:-coffee} --schema-only",
+    "db:export": "tsx scripts/db-export.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1",
@@ -66,6 +70,7 @@
     "tailwindcss": "^4",
     "tsx": "^4",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "@playwright/test": "^1.49.0"
   }
 }

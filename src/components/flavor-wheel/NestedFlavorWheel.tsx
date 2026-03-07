@@ -15,6 +15,24 @@ interface NestedFlavorWheelProps {
 }
 
 /**
+ * Recursively collect all expandable paths in the tree
+ */
+function collectAllPaths(node: FlavorNode, path: string[]): string[] {
+  const currentPath = [...path, node.name];
+  const pathKey = currentPath.join(":");
+  const paths: string[] = [];
+
+  if (node.children && node.children.length > 0) {
+    paths.push(pathKey);
+    for (const child of node.children) {
+      paths.push(...collectAllPaths(child, currentPath));
+    }
+  }
+
+  return paths;
+}
+
+/**
  * Build a path of node names from root to current node
  */
 function buildNodePath(node: FlavorNode, parentPath: string[]): string[] {
@@ -47,34 +65,6 @@ function countSelectedDescendants(
   }
 
   return count;
-}
-
-/**
- * Collect all selected nodes (including ancestors and leaf nodes)
- */
-function collectSelectedNodes(
-  node: FlavorNode,
-  nodePath: string[],
-  selectedNodes: Set<string>,
-  result: Array<{ name: string; path: string[] }>,
-): void {
-  const currentNodePath = buildNodePath(node, nodePath);
-  const currentNodeKey = currentNodePath.join(":");
-
-  // Collect this node if it's selected (including ancestors)
-  if (selectedNodes.has(currentNodeKey)) {
-    result.push({
-      name: node.name,
-      path: currentNodePath,
-    });
-  }
-
-  // Recursively collect from children
-  if (node.children && node.children.length > 0) {
-    for (const child of node.children) {
-      collectSelectedNodes(child, currentNodePath, selectedNodes, result);
-    }
-  }
 }
 
 /**
@@ -215,7 +205,7 @@ export function NestedFlavorWheel({
     if (!value) return new Set<string>();
     if (!Array.isArray(value)) return new Set<string>();
     return new Set(value);
-  }, [value, data]);
+  }, [value]);
 
   // Convert selected node names to a Set of full paths for UI display
   const selectedNodes = useMemo(() => {
@@ -245,7 +235,7 @@ export function NestedFlavorWheel({
     }
 
     return paths;
-  }, [selectedNodeNames]);
+  }, [selectedNodeNames, data.children]);
 
   // Toggle selection for a node path
   const handleToggle = (nodePath: string[]) => {
@@ -307,21 +297,6 @@ export function NestedFlavorWheel({
       newExpanded.add(pathKey);
     }
     setExpandedNodes(newExpanded);
-  };
-
-  // Helper function to recursively collect all expandable paths
-  const collectAllPaths = (node: FlavorNode, path: string[]): string[] => {
-    const currentPath = [...path, node.name];
-    const pathKey = currentPath.join(":");
-    const paths: string[] = [];
-
-    if (node.children && node.children.length > 0) {
-      paths.push(pathKey);
-      for (const child of node.children) {
-        paths.push(...collectAllPaths(child, currentPath));
-      }
-    }
-    return paths;
   };
 
   const handleExpandAll = () => {

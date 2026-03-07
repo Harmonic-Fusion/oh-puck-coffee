@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useSyncExternalStore,
+  useCallback,
+  type ReactNode,
+} from "react";
 
 const SIDEBAR_COLLAPSED_KEY = "coffee-sidebar-collapsed";
 
@@ -22,29 +29,29 @@ function saveSidebarCollapsed(collapsed: boolean): void {
   localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "true" : "false");
 }
 
-export function SidebarProvider({ children }: { children: ReactNode }) {
-  // Always initialize with false to match SSR (prevents hydration mismatch)
-  // After mount, we'll hydrate from localStorage
-  const [collapsed, setCollapsedState] = useState<boolean>(false);
-  const [isHydrated, setIsHydrated] = useState<boolean>(false);
+function subscribeSidebarCollapsed(callback: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
 
-  useEffect(() => {
-    setIsHydrated(true);
-    // Hydrate from localStorage after mount
-    setCollapsedState(getSavedSidebarCollapsed());
+export function SidebarProvider({ children }: { children: ReactNode }) {
+  const collapsedFromStore = useSyncExternalStore(
+    subscribeSidebarCollapsed,
+    getSavedSidebarCollapsed,
+    () => false,
+  );
+  const [localCollapsed, setLocalCollapsed] = useState<boolean | null>(null);
+
+  const collapsed = localCollapsed ?? collapsedFromStore;
+
+  const setCollapsed = useCallback((newCollapsed: boolean) => {
+    setLocalCollapsed(newCollapsed);
+    saveSidebarCollapsed(newCollapsed);
   }, []);
 
-  const setCollapsed = (newCollapsed: boolean) => {
-    setCollapsedState(newCollapsed);
-    saveSidebarCollapsed(newCollapsed);
-  };
-
-  // During SSR and initial client render, always use false to prevent hydration mismatch
-  // After hydration, use the actual collapsed state from localStorage
-  const collapsedValue = isHydrated ? collapsed : false;
-
   return (
-    <SidebarContext.Provider value={{ collapsed: collapsedValue, setCollapsed }}>
+    <SidebarContext.Provider value={{ collapsed, setCollapsed }}>
       {children}
     </SidebarContext.Provider>
   );

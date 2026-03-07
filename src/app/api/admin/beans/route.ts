@@ -29,12 +29,12 @@ export async function GET(request: NextRequest) {
         origin: beans.origin,
         processingMethod: beans.processingMethod,
         roastDate: beans.roastDate,
-        userId: beans.userId,
+        createdBy: beans.createdBy,
         userEmail: users.email,
         createdAt: beans.createdAt,
       })
       .from(beans)
-      .leftJoin(users, eq(beans.userId, users.id))
+      .leftJoin(users, eq(beans.createdBy, users.id))
       .where(whereClause)
       .orderBy(desc(beans.createdAt))
       .limit(limit)

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { shots, users } from "@/db/schema";
-import { gte, eq, desc, count, countDistinct, sql } from "drizzle-orm";
+import { gte, eq, desc, count, countDistinct } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

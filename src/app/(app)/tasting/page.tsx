@@ -73,35 +73,6 @@ export default function TastingPage() {
     setAdjectives([]);
   };
 
-  // Helper function to build node path
-  function buildNodePath(node: FlavorNode, parentPath: string[]): string[] {
-    return [...parentPath, node.name];
-  }
-
-  // Helper function to collect selected nodes
-  function collectSelectedNodes(
-    node: FlavorNode,
-    nodePath: string[],
-    selectedNodes: Set<string>,
-    result: Array<{ name: string; path: string[] }>,
-  ): void {
-    const currentNodePath = buildNodePath(node, nodePath);
-    const currentNodeKey = currentNodePath.join(":");
-
-    if (selectedNodes.has(currentNodeKey)) {
-      result.push({
-        name: node.name,
-        path: currentNodePath,
-      });
-    }
-
-    if (node.children && node.children.length > 0) {
-      for (const child of node.children) {
-        collectSelectedNodes(child, currentNodePath, selectedNodes, result);
-      }
-    }
-  }
-
   // Track custom order for flavors (set when user reorders)
   const [flavorOrder, setFlavorOrder] = useState<string[] | null>(null);
 
@@ -280,7 +251,7 @@ export default function TastingPage() {
     // Always preserve the order from flavorCategories (or flavorOrder if set)
     // This respects the selection order (ancestors first, then leaf, appended to end)
     return orderedFlavors;
-  }, [flavorCategories, flavorOrder]);
+  }, [flavorCategories, flavorOrder, FLAVOR_WHEEL_DATA.children]);
 
   // Compute body badge data
   const bodyBadgeData = useMemo(() => {

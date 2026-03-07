@@ -5,7 +5,7 @@ import { users, subscriptions, userEntitlements } from "@/db/schema";
 import { desc, count, ilike, and, eq, inArray, SQL } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
-  const { session, error } = await requireSuperAdmin();
+  const { error } = await requireSuperAdmin();
   if (error) return error;
 
   const { searchParams } = new URL(request.url);

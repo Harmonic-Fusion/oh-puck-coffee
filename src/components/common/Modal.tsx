@@ -37,6 +37,8 @@ export function Modal({ open, onClose, title, header, children, footer, fullHeig
   return (
     <div
       ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-8 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose();

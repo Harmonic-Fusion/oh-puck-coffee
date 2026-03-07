@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, FormProvider, type Resolver } from "react-hook-form";
+import { useForm, FormProvider, type Resolver, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createShotSchema, type CreateShot } from "@/shared/shots/schema";
 import { useCreateShot, useDeleteShot, useToggleReference, useToggleHidden, type ShotWithJoins } from "@/components/shots/hooks";
@@ -19,22 +19,9 @@ import { ValidationBanner } from "@/components/common/ValidationBanner";
 import { useShotPrePopulation } from "./hooks";
 import type { ShotSummary } from "./__components__/ShotSuccessModal";
 
+// Shell: calls the incompatible react-hook-form APIs so ShotFormInner can be memoized
 export function ShotForm() {
-  const createShot = useCreateShot();
-  const { data: beans } = useBeans();
-  const { data: grinders } = useGrinders();
-  const { data: machines } = useMachines();
-  const { showToast } = useToast();
-  const deleteShot = useDeleteShot();
-  const toggleReference = useToggleReference();
-  const toggleHidden = useToggleHidden();
-
-  // State for shot detail modal
-  const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
-
-  // State for success modal
-  const [successSummary, setSuccessSummary] = useState<ShotSummary | null>(null);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  "use no memo";
 
   const methods = useForm<CreateShot>({
     resolver: zodResolver(createShotSchema) as Resolver<CreateShot>,
@@ -62,10 +49,9 @@ export function ShotForm() {
     },
   });
 
-  // Pre-populate form from URL params, sessionStorage, or last shot
   const { previousShotId } = useShotPrePopulation(methods);
 
-  // Warn before leaving when the user has entered results data
+  // eslint-disable-next-line react-hooks/incompatible-library
   const resultsFields = methods.watch([
     "yieldActualGrams",
     "brewTimeSecs",
@@ -82,6 +68,39 @@ export function ShotForm() {
     Array.isArray(v) ? v.length > 0 : v !== undefined && v !== "" && v !== null,
   );
 
+  return (
+    <ShotFormInner
+      methods={methods}
+      previousShotId={previousShotId}
+      hasResultsData={hasResultsData}
+    />
+  );
+}
+
+interface ShotFormInnerProps {
+  methods: UseFormReturn<CreateShot>;
+  previousShotId: string | null;
+  hasResultsData: boolean;
+}
+
+function ShotFormInner({ methods, previousShotId, hasResultsData }: ShotFormInnerProps) {
+  const createShot = useCreateShot();
+  const { data: beans } = useBeans();
+  const { data: grinders } = useGrinders();
+  const { data: machines } = useMachines();
+  const { showToast } = useToast();
+  const deleteShot = useDeleteShot();
+  const toggleReference = useToggleReference();
+  const toggleHidden = useToggleHidden();
+
+  // State for shot detail modal
+  const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
+
+  // State for success modal
+  const [successSummary, setSuccessSummary] = useState<ShotSummary | null>(null);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+
+  // Warn before leaving when the user has entered results data
   useEffect(() => {
     if (!hasResultsData) return;
 

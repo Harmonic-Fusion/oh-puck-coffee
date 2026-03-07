@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { PlusIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 
@@ -121,7 +122,7 @@ export default function ShotLogResourcePage() {
                     Bean
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    Select the coffee beans you're using for this shot. The bean
+                    Select the coffee beans you&apos;re using for this shot. The bean
                     selection is the foundation of every shot log — knowing which
                     coffee you used lets you compare results across different beans
                     and track how a specific roast evolves over time.
@@ -151,7 +152,7 @@ export default function ShotLogResourcePage() {
                     Grinder
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    Choose the grinder you're using. The grind is arguably the most
+                    Choose the grinder you&apos;re using. The grind is arguably the most
                     important variable in espresso — different grinders produce
                     different particle distributions, and even the same numeric
                     grind setting can mean very different things across models.
@@ -162,7 +163,7 @@ export default function ShotLogResourcePage() {
                     </p>
                     <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-stone-600 dark:text-stone-400">
                       <li>
-                        Select &ldquo;Pre-ground&rdquo; if you're using
+                        Select &ldquo;Pre-ground&rdquo; if you&apos;re using
                         pre-ground coffee — the grind level field will be hidden
                         automatically.
                       </li>
@@ -390,10 +391,12 @@ export default function ShotLogResourcePage() {
                     </p>
                     <div className="mb-4 grid gap-4 md:grid-cols-3">
                       <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
-                        <img
+                        <Image
                           src="/images/shot-quality/poor_extraction.png"
                           alt="Poor extraction showing severe channeling and spraying"
-                          className="mb-3 max-h-48 w-full rounded object-cover"
+                          width={400}
+                          height={300}
+                          className="mb-3 w-full rounded object-cover"
                         />
                         <p className="mb-1 text-sm font-semibold text-stone-800 dark:text-stone-200">
                           1-2: Poor — Severe <GlossaryLink slug="channeling">Channeling</GlossaryLink>
@@ -403,10 +406,12 @@ export default function ShotLogResourcePage() {
                         </p>
                       </div>
                       <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
-                        <img
+                        <Image
                           src="/images/shot-quality/moderate_extraction.png"
                           alt="Moderate extraction showing some channeling"
-                          className="mb-3 max-h-48 w-full rounded object-cover"
+                          width={400}
+                          height={300}
+                          className="mb-3 w-full rounded object-cover"
                         />
                         <p className="mb-1 text-sm font-semibold text-stone-800 dark:text-stone-200">
                           3: Moderate — Some <GlossaryLink slug="channeling">Channeling</GlossaryLink>
@@ -416,10 +421,12 @@ export default function ShotLogResourcePage() {
                         </p>
                       </div>
                       <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
-                        <img
+                        <Image
                           src="/images/shot-quality/excellent_extraction.png"
                           alt="Excellent extraction showing even flow and rich crema"
-                          className="mb-3 max-h-48 w-full rounded object-cover"
+                          width={400}
+                          height={300}
+                          className="mb-3 w-full rounded object-cover"
                         />
                         <p className="mb-1 text-sm font-semibold text-stone-800 dark:text-stone-200">
                           4-5: Excellent — Good to Excellent Even Extraction
@@ -491,7 +498,7 @@ export default function ShotLogResourcePage() {
                     Rating
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    Rate your overall enjoyment of the shot from 1–5 (Undrinkable, Didn't Enjoy, Enjoyed, Really Enjoyed, Loved It). This is
+                    Rate your overall enjoyment of the shot from 1–5 (Undrinkable, Didn&apos;t Enjoy, Enjoyed, Really Enjoyed, Loved It). This is
                     your subjective rating of how much you liked it, separate
                     from technical quality. The rating helps you quickly
                     spot your best shots in the history.

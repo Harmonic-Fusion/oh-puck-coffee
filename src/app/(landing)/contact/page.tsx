@@ -4,8 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import Link from "next/link";
-import { AppRoutes, ApiRoutes } from "@/app/routes";
+import { ApiRoutes } from "@/app/routes";
 import { Input } from "@/components/common/Input";
 import { Textarea } from "@/components/common/Textarea";
 import { Button } from "@/components/common/Button";
@@ -67,7 +66,7 @@ export default function ContactPage() {
           Contact Us
         </h1>
         <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-          Have a question or feedback? We'd love to hear from you.
+          Have a question or feedback? We&apos;d love to hear from you.
         </p>
 
         <form onSubmit={handleSubmit(onSubmit)} className="mt-10 space-y-6">
@@ -90,7 +89,7 @@ export default function ContactPage() {
             label="Subject"
             {...register("subject")}
             error={errors.subject?.message}
-            placeholder="What's this about?"
+            placeholder="What&apos;s this about?"
           />
 
           <Textarea
@@ -98,7 +97,7 @@ export default function ContactPage() {
             rows={6}
             {...register("message")}
             error={errors.message?.message}
-            placeholder="Tell us what's on your mind..."
+            placeholder="Tell us what&apos;s on your mind..."
           />
 
           <Button type="submit" size="lg" loading={isSubmitting} className="w-full">

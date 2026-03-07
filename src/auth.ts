@@ -8,7 +8,7 @@ import { users, accounts, verificationTokens, userEntitlements } from "./db/sche
 import { authConfig } from "./auth.config";
 import { config } from "./shared/config";
 import { createLogger } from "./lib/logger";
-import { FreeEntitlementDefaults } from "./shared/entitlements";
+import { FreeEntitlementDefaults, Entitlements } from "./shared/entitlements";
 
 // Initialize logger early
 import "./lib/logger-init";
@@ -128,6 +128,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           entitlementRows.length > 0
             ? entitlementRows.map((r) => r.lookupKey)
             : FreeEntitlementDefaults;
+        // Default plan is Free; Pro only when Stripe/DB has the entitlement
+        token.subType =
+          entitlementRows.some(
+            (r) => r.lookupKey === Entitlements.NO_SHOT_VIEW_LIMIT,
+          )
+            ? "pro"
+            : "free";
       }
       return token;
     },
@@ -135,7 +142,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
-        session.user.entitlements = token.entitlements ?? [];
+        session.user.entitlements = token.entitlements ?? FreeEntitlementDefaults;
+        session.user.subType = token.subType ?? "free";
       }
       return session;
     },

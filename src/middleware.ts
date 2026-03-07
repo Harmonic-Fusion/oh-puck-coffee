@@ -116,7 +116,7 @@ export default async function middleware(request: NextRequest) {
           // Redirect to home or a 403 page if not super-admin
           return NextResponse.redirect(new URL("/", request.url));
         }
-      } catch (error) {
+      } catch {
         // If decoding fails, treat as unauthenticated
         const url = new URL(AppRoutes.login.path, request.url);
         url.searchParams.set("callbackUrl", pathname);

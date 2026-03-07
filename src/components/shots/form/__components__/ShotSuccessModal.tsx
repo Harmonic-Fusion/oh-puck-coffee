@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AppRoutes, resolvePath } from "@/app/routes";
 import { useCreateShareLink } from "@/components/shots/hooks";
@@ -34,7 +35,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
   const createShareLink = useCreateShareLink();
 
   const shotIdRef = useRef(summary?.shotId);
-  shotIdRef.current = summary?.shotId;
+  useEffect(() => { shotIdRef.current = summary?.shotId; }, [summary?.shotId]);
 
   const getShareUrl = useCallback(async (): Promise<string> => {
     const currentShotId = shotIdRef.current;
@@ -138,10 +139,12 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
 
         {/* Header: Coffee Logo + Title */}
         <div className="mb-5 text-center">
-          <img
+          <Image
             src="/logos/logo_complex.png"
             alt="Coffee"
-            className="mx-auto mb-2 h-14 w-14"
+            width={56}
+            height={56}
+            className="mx-auto mb-2"
           />
           <h2 className="text-xl font-bold text-stone-800 dark:text-stone-200">
             Journey before Destination!
@@ -367,28 +370,4 @@ function getScoreColors(score: number): { bg: string; text: string; label: strin
     text: "text-red-800 dark:text-red-300",
     label: "text-red-600/70 dark:text-red-400/70",
   };
-}
-
-function collectDisplayFlavors(
-  categories?: Record<string, string[]> | null,
-  adjectives?: string[] | null,
-): string[] {
-  const flavors: string[] = [];
-
-  if (categories) {
-    for (const descriptors of Object.values(categories)) {
-      flavors.push(...descriptors);
-    }
-  }
-
-  if (adjectives) {
-    for (const adj of adjectives) {
-      if (!flavors.includes(adj)) {
-        flavors.push(adj);
-      }
-    }
-  }
-
-  // Return 3-6 tasting notes
-  return flavors.slice(0, 6);
 }

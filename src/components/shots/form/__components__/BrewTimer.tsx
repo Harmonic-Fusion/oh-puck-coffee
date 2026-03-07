@@ -14,20 +14,24 @@ export function BrewTimer({ value, onChange, className }: BrewTimerProps) {
   const offsetRef = useRef<number>(0);
   const rafRef = useRef<number | null>(null);
 
-  const tick = useCallback(() => {
-    if (startTimeRef.current === null) return;
-    const now = performance.now();
-    const secs = offsetRef.current + (now - startTimeRef.current) / 1000;
-    onChange(parseFloat(secs.toFixed(1)));
-    rafRef.current = requestAnimationFrame(tick);
+  const tickRef = useRef<() => void>(null);
+
+  useEffect(() => {
+    tickRef.current = () => {
+      if (startTimeRef.current === null) return;
+      const now = performance.now();
+      const secs = offsetRef.current + (now - startTimeRef.current) / 1000;
+      onChange(parseFloat(secs.toFixed(1)));
+      rafRef.current = requestAnimationFrame(() => tickRef.current?.());
+    };
   }, [onChange]);
 
   const handlePlay = useCallback(() => {
     offsetRef.current = value ?? 0;
     startTimeRef.current = performance.now();
     setIsRunning(true);
-    rafRef.current = requestAnimationFrame(tick);
-  }, [tick, value]);
+    rafRef.current = requestAnimationFrame(() => tickRef.current?.());
+  }, [value]);
 
   const handlePause = useCallback(() => {
     setIsRunning(false);

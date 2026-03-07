@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { ReorderableStepConfig } from "../step-config";
 
 interface UseReorderableStepsOptions<TId extends string> {
@@ -59,22 +59,27 @@ export function useReorderableSteps<TId extends string>({
   visibilityKey,
   showAllInputs = false,
 }: UseReorderableStepsOptions<TId>) {
-  const [order, setOrder] = useState<TId[]>(defaultSteps.map((s) => s.id));
-  const [visibility, setVisibility] = useState<Record<TId, boolean>>(
-    getDefaultVisibility(defaultSteps),
+  const defaultOrder = defaultSteps.map((s) => s.id);
+  const initialVisibility = getDefaultVisibility(defaultSteps);
+  const [order, setOrder] = useState<TId[]>(defaultOrder);
+  const [visibility, setVisibility] = useState<Record<TId, boolean>>(initialVisibility);
+  const [isExpanded, setIsExpanded] = useState(() =>
+    defaultSteps.some((s) => s.required === true && s.visible),
   );
-  const [isExpanded, setIsExpanded] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
-  // Hydrate from localStorage on mount; auto-expand if any steps are visible
-  useEffect(() => {
-    setOrder(getSavedOrder(orderKey, defaultSteps));
-    const vis = getSavedVisibility(visibilityKey, defaultSteps);
-    setVisibility(vis);
-    if (Object.values(vis).some(Boolean)) {
+  // Hydrate from localStorage on first render (setState during render pattern)
+  if (typeof window !== "undefined" && !hydrated) {
+    setHydrated(true);
+    const savedOrder = getSavedOrder(orderKey, defaultSteps);
+    const savedVisibility = getSavedVisibility(visibilityKey, defaultSteps);
+    setOrder(savedOrder);
+    setVisibility(savedVisibility);
+    if (Object.values(savedVisibility).some(Boolean)) {
       setIsExpanded(true);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   const handleOrderChange = useCallback(
     (newOrder: TId[], newVisibility: Record<TId, boolean>) => {

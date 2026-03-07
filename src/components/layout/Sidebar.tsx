@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
+import { useQuery } from "@tanstack/react-query";
 import { Bars3Icon, UserIcon } from "@heroicons/react/24/outline";
-import { AppRoutes } from "@/app/routes";
+import { AppRoutes, ApiRoutes } from "@/app/routes";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -18,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSidebar } from "./SidebarContext";
 import { FeedbackModal } from "@/components/common/FeedbackModal";
+import { useShareInvites } from "@/components/beans/hooks";
 import {
   desktopMainNav,
   getDesktopUserMenuItems,
@@ -34,11 +37,35 @@ export function Sidebar() {
   const { collapsed, setCollapsed } = useSidebar();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
-  const userName = session?.user?.name || "User";
+  const { data: profile } = useQuery<{ name: string | null; image: string | null }>({
+    queryKey: ["user", "me"],
+    queryFn: async () => {
+      const res = await fetch(ApiRoutes.users.me.path);
+      if (!res.ok) throw new Error("Failed to fetch profile");
+      return res.json();
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const userName = profile?.name ?? session?.user?.name ?? "User";
   const userEmail = session?.user?.email;
-  const userImage = session?.user?.image;
+  const userImage = profile?.image ?? session?.user?.image;
+  const [userImageFailed, setUserImageFailed] = useState(false);
+  const [prevUserImage, setPrevUserImage] = useState(userImage);
+
+  // Reset image failed flag when userImage changes (store previous value during render)
+  if (userImage !== prevUserImage) {
+    setPrevUserImage(userImage);
+    setUserImageFailed(false);
+  }
+
+  const showUserImage = userImage && !userImageFailed;
 
   const userMenuItems = getDesktopUserMenuItems(session?.user?.role);
+
+  const { data: invites } = useShareInvites();
+  const pendingInviteCount = invites?.filter((i) => i.id).length ?? 0;
+  const showBeansBadge = pendingInviteCount > 0;
 
   function handleUserMenuItemClick(item: typeof userMenuItems[0]) {
     if (isNavItem(item)) {
@@ -70,10 +97,12 @@ export function Sidebar() {
           >
             {!collapsed && (
               <>
-                <img
+                <Image
                   src="/logos/logo_complex.png"
                   alt="Coffee Tracker"
-                  className="h-8 w-8 flex-shrink-0"
+                  width={32}
+                  height={32}
+                  className="flex-shrink-0"
                 />
                 <span className="text-lg font-bold text-amber-800 dark:text-amber-500">
                   Coffee Tracker
@@ -98,6 +127,7 @@ export function Sidebar() {
               {desktopMainNav.map((item) => {
                 const Icon = item.icon;
                 const active = isRouteActive(pathname, item.href);
+                const isBeans = item.href === AppRoutes.beans.path;
                 return (
                   <li key={item.href}>
                     <Link
@@ -111,8 +141,30 @@ export function Sidebar() {
                       }`}
                       title={collapsed ? item.label : undefined}
                     >
-                      <Icon className="h-6 w-6 flex-shrink-0" />
-                      {!collapsed && item.label}
+                      <span className="relative flex-shrink-0">
+                        <Icon className="h-6 w-6" />
+                        {collapsed && isBeans && showBeansBadge && (
+                          <span
+                            className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white"
+                            aria-label={`${pendingInviteCount} pending invite${pendingInviteCount !== 1 ? "s" : ""}`}
+                          >
+                            {pendingInviteCount > 9 ? "9+" : pendingInviteCount}
+                          </span>
+                        )}
+                      </span>
+                      {!collapsed && (
+                        <span className="flex flex-1 items-center gap-2">
+                          {item.label}
+                          {isBeans && showBeansBadge && (
+                            <span
+                              className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-amber-500 px-1.5 text-xs font-semibold text-white"
+                              aria-label={`${pendingInviteCount} pending invite${pendingInviteCount !== 1 ? "s" : ""}`}
+                            >
+                              {pendingInviteCount > 9 ? "9+" : pendingInviteCount}
+                            </span>
+                          )}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
@@ -134,11 +186,14 @@ export function Sidebar() {
                   }`}
                   title={collapsed ? userName : undefined}
                 >
-                  {userImage ? (
-                    <img
+                  {showUserImage ? (
+                    <Image
                       src={userImage}
                       alt={userName}
-                      className="h-8 w-8 rounded-full flex-shrink-0"
+                      width={32}
+                      height={32}
+                      className="rounded-full flex-shrink-0"
+                      onError={() => setUserImageFailed(true)}
                     />
                   ) : (
                     <UserIcon className="h-6 w-6 flex-shrink-0 text-stone-400 dark:text-stone-500" />
@@ -184,7 +239,6 @@ export function Sidebar() {
 
                 {userMenuItems.map((item, index) => {
                   const Icon = item.icon;
-                  const active = isNavItem(item) && isRouteActive(pathname, item.href);
                   const isSignOut = item.label === "Sign Out";
                   const showSeparator = isSignOut && index > 0;
                   

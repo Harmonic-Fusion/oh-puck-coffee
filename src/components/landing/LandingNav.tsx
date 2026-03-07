@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import Image from "next/image";
 import { AppRoutes } from "@/app/routes";
 import { SignInButton } from "@/components/auth/SignInButton";
 import { UserDropdown } from "@/components/landing/UserDropdown";
@@ -13,10 +14,11 @@ export async function LandingNav() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link href={AppRoutes.home.path} className="flex items-center gap-2">
-            <img
+            <Image
               src="/logos/logo_complex.png"
               alt="Coffee Tracker Logo"
-              className="h-8 w-8"
+              width={32}
+              height={32}
             />
             <span className="text-xl font-bold text-stone-900 dark:text-stone-100">
               Coffee Tracker

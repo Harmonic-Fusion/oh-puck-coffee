@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ShotForm } from "@/components/shots/form/ShotForm";
 
 const _PUN_PHRASES = [
@@ -42,6 +42,8 @@ const _KAT_PHRASES = [
 
 const ENCOURAGING_PHRASES = [..._ENCOURAGING_PHRASES, ..._KAT_PHRASES, ..._PUN_PHRASES];
 
+const INITIAL_PHRASE = ENCOURAGING_PHRASES[Math.floor(Math.random() * ENCOURAGING_PHRASES.length)];
+
 function TypewriterText({ text }: { text: string }) {
   const [displayed, setDisplayed] = useState("");
 
@@ -64,10 +66,7 @@ function TypewriterText({ text }: { text: string }) {
 }
 
 export default function LogPage() {
-  const phrase = useMemo(
-    () => ENCOURAGING_PHRASES[Math.floor(Math.random() * ENCOURAGING_PHRASES.length)],
-    []
-  );
+  const [phrase] = useState(INITIAL_PHRASE);
 
   return (
     <div className="mx-auto w-full max-w-2xl">

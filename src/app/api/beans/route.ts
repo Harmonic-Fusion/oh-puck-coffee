@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, shots, shotShares } from "@/db/schema";
+import { beans, userBeans, beansShare, shots, shotShares } from "@/db/schema";
 import { createBeanSchema } from "@/shared/beans/schema";
-import { ilike, desc, eq, and, max, sql, inArray, count, not } from "drizzle-orm";
+import { ilike, desc, eq, and, max, sql, inArray, count } from "drizzle-orm";
 import { generateShortUid } from "@/lib/short-uid";
 
 interface ShareSideLoadItem {
@@ -25,21 +25,49 @@ export async function GET(request: NextRequest) {
   const withCounts = searchParams.get("withCounts") === "true";
   const shareShotIds = parseShareShotIds(searchParams);
 
-  // Members can only see beans they created, admins can see all
-  const beanConditions = [];
-  if (session.user.role !== "admin") {
-    beanConditions.push(eq(beans.userId, session.user.id));
-  }
-  if (search) {
-    beanConditions.push(ilike(beans.name, `%${search}%`));
-  }
+  // User sees beans they have a user_beans row for (created + shared with them)
+  const searchCondition = search ? ilike(beans.name, `%${search}%`) : undefined;
 
-  const beanWhereClause =
-    beanConditions.length > 0 ? and(...beanConditions) : undefined;
+  function toBeanWithUserData(
+    r: {
+      id: string;
+      name: string;
+      origin: string | null;
+      roaster: string | null;
+      originId: number | null;
+      roasterId: number | null;
+      originDetails: string | null;
+      processingMethod: string | null;
+      roastLevel: string;
+      roastDate: Date | null;
+      isRoastDateBestGuess: boolean;
+      createdBy: string;
+      generalAccess: "restricted" | "anyone_with_link" | "public";
+      generalAccessShareShots: boolean;
+      shareSlug: string | null;
+      createdAt: Date;
+      openBagDate: Date | null;
+      userBeanCreatedAt: Date;
+      beanId: string;
+      userId: string;
+      shareMyShotsPublicly?: boolean;
+    } & Record<string, unknown>,
+  ) {
+    const { openBagDate, userBeanCreatedAt, beanId, userId, shareMyShotsPublicly = false, ...rest } = r;
+    return {
+      ...rest,
+      userBean: {
+        beanId,
+        userId,
+        openBagDate,
+        shareMyShotsPublicly,
+        createdAt: userBeanCreatedAt,
+      },
+    };
+  }
 
   // If ordering by recent usage, join with shots and order by max createdAt
   if (orderBy === "recent") {
-    // Members can only see their own shots, admins see all shots
     const joinCondition =
       session.user.role !== "admin"
         ? and(eq(shots.beanId, beans.id), eq(shots.userId, session.user.id))
@@ -57,15 +85,30 @@ export async function GET(request: NextRequest) {
         processingMethod: beans.processingMethod,
         roastLevel: beans.roastLevel,
         roastDate: beans.roastDate,
-        openBagDate: beans.openBagDate,
         isRoastDateBestGuess: beans.isRoastDateBestGuess,
-        userId: beans.userId,
+        createdBy: beans.createdBy,
+        generalAccess: beans.generalAccess,
+        generalAccessShareShots: beans.generalAccessShareShots,
+        shareSlug: beans.shareSlug,
         createdAt: beans.createdAt,
+        openBagDate: userBeans.openBagDate,
+        userBeanCreatedAt: userBeans.createdAt,
+        beanId: userBeans.beanId,
+        userId: userBeans.userId,
+        shareMyShotsPublicly: userBeans.shareMyShotsPublicly,
+
         lastUsedAt: max(shots.createdAt).as("lastUsedAt"),
       })
       .from(beans)
+      .innerJoin(
+        userBeans,
+        and(
+          eq(beans.id, userBeans.beanId),
+          eq(userBeans.userId, session.user.id),
+        ),
+      )
       .leftJoin(shots, joinCondition)
-      .where(beanWhereClause)
+      .where(searchCondition)
       .groupBy(
         beans.id,
         beans.name,
@@ -77,23 +120,30 @@ export async function GET(request: NextRequest) {
         beans.processingMethod,
         beans.roastLevel,
         beans.roastDate,
-        beans.openBagDate,
         beans.isRoastDateBestGuess,
-        beans.userId,
-        beans.createdAt
+        beans.createdBy,
+        beans.generalAccess,
+        beans.generalAccessShareShots,
+        beans.shareSlug,
+        beans.createdAt,
+        userBeans.openBagDate,
+        userBeans.createdAt,
+        userBeans.beanId,
+        userBeans.userId,
+        userBeans.shareMyShotsPublicly,
+
       )
       .orderBy(desc(sql`max(${shots.createdAt})`), desc(beans.createdAt));
 
     const share = await getShareSideLoad(shareShotIds, session.user.id);
     if (!share) {
-      return NextResponse.json(results);
+      return NextResponse.json(results.map(toBeanWithUserData));
     }
-    return NextResponse.json({ data: results, share });
+    return NextResponse.json({ data: results.map(toBeanWithUserData), share });
   }
 
   // If ordering by best rating, join with shots and order by max rating
   if (orderBy === "bestRating") {
-    // Members can only see their own shots, admins see all shots
     const joinCondition =
       session.user.role !== "admin"
         ? and(
@@ -115,15 +165,34 @@ export async function GET(request: NextRequest) {
         processingMethod: beans.processingMethod,
         roastLevel: beans.roastLevel,
         roastDate: beans.roastDate,
-        openBagDate: beans.openBagDate,
         isRoastDateBestGuess: beans.isRoastDateBestGuess,
-        userId: beans.userId,
+        createdBy: beans.createdBy,
+        generalAccess: beans.generalAccess,
+        generalAccessShareShots: beans.generalAccessShareShots,
+        shareSlug: beans.shareSlug,
         createdAt: beans.createdAt,
-        bestRating: sql<number | null>`max(${shots.rating}) filter (where ${shots.rating} is not null)`.as("bestRating"),
+        openBagDate: userBeans.openBagDate,
+        userBeanCreatedAt: userBeans.createdAt,
+        beanId: userBeans.beanId,
+        userId: userBeans.userId,
+        shareMyShotsPublicly: userBeans.shareMyShotsPublicly,
+
+        bestRating: sql<
+          number | null
+        >`max(${shots.rating}) filter (where ${shots.rating} is not null)`.as(
+          "bestRating",
+        ),
       })
       .from(beans)
+      .innerJoin(
+        userBeans,
+        and(
+          eq(beans.id, userBeans.beanId),
+          eq(userBeans.userId, session.user.id),
+        ),
+      )
       .leftJoin(shots, joinCondition)
-      .where(beanWhereClause)
+      .where(searchCondition)
       .groupBy(
         beans.id,
         beans.name,
@@ -135,18 +204,31 @@ export async function GET(request: NextRequest) {
         beans.processingMethod,
         beans.roastLevel,
         beans.roastDate,
-        beans.openBagDate,
         beans.isRoastDateBestGuess,
-        beans.userId,
-        beans.createdAt
+        beans.createdBy,
+        beans.generalAccess,
+        beans.generalAccessShareShots,
+        beans.shareSlug,
+        beans.createdAt,
+        userBeans.openBagDate,
+        userBeans.createdAt,
+        userBeans.beanId,
+        userBeans.userId,
+        userBeans.shareMyShotsPublicly,
+
       )
-      .orderBy(desc(sql`max(${shots.rating}) filter (where ${shots.rating} is not null)`), desc(beans.createdAt));
+      .orderBy(
+        desc(
+          sql`max(${shots.rating}) filter (where ${shots.rating} is not null)`,
+        ),
+        desc(beans.createdAt),
+      );
 
     const share = await getShareSideLoad(shareShotIds, session.user.id);
     if (!share) {
-      return NextResponse.json(results);
+      return NextResponse.json(results.map(toBeanWithUserData));
     }
-    return NextResponse.json({ data: results, share });
+    return NextResponse.json({ data: results.map(toBeanWithUserData), share });
   }
 
   // withCounts=true: include shot count, last shot date, and allShotsHidden
@@ -156,8 +238,11 @@ export async function GET(request: NextRequest) {
         ? and(eq(shots.beanId, beans.id), eq(shots.userId, session.user.id))
         : eq(shots.beanId, beans.id);
 
-    // For bestRating ordering, we need to calculate max rating from non-hidden shots
-    const bestRatingExpr = sql<number | null>`max(${shots.rating}) filter (where ${shots.rating} is not null and not ${shots.isHidden})`.as("bestRating");
+    const bestRatingExpr = sql<
+      number | null
+    >`max(${shots.rating}) filter (where ${shots.rating} is not null and not ${shots.isHidden})`.as(
+      "bestRating",
+    );
 
     const results = await db
       .select({
@@ -171,18 +256,36 @@ export async function GET(request: NextRequest) {
         processingMethod: beans.processingMethod,
         roastLevel: beans.roastLevel,
         roastDate: beans.roastDate,
-        openBagDate: beans.openBagDate,
         isRoastDateBestGuess: beans.isRoastDateBestGuess,
-        userId: beans.userId,
+        createdBy: beans.createdBy,
+        generalAccess: beans.generalAccess,
+        generalAccessShareShots: beans.generalAccessShareShots,
+        shareSlug: beans.shareSlug,
         createdAt: beans.createdAt,
+        openBagDate: userBeans.openBagDate,
+        userBeanCreatedAt: userBeans.createdAt,
+        beanId: userBeans.beanId,
+        userId: userBeans.userId,
+        shareMyShotsPublicly: userBeans.shareMyShotsPublicly,
+
         shotCount: count(shots.id).as("shotCount"),
         lastShotAt: max(shots.createdAt).as("lastShotAt"),
-        visibleShotCount: sql<number>`count(${shots.id}) filter (where not ${shots.isHidden})`.as("visibleShotCount"),
+        visibleShotCount:
+          sql<number>`count(${shots.id}) filter (where not ${shots.isHidden})`.as(
+            "visibleShotCount",
+          ),
         bestRating: bestRatingExpr,
       })
       .from(beans)
+      .innerJoin(
+        userBeans,
+        and(
+          eq(beans.id, userBeans.beanId),
+          eq(userBeans.userId, session.user.id),
+        ),
+      )
       .leftJoin(shots, joinCondition)
-      .where(beanWhereClause)
+      .where(searchCondition)
       .groupBy(
         beans.id,
         beans.name,
@@ -194,28 +297,40 @@ export async function GET(request: NextRequest) {
         beans.processingMethod,
         beans.roastLevel,
         beans.roastDate,
-        beans.openBagDate,
         beans.isRoastDateBestGuess,
-        beans.userId,
+        beans.createdBy,
+        beans.generalAccess,
+        beans.generalAccessShareShots,
+        beans.shareSlug,
         beans.createdAt,
+        userBeans.openBagDate,
+        userBeans.createdAt,
+        userBeans.beanId,
+        userBeans.userId,
+        userBeans.shareMyShotsPublicly,
+
       )
       .orderBy(
         orderBy === "bestRating"
-          ? desc(sql`max(${shots.rating}) filter (where ${shots.rating} is not null and not ${shots.isHidden})`)
+          ? desc(
+              sql`max(${shots.rating}) filter (where ${shots.rating} is not null and not ${shots.isHidden})`,
+            )
           : desc(beans.createdAt),
-        desc(beans.createdAt)
+        desc(beans.createdAt),
       );
 
-    // Calculate average rating and common flavors per bean
     const beanIds = results.map((r) => r.id);
     const avgRatings = new Map<string, number | null>();
     const commonFlavorsMap = new Map<string, string[]>();
-    
+
     if (beanIds.length > 0) {
       const ratingResults = await db
         .select({
           beanId: shots.beanId,
-          avgRating: sql<number>`avg(${shots.rating}) filter (where ${shots.rating} is not null)`.as("avgRating"),
+          avgRating:
+            sql<number>`avg(${shots.rating}) filter (where ${shots.rating} is not null)`.as(
+              "avgRating",
+            ),
         })
         .from(shots)
         .where(
@@ -236,7 +351,6 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      // Get flavors for each bean
       const flavorShots = await db
         .select({
           beanId: shots.beanId,
@@ -253,7 +367,6 @@ export async function GET(request: NextRequest) {
           ),
         );
 
-      // Aggregate flavors per bean
       const flavorCountsByBean = new Map<string, Record<string, number>>();
       for (const shot of flavorShots) {
         if (!shot.flavors || !Array.isArray(shot.flavors)) continue;
@@ -266,7 +379,6 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Get top 3 flavors per bean
       for (const [beanId, counts] of flavorCountsByBean.entries()) {
         const topFlavors = Object.entries(counts)
           .sort((a, b) => b[1] - a[1])
@@ -277,10 +389,17 @@ export async function GET(request: NextRequest) {
     }
 
     const withHiddenFlag = results.map((r) => ({
-      ...r,
-      allShotsHidden: r.shotCount > 0 && r.visibleShotCount === 0,
+      ...toBeanWithUserData(r),
+      shotCount: Number(r.shotCount),
+      lastShotAt: r.lastShotAt,
+      visibleShotCount: Number(r.visibleShotCount),
+      allShotsHidden:
+        Number(r.shotCount) > 0 && Number(r.visibleShotCount) === 0,
       avgRating: avgRatings.get(r.id) ?? null,
-      bestRating: r.bestRating != null ? parseFloat(Number(r.bestRating).toFixed(1)) : null,
+      bestRating:
+        r.bestRating != null
+          ? parseFloat(Number(r.bestRating).toFixed(1))
+          : null,
       commonFlavors: commonFlavorsMap.get(r.id) ?? [],
     }));
 
@@ -289,16 +408,45 @@ export async function GET(request: NextRequest) {
 
   // Default: order by createdAt desc
   const results = await db
-    .select()
+    .select({
+      id: beans.id,
+      name: beans.name,
+      origin: beans.origin,
+      roaster: beans.roaster,
+      originId: beans.originId,
+      roasterId: beans.roasterId,
+      originDetails: beans.originDetails,
+      processingMethod: beans.processingMethod,
+      roastLevel: beans.roastLevel,
+      roastDate: beans.roastDate,
+      isRoastDateBestGuess: beans.isRoastDateBestGuess,
+      createdBy: beans.createdBy,
+      generalAccess: beans.generalAccess,
+      generalAccessShareShots: beans.generalAccessShareShots,
+      shareSlug: beans.shareSlug,
+      createdAt: beans.createdAt,
+      openBagDate: userBeans.openBagDate,
+      userBeanCreatedAt: userBeans.createdAt,
+      beanId: userBeans.beanId,
+      userId: userBeans.userId,
+      shareMyShotsPublicly: userBeans.shareMyShotsPublicly,
+    })
     .from(beans)
-    .where(beanWhereClause)
+    .innerJoin(
+      userBeans,
+      and(
+        eq(beans.id, userBeans.beanId),
+        eq(userBeans.userId, session.user.id),
+      ),
+    )
+    .where(searchCondition)
     .orderBy(desc(beans.createdAt));
 
   const share = await getShareSideLoad(shareShotIds, session.user.id);
   if (!share) {
-    return NextResponse.json(results);
+    return NextResponse.json(results.map(toBeanWithUserData));
   }
-  return NextResponse.json({ data: results, share });
+  return NextResponse.json({ data: results.map(toBeanWithUserData), share });
 }
 
 export async function POST(request: NextRequest) {
@@ -313,19 +461,58 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Validation failed", details: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400 },
     );
   }
+
+  const { openBagDate, ...beanData } = parsed.data;
 
   const [bean] = await db
     .insert(beans)
     .values({
-      ...parsed.data,
-      userId: session.user.id,
+      ...beanData,
+      createdBy: session.user.id,
     })
     .returning();
 
-  return NextResponse.json(bean, { status: 201 });
+  if (!bean) {
+    return NextResponse.json(
+      { error: "Failed to create bean" },
+      { status: 500 },
+    );
+  }
+
+  const [userBeanRow] = await db
+    .insert(userBeans)
+    .values({
+      beanId: bean.id,
+      userId: session.user.id,
+      openBagDate: openBagDate ?? null,
+    })
+    .returning();
+
+  // Create the owner's membership row in beansShare. invitedBy = null (no inviter),
+  // reshareEnabled = true (owner can always reshare), shareShotHistory = false (opt-in).
+  await db.insert(beansShare).values({
+    beanId: bean.id,
+    userId: session.user.id,
+    invitedBy: null,
+    status: "accepted",
+    shareShotHistory: false,
+    reshareEnabled: true,
+  });
+
+  const userBean = userBeanRow
+    ? {
+        beanId: userBeanRow.beanId,
+        userId: userBeanRow.userId,
+        openBagDate: userBeanRow.openBagDate,
+        shareMyShotsPublicly: userBeanRow.shareMyShotsPublicly,
+        createdAt: userBeanRow.createdAt,
+      }
+    : null;
+
+  return NextResponse.json({ ...bean, userBean }, { status: 201 });
 }
 
 function parseShareShotIds(searchParams: URLSearchParams): string[] {
@@ -349,7 +536,7 @@ function parseShareShotIds(searchParams: URLSearchParams): string[] {
 
 async function getShareSideLoad(
   shareShotIds: string[],
-  userId: string
+  userId: string,
 ): Promise<ShareSideLoadItem[] | null> {
   if (shareShotIds.length === 0) {
     return null;
@@ -376,15 +563,15 @@ async function getShareSideLoad(
     .where(
       and(
         inArray(shotShares.shotId, allowedShotIds),
-        eq(shotShares.userId, userId)
-      )
+        eq(shotShares.userId, userId),
+      ),
     );
 
   const existingByShotId = new Map(
-    existingShares.map((share) => [share.shotId, share])
+    existingShares.map((share) => [share.shotId, share]),
   );
   const missingShotIds = allowedShotIds.filter(
-    (shotId) => !existingByShotId.has(shotId)
+    (shotId) => !existingByShotId.has(shotId),
   );
 
   let createdShares: ShareSideLoadItem[] = [];
@@ -396,7 +583,7 @@ async function getShareSideLoad(
           id: generateShortUid(),
           shotId,
           userId,
-        }))
+        })),
       )
       .returning({
         id: shotShares.id,

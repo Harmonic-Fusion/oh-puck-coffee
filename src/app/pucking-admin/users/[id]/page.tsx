@@ -1,6 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart,
@@ -142,10 +143,12 @@ export default function AdminUserDetailPage({
         <div className="mb-6 rounded-lg border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900">
           <div className="flex items-center gap-4">
             {data.user.image && (
-              <img
+              <Image
                 src={data.user.image}
                 alt=""
-                className="h-12 w-12 rounded-full"
+                width={48}
+                height={48}
+                className="rounded-full"
               />
             )}
             <div>

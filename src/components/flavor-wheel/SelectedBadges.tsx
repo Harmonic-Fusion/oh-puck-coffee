@@ -84,14 +84,10 @@ export function SelectedBadges({
 }: SelectedBadgesProps) {
   // Infer allowOrdering from onReorder if not explicitly provided
   const inferredAllowOrdering = allowOrdering ?? onReorder !== undefined;
-
-  if (items.length === 0) {
-    return null;
-  }
-
   const showOrdering = inferredAllowOrdering && items.length > 1;
 
   // Configure sensors for drag and drop (pointer for mouse/touch, keyboard for accessibility)
+  // Must be called before any early return to satisfy Rules of Hooks
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -102,6 +98,10 @@ export function SelectedBadges({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  if (items.length === 0) {
+    return null;
+  }
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;

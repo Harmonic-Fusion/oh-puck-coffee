@@ -50,7 +50,7 @@ export function AdminLayoutContent({
               </span>
             </div>
             <Link
-              href={AppRoutes.home.path}
+              href={AppRoutes.log.path}
               className="text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
             >
               ← Back to App

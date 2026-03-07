@@ -1,12 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
-import { constructWebhookEvent } from "@/lib/billing/stripe";
+import { constructWebhookEvent, getStripeClient } from "@/lib/billing/stripe";
 import { db } from "@/db";
 import { users, subscriptions, userEntitlements } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
+import { Entitlements } from "@/shared/entitlements";
 
 // Stripe sends the raw body for signature verification — do NOT parse as JSON.
 export const runtime = "nodejs";
+
+async function syncEntitlementsFromSubscription(
+  userId: string,
+  stripeProductId: string | null,
+  status: string,
+): Promise<void> {
+  await db.delete(userEntitlements).where(eq(userEntitlements.userId, userId));
+
+  const isActive =
+    status === "active" || status === "trialing";
+  if (!isActive || !stripeProductId) return;
+
+  try {
+    const stripe = getStripeClient();
+    const pf = await stripe.products.listFeatures(stripeProductId, {
+      limit: 100,
+    });
+    const lookupKeys = pf.data.map(
+      (f) => (f as { entitlement_feature?: { lookup_key: string } }).entitlement_feature?.lookup_key,
+    ).filter((key): key is string => typeof key === "string");
+
+    // Any active subscription = Pro: always include no-shot-view-limit; merge with product features
+    const proKey = Entitlements.NO_SHOT_VIEW_LIMIT;
+    const keysToInsert =
+      lookupKeys.length > 0
+        ? lookupKeys.includes(proKey)
+          ? lookupKeys
+          : [proKey, ...lookupKeys]
+        : [proKey];
+    await db.insert(userEntitlements).values(
+      keysToInsert.map((lookupKey) => ({ userId, lookupKey })),
+    );
+  } catch (err) {
+    console.error("[webhook] Failed to sync product features to entitlements:", err);
+  }
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -100,6 +137,10 @@ export async function POST(request: NextRequest) {
               updatedAt: new Date(),
             },
           });
+
+        const productId =
+          item?.price.product != null ? String(item.price.product) : null;
+        await syncEntitlementsFromSubscription(user.id, productId, status);
         break;
       }
 

@@ -14,7 +14,7 @@ import {
 } from "@heroicons/react/24/solid";
 
 interface UseShotActionsOptions {
-  shot: ShotWithJoins;
+  shot: ShotWithJoins | null;
   tempUnit: TempUnit;
   shotShareData: ShotShareData | null;
   getShareUrl: () => Promise<string>;
@@ -38,6 +38,7 @@ export function useShotActions({
   onDuplicate,
   showEdit = true,
 }: UseShotActionsOptions): ActionConfig[] {
+  if (!shot) return [];
   const actions: ActionConfig[] = [];
 
   // Edit button

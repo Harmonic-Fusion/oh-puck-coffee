@@ -75,12 +75,6 @@ function formatValue(
   }
 }
 
-function getNumericValue(value: unknown): number | null {
-  if (value === null || value === undefined || value === "") return null;
-  const n = typeof value === "string" ? parseFloat(value) : Number(value);
-  return isNaN(n) ? null : n;
-}
-
 // ── Component ────────────────────────────────────────────────────────
 
 export function CompareItems<T extends Record<string, unknown>>({
@@ -98,19 +92,6 @@ export function CompareItems<T extends Record<string, unknown>>({
         {emptyState ?? "No items to compare."}
       </div>
     );
-  }
-
-  // Compute best numeric values per row for highlighting
-  const bestValues: Record<string, number> = {};
-  for (const field of config) {
-    if (field.type !== "number" && field.type !== "rating") continue;
-    if (!field.higherIsBetter) continue;
-    const vals = items
-      .map((item) => getNumericValue(item[field.field]))
-      .filter((v): v is number => v !== null);
-    if (vals.length > 1) {
-      bestValues[field.field] = Math.max(...vals);
-    }
   }
 
   const showAddSlot = items.length < maxItems && itemSelector != null;
@@ -227,12 +208,6 @@ export function CompareItems<T extends Record<string, unknown>>({
               {items.map((item, i) => {
                 const raw = item[field.field];
                 const display = formatValue(raw, field.type, undefined);
-                const numVal = getNumericValue(raw);
-                const isBest =
-                  field.higherIsBetter &&
-                  numVal !== null &&
-                  bestValues[field.field] !== undefined &&
-                  numVal === bestValues[field.field];
 
                 return (
                   <td
@@ -244,9 +219,7 @@ export function CompareItems<T extends Record<string, unknown>>({
                         : field.type === "rating"
                           ? "text-sm"
                           : "font-mono text-sm",
-                      isBest
-                        ? "font-semibold text-stone-900 dark:text-stone-100"
-                        : "text-stone-700 dark:text-stone-300",
+                      "text-stone-700 dark:text-stone-300",
                       display === "—" && "text-stone-300 dark:text-stone-600",
                     )}
                   >

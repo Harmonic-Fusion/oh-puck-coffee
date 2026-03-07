@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { AppRoutes } from "@/app/routes";
 
 export default function SocialMediaPage() {
@@ -16,11 +17,12 @@ export default function SocialMediaPage() {
         {/* GIF Section */}
         <div className="mt-12 flex justify-center">
           <div className="rounded-2xl bg-stone-100 p-4 dark:bg-stone-800">
-            <img
+            <Image
               src="https://media.giphy.com/media/l0MYC0LajDoPo0BIc/giphy.gif"
               alt="Funny espresso gif"
+              width={500}
+              height={500}
               className="max-w-full rounded-lg"
-              style={{ maxHeight: "500px" }}
             />
           </div>
         </div>

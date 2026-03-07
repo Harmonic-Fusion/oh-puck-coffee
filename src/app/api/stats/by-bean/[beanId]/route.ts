@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { shots, beans } from "@/db/schema";
-import { eq, count, avg, and } from "drizzle-orm";
-import { validateMemberAccess } from "@/lib/api-auth";
+import { shots } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+import { canAccessBean } from "@/lib/api-auth";
 
 export async function GET(
   _request: NextRequest,
@@ -16,24 +16,17 @@ export async function GET(
 
   const { beanId } = await params;
 
-  // Get bean info
-  const [bean] = await db
-    .select()
-    .from(beans)
-    .where(eq(beans.id, beanId))
-    .limit(1);
+  const result = await canAccessBean(
+    session.user.id,
+    beanId,
+    session.user.role,
+  );
 
-  if (!bean) {
-    return NextResponse.json({ error: "Bean not found" }, { status: 404 });
+  if (!result.allowed) {
+    return result.error;
   }
 
-  // Check if member can access this bean
-  const accessError = validateMemberAccess(
-    session.user.id,
-    bean.userId,
-    session.user.role
-  );
-  if (accessError) return accessError;
+  const { bean } = result;
 
   // Get shot stats for this bean (excluding hidden)
   // Members can only see their own shots for this bean

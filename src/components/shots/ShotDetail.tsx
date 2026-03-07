@@ -36,7 +36,6 @@ import {
 } from "@heroicons/react/24/outline";
 import {
   BookmarkIcon as BookmarkIconSolid,
-  EyeIcon as EyeIconSolid,
 } from "@heroicons/react/24/solid";
 
 const SHOT_DETAIL_EXPANDED_SECTIONS_KEY =
@@ -65,7 +64,7 @@ function getSavedExpandedSections(): Set<string> {
     return filtered.length > 0
       ? new Set(filtered)
       : new Set(DEFAULT_EXPANDED_SECTIONS);
-  } catch (error: unknown) {
+  } catch {
     // Invalid JSON or other error - return defaults
     return new Set(DEFAULT_EXPANDED_SECTIONS);
   }
@@ -145,17 +144,16 @@ export function ShotDetail({
   }, [allTools]);
 
   const [isEditMode, setIsEditMode] = useState(initialEditMode);
-  const [shareCopied, setShareCopied] = useState(false);
   const createShareLink = useCreateShareLink();
 
-  // Reset edit mode when modal closes or shot changes
-  useEffect(() => {
-    if (!open) {
-      setIsEditMode(false);
-    } else {
-      setIsEditMode(initialEditMode);
-    }
-  }, [open, initialEditMode]);
+  // Reset edit mode when modal opens/closes
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevInitialEditMode, setPrevInitialEditMode] = useState(initialEditMode);
+  if (open !== prevOpen || initialEditMode !== prevInitialEditMode) {
+    setPrevOpen(open);
+    setPrevInitialEditMode(initialEditMode);
+    setIsEditMode(open ? initialEditMode : false);
+  }
 
   // Touch swipe state
   const touchStartX = useRef<number | null>(null);
@@ -245,7 +243,7 @@ export function ShotDetail({
   }, [shot]);
 
   const shotIdRef = useRef(shot?.id);
-  shotIdRef.current = shot?.id;
+  useEffect(() => { shotIdRef.current = shot?.id; }, [shot?.id]);
 
   const getShareUrl = useCallback(async (): Promise<string> => {
     const currentShotId = shotIdRef.current;
@@ -297,8 +295,6 @@ export function ShotDetail({
     // Fallback: Copy text to clipboard (URL is already in the text)
     try {
       await navigator.clipboard.writeText(shareData.text);
-      setShareCopied(true);
-      setTimeout(() => setShareCopied(false), 2000);
     } catch (clipboardErr) {
       console.error("Error copying to clipboard:", clipboardErr);
     }
@@ -380,8 +376,6 @@ export function ShotDetail({
     };
   }, [open, shots, currentIndex, handlePrevious, handleNext]);
 
-  if (!shot) return null;
-
   const handleEditSuccess = () => {
     setIsEditMode(false);
     refetch();
@@ -397,6 +391,7 @@ export function ShotDetail({
   };
 
   const handleDuplicate = () => {
+    if (!shot) return;
     if (duplicateUrl) {
       onClose();
       router.push(duplicateUrl);
@@ -426,27 +421,16 @@ export function ShotDetail({
   };
 
   const handleToggleReference = () => {
-    if (onToggleReference) {
+    if (shot && onToggleReference) {
       onToggleReference(shot.id);
     }
   };
 
   const handleToggleHidden = () => {
-    if (onToggleHidden) {
+    if (shot && onToggleHidden) {
       onToggleHidden(shot.id);
     }
   };
-
-  const dose = parseFloat(shot.doseGrams);
-  const yieldG = parseFloat(shot.yieldGrams);
-  const yieldActual = shot.yieldActualGrams
-    ? parseFloat(shot.yieldActualGrams)
-    : null;
-  const ratio = dose > 0 ? parseFloat((yieldG / dose).toFixed(2)) : null;
-  const actualRatio =
-    dose > 0 && yieldActual
-      ? parseFloat((yieldActual / dose).toFixed(2))
-      : null;
 
   const shotActions = useShotActions({
     shot,
@@ -460,6 +444,19 @@ export function ShotDetail({
     onDuplicate: handleDuplicate,
     showEdit: !isEditMode,
   });
+
+  if (!shot) return null;
+
+  const dose = parseFloat(shot.doseGrams);
+  const yieldG = parseFloat(shot.yieldGrams);
+  const yieldActual = shot.yieldActualGrams
+    ? parseFloat(shot.yieldActualGrams)
+    : null;
+  const ratio = dose > 0 ? parseFloat((yieldG / dose).toFixed(2)) : null;
+  const actualRatio =
+    dose > 0 && yieldActual
+      ? parseFloat((yieldActual / dose).toFixed(2))
+      : null;
 
   const footer = readOnly ? null : (
     <ActionButtonBar actions={shotActions} />

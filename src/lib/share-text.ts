@@ -49,8 +49,7 @@ export type ShareFormat = "short" | "standard" | "ridiculous";
 // resolves to "" collapses entirely (no stray blank lines).
 
 const BEAN_SECTION = `\
-🫘 Beans
-{beanName}
+🫘 {beanName}
 {beanOrigin} · {beanRoaster}
 {roastLevel} · {processingMethod} · {roastDate}`;
 
@@ -76,7 +75,6 @@ const TASTING_SECTION = `\
 
 const TEMPLATE = `\
 Journey before Destination!
-{url}
 
 {beanSection}
 
@@ -88,7 +86,7 @@ Journey before Destination!
 
 {notes}
 
-`;
+{url}`;
 
 
 export function buildShotShareText(shot: ShotShareData, tempUnit: TempUnit = "F"): string {
@@ -114,7 +112,7 @@ export function buildShotShareText(shot: ShotShareData, tempUnit: TempUnit = "F"
 /**
  * Build a short share text with just bean name, rating, and URL.
  */
-export function buildShortShareText(shot: ShotShareData, tempUnit: TempUnit = "F"): string {
+export function buildShortShareText(shot: ShotShareData): string {
   const parts: string[] = [];
 
   if (shot.beanName) {
@@ -295,7 +293,9 @@ export function buildRidiculousShareText(shot: ShotShareData, tempUnit: TempUnit
     parts.push(`🔗 Full details: ${v.url}`);
   }
   parts.push("");
-  
+  parts.push("May your next shot be even more extraordinary!");
+  parts.push("");
+
   // Random sign-off
   const signOffs = [
     "☕ Puck around and find out ☕",
@@ -325,7 +325,7 @@ export function buildShareText(
 ): string {
   switch (format) {
     case "short":
-      return buildShortShareText(shot, tempUnit);
+      return buildShortShareText(shot);
     case "ridiculous":
       return buildRidiculousShareText(shot, tempUnit);
     case "standard":
@@ -494,38 +494,4 @@ function cleanSeparators(line: string): string {
     .split(" · ")
     .filter((part) => part.trim() !== "")
     .join(" · ");
-}
-
-function collectFlavors(
-  categories?: Record<string, string[]> | null,
-  adjectives?: string[] | null,
-): string[] {
-  const flavors: string[] = [];
-
-  if (categories) {
-    for (const paths of Object.values(categories)) {
-      // Paths are now just node names, but handle old format for backward compatibility
-      const leafFlavors = paths.map((path) => {
-        // If it contains ":", it's old format - extract last part
-        if (path.includes(":")) {
-          const parts = path.split(":");
-          return parts[parts.length - 1] || path;
-        }
-        // New format: just return the node name
-        return path;
-      });
-      flavors.push(...leafFlavors);
-    }
-  }
-
-  if (adjectives) {
-    for (const adj of adjectives) {
-      if (!flavors.includes(adj)) {
-        flavors.push(adj);
-      }
-    }
-  }
-
-  // Remove duplicates while preserving order
-  return Array.from(new Set(flavors));
 }

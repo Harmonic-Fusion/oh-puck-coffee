@@ -56,12 +56,14 @@ export function SectionSetup() {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const hasEquipment = grinderName || machineName;
-  const summaryText = [grinderName, machineName].filter(Boolean).join(" · ");
+  const summaryText = hasEquipment
+    ? [grinderName, machineName].filter(Boolean).join(" · ")
+    : "Expand to Edit";
 
   return (
     <Card>
       <section id="setup" className="space-y-6">
-        {!isExpanded && hasEquipment ? (
+        {!isExpanded ? (
           <button
             type="button"
             onClick={() => setIsExpanded(true)}
@@ -78,19 +80,15 @@ export function SectionSetup() {
           </button>
         ) : (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <SetupHeader />
-              {hasEquipment && (
-                <button
-                  type="button"
-                  onClick={() => setIsExpanded(false)}
-                  className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-                  aria-label="Collapse setup"
-                >
-                  <ChevronUpIcon className="h-5 w-5" />
-                </button>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={() => setIsExpanded(false)}
+              className="flex w-full items-center justify-between gap-2 text-left rounded-lg p-1 -m-1 hover:bg-stone-100 dark:hover:bg-stone-800/50"
+              aria-label="Collapse setup"
+            >
+              <SetupHeader onLinkClick={(e) => e.stopPropagation()} />
+              <ChevronUpIcon className="h-5 w-5 text-stone-400 shrink-0" />
+            </button>
             <div className="space-y-6">
               <GrinderSelector
                 value={grinderId || ""}

@@ -246,4 +246,10 @@ export const config = {
    * Defaults to 100.
    */
   shotViewLimit: parseInt(process.env.FEATURE_SHOT_VIEW_LIMIT ?? "100", 10),
+
+  /**
+   * Maximum number of bean shares (individual + general access) per user.
+   * Defaults to 10.
+   */
+  maxBeanShares: parseInt(process.env.MAX_BEAN_SHARES ?? "10", 10),
 } as const;

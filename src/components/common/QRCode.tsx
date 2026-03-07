@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useEffect, useState, forwardRef } from "react";
+import { useMemo, useRef, useEffect, useState, forwardRef, useSyncExternalStore } from "react";
 import { QRCode as QRCodeLogo } from "react-qrcode-logo";
 
 type EyeRadius = [number, number, number, number];
@@ -38,8 +38,18 @@ export const QRCode = forwardRef<HTMLDivElement, QRCodeProps>(function QRCode(
   ref
 ) {
   const internalRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
-  const [error, setError] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const error = useMemo(() => {
+    if (!value || !value.trim()) return true;
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+      try { new URL(value); return false; } catch { return !!value.trim(); }
+    }
+    return false;
+  }, [value]);
 
   // Merge external ref with internal ref using callback ref
   const setRef = (node: HTMLDivElement | null) => {
@@ -53,51 +63,17 @@ export const QRCode = forwardRef<HTMLDivElement, QRCodeProps>(function QRCode(
 
   const containerRef = internalRef;
 
-  // Validate value
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      setMounted(true);
-      return;
-    }
-
-    try {
-      // Try to validate as URL if it looks like one
-      if (value && (value.startsWith("http://") || value.startsWith("https://"))) {
-        new URL(value);
-        setError(false);
-      } else if (value && value.trim() !== "") {
-        // Allow non-URL values (like recipe data)
-        setError(false);
-      } else {
-        setError(true);
-      }
-    } catch {
-      // If it's not a URL but has content, it's valid
-      if (value && value.trim() !== "") {
-        setError(false);
-      } else {
-        setError(true);
-      }
-    }
-    setMounted(true);
-  }, [value]);
-
   // Detect if className contains any width or height variants (w-*, h-*)
   const hasWidthClass = className?.match(/\bw-[\w/]+/)?.[0];
   const hasHeightClass = className?.match(/\bh-[\w/]+/)?.[0];
   const isResponsive = !!(hasWidthClass || hasHeightClass);
 
-  const [dynamicSize, setDynamicSize] = useState(size || 317);
+  const baseSize = size ?? 317;
+  const [responsiveSize, setResponsiveSize] = useState(baseSize);
 
   // Calculate size from container dimensions when using width/height classes (responsive mode)
   useEffect(() => {
-    if (!isResponsive || !containerRef.current) {
-      // If not responsive, use provided size or default
-      if (size !== undefined) {
-        setDynamicSize(size);
-      }
-      return;
-    }
+    if (!isResponsive || !containerRef.current) return;
 
     const updateSize = () => {
       if (containerRef.current) {
@@ -123,7 +99,7 @@ export const QRCode = forwardRef<HTMLDivElement, QRCodeProps>(function QRCode(
           calculatedSize = availableHeight;
         }
 
-        setDynamicSize(Math.max(100, calculatedSize));
+        setResponsiveSize(Math.max(100, calculatedSize));
       }
     };
 
@@ -137,9 +113,9 @@ export const QRCode = forwardRef<HTMLDivElement, QRCodeProps>(function QRCode(
     return () => {
       resizeObserver.disconnect();
     };
-  }, [size, isResponsive, hasWidthClass, hasHeightClass]);
+  }, [isResponsive, hasWidthClass, hasHeightClass, containerRef]);
 
-  const finalSize = isResponsive ? dynamicSize : size ?? 317;
+  const finalSize = isResponsive ? responsiveSize : baseSize;
 
   // Compute colors during render (avoid useEffect for derived values)
   const { fgColor, bgColor } = useMemo(() => {

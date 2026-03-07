@@ -5,12 +5,14 @@ import { SessionProvider } from "next-auth/react";
 import { useState } from "react";
 import { ToastProvider } from "@/components/common/Toast";
 import { LoggerInit } from "@/components/common/LoggerInit";
+import { SessionRefetchOnAuth } from "@/components/auth/SessionRefetchOnAuth";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
     <SessionProvider>
+      <SessionRefetchOnAuth />
       <QueryClientProvider client={queryClient}>
         <LoggerInit />
         <ToastProvider>{children}</ToastProvider>

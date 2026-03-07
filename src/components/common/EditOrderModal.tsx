@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 // EditOrderModal - reusable drag-and-drop order modal component
 import {
   DndContext,
@@ -138,6 +138,16 @@ export function EditOrderModal<T extends OrderItem, TId extends string = string>
 }: EditOrderModalProps<T, TId>) {
   const [localOrder, setLocalOrder] = useState<TId[]>(order);
   const [localVisibility, setLocalVisibility] = useState<Record<TId, boolean>>(visibility);
+  const [prevOpen, setPrevOpen] = useState(open);
+
+  // Sync local state when modal opens (store previous value during render)
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    setLocalOrder(order);
+    setLocalVisibility(visibility);
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
 
   // Configure sensors for drag and drop
   const sensors = useSensors(
@@ -150,14 +160,6 @@ export function EditOrderModal<T extends OrderItem, TId extends string = string>
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
-  // Sync local state when modal opens or props change
-  useEffect(() => {
-    if (open) {
-      setLocalOrder(order);
-      setLocalVisibility(visibility);
-    }
-  }, [open, order, visibility]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;

@@ -12,7 +12,7 @@ interface AdminBean {
   origin: string | null;
   processingMethod: string | null;
   roastDate: string | null;
-  userId: string;
+  createdBy: string;
   userEmail: string | null;
   createdAt: string;
 }

@@ -6,7 +6,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useBeansCompare, type BeanWithComparisons } from "@/components/beans/hooks";
 import { CompareItems, type CompareFieldConfig } from "@/components/common/CompareItems";
 import { AppRoutes } from "@/app/routes";
-import { cn } from "@/lib/utils";
 import { ChevronRightIcon, ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 // ── Field config ──────────────────────────────────────────────────────
@@ -42,11 +41,6 @@ function fmtDate(d: string | Date | null | undefined): string {
   });
 }
 
-function fmtNum(v: number | null | undefined, decimals = 1): string {
-  if (v === null || v === undefined) return "—";
-  return v.toFixed(decimals);
-}
-
 // ── Flatten bean data for CompareItems ───────────────────────────────
 
 function flattenBean(b: BeanWithComparisons): Record<string, unknown> {
@@ -59,7 +53,7 @@ function flattenBean(b: BeanWithComparisons): Record<string, unknown> {
     roaster: b.roaster,
     processingMethod: b.processingMethod,
     roastDate: b.roastDate,
-    openBagDate: b.openBagDate,
+    openBagDate: b.userBean?.openBagDate ?? null,
     // Stats fields (flattened from shotComparisons)
     shotCount: b.shotComparisons.shotCount,
     bestRating: b.shotComparisons.bestRating,
@@ -134,14 +128,14 @@ function ShotHistoryTable({ beans }: { beans: BeanWithComparisons[] }) {
                       {ratio && <span className="ml-1 text-stone-400">({ratio})</span>}
                     </p>
                     {rating && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400">★ {rating}</p>
+                      <p className="text-xs text-stone-600 dark:text-stone-400">★ {rating}</p>
                     )}
                     {shot.flavors && shot.flavors.length > 0 && (
                       <div className="mt-1.5 flex flex-col gap-1 items-center">
                         {shot.flavors.map((flavor, idx) => (
                           <span
                             key={idx}
-                            className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                            className="rounded-full bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-600 dark:bg-stone-800 dark:text-stone-400"
                           >
                             {flavor}
                           </span>
@@ -196,7 +190,10 @@ export default function BeanComparePage() {
   );
 
   const { data, isLoading, error } = useBeansCompare(beanIds);
-  const compareBeans = data?.beans ?? [];
+  const compareBeans = useMemo(
+    () => data?.beans ?? [],
+    [data?.beans],
+  );
 
   const flattenedBeans = useMemo(
     () => compareBeans.map(flattenBean),
@@ -232,7 +229,7 @@ export default function BeanComparePage() {
         </p>
         <Link
           href={AppRoutes.beans.path}
-          className="mt-4 inline-flex items-center gap-1.5 text-sm text-amber-600 hover:text-amber-700 dark:text-amber-400 dark:hover:text-amber-300"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm text-stone-600 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-300"
         >
           <ArrowLeftIcon className="h-4 w-4" />
           Back to Beans
@@ -281,7 +278,7 @@ export default function BeanComparePage() {
               <div className="space-y-0.5">
                 <Link
                   href={`${AppRoutes.beans.path}/${bean.id}`}
-                  className="block truncate text-sm font-semibold text-amber-600 hover:underline dark:text-amber-400"
+                  className="block truncate text-sm font-semibold text-stone-700 hover:underline dark:text-stone-300"
                 >
                   {bean.name}
                 </Link>

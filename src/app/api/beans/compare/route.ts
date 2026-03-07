@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, shots } from "@/db/schema";
+import { beans, userBeans, shots } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
@@ -24,16 +24,31 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Maximum 5 beans can be compared at once" }, { status: 400 });
   }
 
-  // Fetch beans (only user's own unless admin)
-  const beanConditions = [inArray(beans.id, beanIds)];
-  if (session.user.role !== "admin" && session.user.role !== "super-admin") {
-    beanConditions.push(eq(beans.userId, session.user.id));
-  }
-
+  // Fetch beans (only beans user has via user_beans unless admin)
   const beanRows = await db
-    .select()
+    .select({
+      id: beans.id,
+      name: beans.name,
+      origin: beans.origin,
+      roaster: beans.roaster,
+      originDetails: beans.originDetails,
+      processingMethod: beans.processingMethod,
+      roastLevel: beans.roastLevel,
+      roastDate: beans.roastDate,
+      isRoastDateBestGuess: beans.isRoastDateBestGuess,
+      createdAt: beans.createdAt,
+      openBagDate: userBeans.openBagDate,
+      userBeanCreatedAt: userBeans.createdAt,
+      beanId: userBeans.beanId,
+      userId: userBeans.userId,
+      shareMyShotsPublicly: userBeans.shareMyShotsPublicly,
+    })
     .from(beans)
-    .where(and(...beanConditions));
+    .innerJoin(
+      userBeans,
+      and(eq(beans.id, userBeans.beanId), eq(userBeans.userId, session.user.id)),
+    )
+    .where(inArray(beans.id, beanIds));
 
   if (beanRows.length === 0) {
     return NextResponse.json({ beans: [] });
@@ -174,9 +189,15 @@ export async function GET(request: NextRequest) {
       processingMethod: bean.processingMethod,
       roastLevel: bean.roastLevel,
       roastDate: bean.roastDate,
-      openBagDate: bean.openBagDate,
       isRoastDateBestGuess: bean.isRoastDateBestGuess,
       createdAt: bean.createdAt,
+      userBean: {
+        beanId: bean.beanId,
+        userId: bean.userId,
+        openBagDate: bean.openBagDate,
+        shareMyShotsPublicly: bean.shareMyShotsPublicly,
+        createdAt: bean.userBeanCreatedAt,
+      },
       shotComparisons: {
         shotCount,
         minShotNumber,

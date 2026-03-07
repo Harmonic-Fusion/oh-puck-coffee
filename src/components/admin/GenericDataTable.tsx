@@ -142,7 +142,7 @@ export function GenericDataTable<T extends Record<string, any>>({
       const cmp = String(aVal).localeCompare(String(bVal), undefined, { numeric: true });
       return sortDir === "asc" ? cmp : -cmp;
     });
-  }, [data?.data, sortKey, sortDir]);
+  }, [data, sortKey, sortDir]);
 
   const totalPages = data ? Math.ceil(data.total / pageSize) : 0;
   const currentPage = page + 1;

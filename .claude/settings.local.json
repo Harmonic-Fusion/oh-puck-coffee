@@ -25,9 +25,24 @@
       "Bash(npm run build)",
       "Bash(npx tsc --noEmit)",
       "Bash(pnpm tsc --noEmit)",
-      "Bash(git checkout main)"
+      "Bash(git checkout main)",
+      "Bash(/usr/bin/git branch --show-current)",
+      "Bash(/usr/bin/find /Users/dylan/projects/coffee/src/app/api/beans -type f)",
+      "Bash(/usr/bin/head -30)",
+      "Bash(pnpm exec vitest run src/app/api/beans/\\\\[id\\\\]/shares/__tests__/shares-permissions.test.ts)",
+      "Bash(pnpm exec vitest run --reporter=verbose)",
+      "Bash(/usr/bin/find /Users/dylan -name \"node\" -type f -maxdepth 8)",
+      "Bash(/usr/bin/head -5)",
+      "Bash(pnpm db:generate)",
+      "Bash(printf 'y\\\\n')",
+      "Bash(pnpm db:push)",
+      "Bash(pnpm test)"
     ],
-    "deny": ["Read(./.env)"],
-    "ask": ["Bash(git commit *)"]
+    "deny": [
+      "Read(./.env)"
+    ],
+    "ask": [
+      "Bash(git commit *)"
+    ]
   }
 }

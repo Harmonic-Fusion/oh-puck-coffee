@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { AppRoutes } from "@/app/routes";
@@ -50,10 +51,12 @@ export function UserDropdown({ userName, userImage }: UserDropdownProps) {
             className="gap-2 rounded-lg border-stone-300 bg-white px-3 py-1.5 text-sm font-medium text-stone-700 shadow-sm hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:hover:bg-stone-700"
           >
             {userImage ? (
-              <img
+              <Image
                 src={userImage}
                 alt=""
-                className="h-6 w-6 rounded-full"
+                width={24}
+                height={24}
+                className="rounded-full"
                 referrerPolicy="no-referrer"
               />
             ) : (

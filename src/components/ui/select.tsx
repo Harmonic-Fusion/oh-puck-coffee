@@ -53,8 +53,7 @@ function Select({ value: controlledValue, onValueChange, children }: SelectProps
   );
 }
 
-export interface SelectTriggerProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
+export type SelectTriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
   ({ className, children, ...props }, ref) => {
@@ -79,11 +78,11 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
 );
 SelectTrigger.displayName = "SelectTrigger";
 
-export interface SelectContentProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type SelectContentProps = React.HTMLAttributes<HTMLDivElement>;
 
 const SelectContent = React.forwardRef<HTMLDivElement, SelectContentProps>(
   ({ className, children, ...props }, ref) => {
-    const { open, setOpen, value, onValueChange } = useSelectContext();
+    const { open, setOpen } = useSelectContext();
     const contentRef = React.useRef<HTMLDivElement>(null);
 
     React.useEffect(() => {

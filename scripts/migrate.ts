@@ -16,7 +16,7 @@ import { sql } from "drizzle-orm";
 // Optional dotenv import - not needed in production where env vars are set directly
 let dotenvConfig: ((options?: { path?: string; override?: boolean }) => void) | null = null;
 try {
-  const dotenv = require("dotenv");
+  const dotenv = await import("dotenv");
   dotenvConfig = dotenv.config;
 } catch {
   // dotenv not available (e.g., in production) - that's fine, we'll use process.env directly
@@ -57,7 +57,7 @@ function getMigrationHash(filename: string): string {
     const fileContent = readFileSync(filePath, "utf-8");
     const hash = createHash("sha256").update(fileContent).digest("hex");
     return hash;
-  } catch (error) {
+  } catch {
     // If we can't read the file, fall back to filename-based hash
     // This shouldn't happen, but provides a fallback
     console.warn(`⚠️  Could not compute hash for ${filename}, using filename fallback`);
@@ -114,7 +114,7 @@ async function getAppliedMigrations(db: ReturnType<typeof drizzle>): Promise<Set
             ORDER BY created_at;
           `);
           schemaUsed = "search_path";
-        } catch (err) {
+        } catch {
           // No migrations table found
           return new Set();
         }
@@ -127,7 +127,6 @@ async function getAppliedMigrations(db: ReturnType<typeof drizzle>): Promise<Set
 
     // Debug: log what we found (show first few hashes for debugging)
     if (appliedMigrations.length > 0) {
-      const hashList = appliedMigrations.map(r => r.hash).slice(0, 3);
       const more = appliedMigrations.length > 3 ? ` (+${appliedMigrations.length - 3} more)` : "";
       console.log(`   🔍 Found ${appliedMigrations.length} migration(s) in ${schemaUsed} schema${more}`);
       // Show all hashes for debugging
@@ -381,7 +380,7 @@ async function runMigrations() {
               `);
               console.log(`   ✅ Successfully applied and recorded ${file} (in drizzle schema)`);
               recorded = true;
-            } catch (recordError) {
+            } catch {
               // Try public schema
               try {
                 const checkPublic = await db.execute(sql`
@@ -465,7 +464,7 @@ async function runMigrations() {
       if (tables.length > 0) {
         console.log(`\n   🔍 Migration table found in schema(s): ${tables.map(t => t.table_schema).join(", ")}`);
       }
-    } catch (err) {
+    } catch {
       // Ignore diagnostic errors
     }
 

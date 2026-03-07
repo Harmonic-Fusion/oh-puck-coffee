@@ -46,25 +46,11 @@ function usePopoverContext() {
   return context;
 }
 
-export interface PopoverTriggerProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  asChild?: boolean;
-}
+export type PopoverTriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 const PopoverTrigger = React.forwardRef<HTMLButtonElement, PopoverTriggerProps>(
-  ({ className, children, asChild, ...props }, ref) => {
+  ({ className, children, ...props }, ref) => {
     const { setOpen, open } = usePopoverContext();
-
-    if (asChild && React.isValidElement(children)) {
-      return React.cloneElement(children, {
-        ...props,
-        ref,
-        onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
-          props.onClick?.(e);
-          setOpen(!open);
-        },
-      } as any);
-    }
 
     return (
       <button
@@ -92,9 +78,6 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
   (
     {
       className,
-      align = "center",
-      side = "bottom",
-      sideOffset = 4,
       ...props
     },
     ref

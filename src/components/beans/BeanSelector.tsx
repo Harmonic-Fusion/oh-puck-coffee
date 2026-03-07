@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useBeans, useCreateBean, useUpdateBean } from "./hooks";
 import { ROAST_LEVELS, PROCESSING_METHODS } from "@/shared/beans/constants";
 import { ApiRoutes, resolvePath } from "@/app/routes";
-import type { Bean } from "@/shared/beans/schema";
+import type { BeanWithUserData } from "@/shared/beans/schema";
 import { SearchableSelect } from "@/components/common/SearchableSelect";
 import { Modal } from "@/components/common/Modal";
 import { ComboboxInput } from "@/components/common/ComboboxInput";
@@ -28,9 +28,18 @@ export function BeanSelector({ value, onChange, error, id }: BeanSelectorProps) 
   const [newOpenBagDate, setNewOpenBagDate] = useState("");
   const [newOriginDetails, setNewOriginDetails] = useState("");
   const [newIsRoastDateBestGuess, setNewIsRoastDateBestGuess] = useState(false);
-  const [selectedBean, setSelectedBean] = useState<Bean | null>(null);
-
   const { data: beans, isLoading } = useBeans();
+
+  // Derive selectedBean from beans when value is in the list
+  const selectedBeanFromList = useMemo(() => {
+    if (!value || !beans) return null;
+    return beans.find((b) => b.id === value) ?? null;
+  }, [value, beans]);
+
+  // State for bean fetched individually (not in list)
+  const [fetchedBean, setFetchedBean] = useState<BeanWithUserData | null>(null);
+
+  const selectedBean = selectedBeanFromList ?? (fetchedBean?.id === value ? fetchedBean : null);
   const createBean = useCreateBean();
   const updateBean = useUpdateBean();
 
@@ -42,22 +51,16 @@ export function BeanSelector({ value, onChange, error, id }: BeanSelectorProps) 
     new Set((beans ?? []).map((b) => b.roaster).filter(Boolean) as string[])
   ).sort();
 
-  // Fetch selected bean details
+  // Fetch individual bean when value is not in the beans list
   useEffect(() => {
-    if (value && beans) {
-      const bean = beans.find((b) => b.id === value);
-      if (bean) {
-        setSelectedBean(bean);
-      } else {
-        // Fetch individual bean if not in list
-        fetch(resolvePath(ApiRoutes.beans.beanId, { id: value }))
-          .then((res) => res.json())
-          .then((data) => setSelectedBean(data))
-          .catch(() => setSelectedBean(null));
-      }
-    } else {
-      setSelectedBean(null);
-    }
+    if (!value || !beans) return;
+    if (beans.find((b) => b.id === value)) return;
+    let cancelled = false;
+    fetch(resolvePath(ApiRoutes.beans.beanId, { id: value }))
+      .then((res) => res.json())
+      .then((data) => { if (!cancelled) setFetchedBean(data); })
+      .catch(() => { if (!cancelled) setFetchedBean(null); });
+    return () => { cancelled = true; };
   }, [value, beans]);
 
   const resetFormFields = useCallback(() => {
@@ -114,8 +117,8 @@ export function BeanSelector({ value, onChange, error, id }: BeanSelectorProps) 
         : ""
     );
     setNewOpenBagDate(
-      selectedBean.openBagDate
-        ? new Date(selectedBean.openBagDate).toISOString().split("T")[0]
+      selectedBean.userBean?.openBagDate
+        ? new Date(selectedBean.userBean.openBagDate).toISOString().split("T")[0]
         : ""
     );
     setNewIsRoastDateBestGuess(selectedBean.isRoastDateBestGuess || false);
@@ -123,9 +126,9 @@ export function BeanSelector({ value, onChange, error, id }: BeanSelectorProps) 
   };
 
   const handleUpdate = async () => {
-    if (!value || !newName.trim()) return;
+    if (!newName.trim()) return;
     try {
-      const bean = await updateBean.mutateAsync({
+      await updateBean.mutateAsync({
         id: value,
         data: {
           name: newName.trim(),
@@ -190,12 +193,12 @@ export function BeanSelector({ value, onChange, error, id }: BeanSelectorProps) 
           </div>
         )}
         {/* Line 3: Opened date (N days since) */}
-        {selectedBean.openBagDate && (
+        {selectedBean.userBean?.openBagDate && (
           <div>
-            Opened {formatDate(selectedBean.openBagDate)}
-            {daysSince(selectedBean.openBagDate) !== null && (
+            Opened {formatDate(selectedBean.userBean.openBagDate)}
+            {daysSince(selectedBean.userBean.openBagDate) !== null && (
               <span className="text-stone-400 dark:text-stone-500">
-                {" "}({daysSince(selectedBean.openBagDate)} days ago)
+                {" "}({daysSince(selectedBean.userBean.openBagDate)} days ago)
               </span>
             )}
           </div>
@@ -212,7 +215,7 @@ export function BeanSelector({ value, onChange, error, id }: BeanSelectorProps) 
     </div>
   );
 
-  const formatRoastDate = (bean: Bean): string => {
+  const formatRoastDate = (bean: BeanWithUserData): string => {
     if (!bean.roastDate) return "";
     const date = new Date(bean.roastDate);
     const formatted = date.toLocaleDateString("en-US", {

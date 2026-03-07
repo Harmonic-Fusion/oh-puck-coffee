@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/api-auth";
 import { db } from "@/db";
 import { beans, users, shots } from "@/db/schema";
-import { eq, count, desc, and } from "drizzle-orm";
+import { eq, count, desc } from "drizzle-orm";
 
 export async function GET(
   _request: NextRequest,
@@ -22,13 +22,12 @@ export async function GET(
       origin: beans.origin,
       processingMethod: beans.processingMethod,
       roastDate: beans.roastDate,
-      openBagDate: beans.openBagDate,
-      userId: beans.userId,
+      createdBy: beans.createdBy,
       userEmail: users.email,
       createdAt: beans.createdAt,
     })
     .from(beans)
-    .leftJoin(users, eq(beans.userId, users.id))
+    .leftJoin(users, eq(beans.createdBy, users.id))
     .where(eq(beans.id, id))
     .limit(1);
 

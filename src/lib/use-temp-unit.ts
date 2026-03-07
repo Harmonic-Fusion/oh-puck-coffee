@@ -1,26 +1,34 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useSyncExternalStore, useCallback } from "react";
 import type { TempUnit } from "@/lib/format-numbers";
 import { getSavedTempUnit, saveTempUnit } from "@/lib/format-numbers";
 
-/**
- * React hook that manages the user's preferred temperature display unit.
- * Reads from / writes to localStorage so the preference persists.
- *
- * Returns [unit, setUnit] – the current unit and a setter that also persists.
- */
-export function useTempUnit(): [TempUnit, (unit: TempUnit) => void] {
-  // Default to "F" on the server; hydrate from localStorage in useEffect
-  const [unit, setUnitState] = useState<TempUnit>("F");
+let tempUnitListeners: Array<() => void> = [];
 
-  useEffect(() => {
-    setUnitState(getSavedTempUnit());
-  }, []);
+function emitTempUnitChange() {
+  for (const listener of tempUnitListeners) {
+    listener();
+  }
+}
+
+function subscribeTempUnit(callback: () => void) {
+  tempUnitListeners.push(callback);
+  return () => {
+    tempUnitListeners = tempUnitListeners.filter((l) => l !== callback);
+  };
+}
+
+export function useTempUnit(): [TempUnit, (unit: TempUnit) => void] {
+  const unit = useSyncExternalStore(
+    subscribeTempUnit,
+    getSavedTempUnit,
+    () => "F" as TempUnit,
+  );
 
   const setUnit = useCallback((next: TempUnit) => {
-    setUnitState(next);
     saveTempUnit(next);
+    emitTempUnitChange();
   }, []);
 
   return [unit, setUnit];

@@ -15,8 +15,7 @@ interface BeanDetail {
     origin: string | null;
     processingMethod: string | null;
     roastDate: string | null;
-    openBagDate: string | null;
-    userId: string;
+    createdBy: string;
     userEmail: string | null;
     createdAt: string;
   };
@@ -87,10 +86,6 @@ export default function AdminBeanDetailPage({
               value={data.bean.roastDate ? new Date(data.bean.roastDate).toLocaleDateString() : null}
             />
             <InfoRow
-              label="Open Bag Date"
-              value={data.bean.openBagDate ? new Date(data.bean.openBagDate).toLocaleDateString() : null}
-            />
-            <InfoRow
               label="Created"
               value={new Date(data.bean.createdAt).toLocaleDateString()}
             />
@@ -117,14 +112,14 @@ export default function AdminBeanDetailPage({
               <div className="mt-3">
                 <InfoRow label="Email" value={
                   <Link
-                    href={`${AppRoutes.puckingAdmin.users.path}/${data.bean.userId}`}
+                    href={`${AppRoutes.puckingAdmin.users.path}/${data.bean.createdBy}`}
                     className="font-mono text-xs text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
                   >
                     {data.bean.userEmail}
                   </Link>
                 } />
                 <InfoRow label="User ID" value={
-                  <span className="font-mono text-xs text-stone-400">{data.bean.userId.slice(0, 8)}...</span>
+                  <span className="font-mono text-xs text-stone-400">{data.bean.createdBy.slice(0, 8)}...</span>
                 } />
               </div>
             </div>

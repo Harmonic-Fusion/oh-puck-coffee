@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useFormContext } from "react-hook-form";
 import { MagnifyingGlassIcon, PencilSquareIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
 import { useBeans, useCreateBean, useUpdateBean } from "@/components/beans/hooks";
 import { ROAST_LEVELS, PROCESSING_METHODS } from "@/shared/beans/constants";
 import { ApiRoutes, resolvePath } from "@/app/routes";
-import type { Bean } from "@/shared/beans/schema";
+import type { BeanWithUserData } from "@/shared/beans/schema";
 import type { CreateShot } from "@/shared/shots/schema";
 import { Modal } from "@/components/common/Modal";
 import { ActionButtonBar } from "@/components/shots/ActionButtonBar";
@@ -17,7 +17,7 @@ interface BeanSectionProps {
   id?: string;
 }
 
-export function BeanSection({ error, id }: BeanSectionProps) {
+export function BeanSection({ error }: BeanSectionProps) {
   const {
     setValue,
     watch,
@@ -28,7 +28,6 @@ export function BeanSection({ error, id }: BeanSectionProps) {
   const [showCreate, setShowCreate] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBean, setSelectedBean] = useState<Bean | null>(null);
   const [newName, setNewName] = useState("");
   const [newOrigin, setNewOrigin] = useState("");
   const [newRoaster, setNewRoaster] = useState("");
@@ -51,22 +50,27 @@ export function BeanSection({ error, id }: BeanSectionProps) {
     new Set((beans ?? []).map((b) => b.roaster).filter(Boolean) as string[])
   ).sort();
 
-  // Fetch selected bean details
+  // Derive selectedBean from beans when beanId is in the list
+  const selectedBeanFromList = useMemo(() => {
+    if (!beanId || !beans) return null;
+    return beans.find((b) => b.id === beanId) ?? null;
+  }, [beanId, beans]);
+
+  // State for bean fetched individually (not in list)
+  const [fetchedBean, setFetchedBean] = useState<BeanWithUserData | null>(null);
+
+  const selectedBean = selectedBeanFromList ?? (fetchedBean?.id === beanId ? fetchedBean : null);
+
+  // Fetch individual bean when beanId is not in the beans list
   useEffect(() => {
-    if (beanId && beans) {
-      const bean = beans.find((b) => b.id === beanId);
-      if (bean) {
-        setSelectedBean(bean);
-      } else {
-        // Fetch individual bean if not in list
-        fetch(resolvePath(ApiRoutes.beans.beanId, { id: beanId }))
-          .then((res) => res.json())
-          .then((data) => setSelectedBean(data))
-          .catch(() => setSelectedBean(null));
-      }
-    } else {
-      setSelectedBean(null);
-    }
+    if (!beanId || !beans) return;
+    if (beans.find((b) => b.id === beanId)) return;
+    let cancelled = false;
+    fetch(resolvePath(ApiRoutes.beans.beanId, { id: beanId }))
+      .then((res) => res.json())
+      .then((data) => { if (!cancelled) setFetchedBean(data); })
+      .catch(() => { if (!cancelled) setFetchedBean(null); });
+    return () => { cancelled = true; };
   }, [beanId, beans]);
 
   const resetFormFields = useCallback(() => {
@@ -123,8 +127,8 @@ export function BeanSection({ error, id }: BeanSectionProps) {
         : ""
     );
     setNewOpenBagDate(
-      selectedBean.openBagDate
-        ? new Date(selectedBean.openBagDate).toISOString().split("T")[0]
+      selectedBean.userBean?.openBagDate
+        ? new Date(selectedBean.userBean.openBagDate).toISOString().split("T")[0]
         : ""
     );
     setNewIsRoastDateBestGuess(selectedBean.isRoastDateBestGuess || false);
@@ -193,7 +197,7 @@ export function BeanSection({ error, id }: BeanSectionProps) {
     return Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
   };
 
-  const formatRoastDate = (bean: Bean): string => {
+  const formatRoastDate = (bean: BeanWithUserData): string => {
     if (!bean.roastDate) return "";
     const date = new Date(bean.roastDate);
     const formatted = date.toLocaleDateString("en-US", {
@@ -239,12 +243,12 @@ export function BeanSection({ error, id }: BeanSectionProps) {
             </div>
           )}
           {/* Line 3: Opened date (N days since) */}
-          {selectedBean.openBagDate && (
+          {selectedBean.userBean?.openBagDate && (
             <div>
-              Opened {formatDate(selectedBean.openBagDate)}
-              {daysSince(selectedBean.openBagDate) !== null && (
+              Opened {formatDate(selectedBean.userBean.openBagDate)}
+              {daysSince(selectedBean.userBean.openBagDate) !== null && (
                 <span className="text-stone-400 dark:text-stone-500">
-                  {" "}({daysSince(selectedBean.openBagDate)} days ago)
+                  {" "}({daysSince(selectedBean.userBean.openBagDate)} days ago)
                 </span>
               )}
             </div>

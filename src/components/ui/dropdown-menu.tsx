@@ -7,6 +7,7 @@ interface DropdownMenuContextValue {
   open: boolean;
   setOpen: (open: boolean) => void;
   triggerRef: React.RefObject<HTMLElement | null>;
+  setTriggerNode: (node: HTMLElement | null) => void;
 }
 
 const DropdownMenuContext = React.createContext<
@@ -26,6 +27,9 @@ function DropdownMenu({
 }: DropdownMenuProps) {
   const [internalOpen, setInternalOpen] = React.useState(false);
   const triggerRef = React.useRef<HTMLElement>(null);
+  const setTriggerNode = React.useCallback((node: HTMLElement | null) => {
+    (triggerRef as React.MutableRefObject<HTMLElement | null>).current = node;
+  }, []);
   const open = controlledOpen ?? internalOpen;
   const setOpen = React.useCallback(
     (newOpen: boolean) => {
@@ -38,7 +42,7 @@ function DropdownMenu({
   );
 
   return (
-    <DropdownMenuContext.Provider value={{ open, setOpen, triggerRef }}>
+    <DropdownMenuContext.Provider value={{ open, setOpen, triggerRef, setTriggerNode }}>
       {children}
     </DropdownMenuContext.Provider>
   );
@@ -60,30 +64,34 @@ const DropdownMenuTrigger = React.forwardRef<
   HTMLButtonElement,
   DropdownMenuTriggerProps
 >(({ className, children, asChild, ...props }, ref) => {
-  const { setOpen, open, triggerRef } = useDropdownMenuContext();
+  const { setOpen, open, setTriggerNode } = useDropdownMenuContext();
 
   const combinedRef = React.useCallback(
     (node: HTMLButtonElement | null) => {
-      // Update both the forwarded ref and the context ref
       if (typeof ref === "function") {
         ref(node);
       } else if (ref) {
         ref.current = node;
       }
-      (triggerRef as React.MutableRefObject<HTMLElement | null>).current = node;
+      setTriggerNode(node);
     },
-    [ref, triggerRef],
+    [ref, setTriggerNode],
   );
 
   if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(children, {
-      ...props,
-      ref: combinedRef,
-      onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
-        props.onClick?.(e);
-        setOpen(!open);
+    /* eslint-disable react-hooks/refs -- cloneElement forwards ref to child element; it is not read during render */
+    return React.cloneElement(
+      children as React.ReactElement<Record<string, unknown>>,
+      {
+        ...props,
+        ref: combinedRef,
+        onClick: (e: React.MouseEvent<HTMLButtonElement>) => {
+          props.onClick?.(e);
+          setOpen(!open);
+        },
       },
-    } as any);
+    );
+    /* eslint-enable react-hooks/refs */
   }
 
   return (
@@ -240,7 +248,7 @@ const DropdownMenuContent = React.forwardRef<
 );
 DropdownMenuContent.displayName = "DropdownMenuContent";
 
-export interface DropdownMenuItemProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
+export type DropdownMenuItemProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 const DropdownMenuItem = React.forwardRef<
   HTMLButtonElement,
@@ -338,7 +346,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
 );
 DropdownMenuCheckboxItem.displayName = "DropdownMenuCheckboxItem";
 
-export interface DropdownMenuLabelProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type DropdownMenuLabelProps = React.HTMLAttributes<HTMLDivElement>;
 
 const DropdownMenuLabel = React.forwardRef<
   HTMLDivElement,
@@ -352,7 +360,7 @@ const DropdownMenuLabel = React.forwardRef<
 ));
 DropdownMenuLabel.displayName = "DropdownMenuLabel";
 
-export interface DropdownMenuSeparatorProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type DropdownMenuSeparatorProps = React.HTMLAttributes<HTMLDivElement>;
 
 const DropdownMenuSeparator = React.forwardRef<
   HTMLDivElement,

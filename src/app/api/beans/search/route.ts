@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans } from "@/db/schema";
+import { beans, userBeans } from "@/db/schema";
 import { ilike, desc, eq, and } from "drizzle-orm";
 
 /**
@@ -21,17 +21,9 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get("search");
   const limit = parseInt(searchParams.get("limit") || "50", 10);
 
-  // Members can only see beans they created, admins can see all
-  const beanConditions = [];
-  if (session.user.role !== "admin") {
-    beanConditions.push(eq(beans.userId, session.user.id));
-  }
-  if (search) {
-    beanConditions.push(ilike(beans.name, `%${search}%`));
-  }
-
-  const beanWhereClause =
-    beanConditions.length > 0 ? and(...beanConditions) : undefined;
+  const searchCondition = search
+    ? ilike(beans.name, `%${search}%`)
+    : undefined;
 
   const results = await db
     .select({
@@ -39,7 +31,11 @@ export async function GET(request: NextRequest) {
       name: beans.name,
     })
     .from(beans)
-    .where(beanWhereClause)
+    .innerJoin(
+      userBeans,
+      and(eq(beans.id, userBeans.beanId), eq(userBeans.userId, session.user.id)),
+    )
+    .where(searchCondition)
     .orderBy(desc(beans.createdAt))
     .limit(limit);
 

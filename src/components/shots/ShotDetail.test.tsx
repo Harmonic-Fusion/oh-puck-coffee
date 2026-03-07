@@ -4,6 +4,16 @@ import { ShotDetail } from "./ShotDetail";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { TestWrapper } from "@/test/setup";
 
+vi.mock("@/components/equipment/hooks", () => ({
+  useTools: () => ({ data: [] }),
+}));
+
+vi.mock("@/components/shots/hooks", () => ({
+  useShot: () => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() }),
+  useCreateShareLink: () => ({ mutate: vi.fn(), isPending: false }),
+  useShotMetrics: () => ({ data: undefined }),
+}));
+
 // Mock QRCode component to avoid canvas issues in tests
 vi.mock("@/components/common/QRCode", () => ({
   QRCode: ({ value, title }: { value: string; title?: string }) => (

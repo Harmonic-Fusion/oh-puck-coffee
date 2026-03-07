@@ -78,34 +78,38 @@ export function CollapsibleSection({
               onLinkClick={(e) => e.stopPropagation()}
             />
             <div className="flex items-center gap-2">
-              {summaryText && (
-                <span className="text-base text-stone-700 dark:text-stone-300">
-                  {summaryText}
-                </span>
-              )}
+              <span className="text-base text-stone-700 dark:text-stone-300">
+                {summaryText || "Expand to Edit"}
+              </span>
               <ChevronDownIcon className="h-5 w-5 text-stone-400" />
             </div>
           </button>
         ) : (
           <>
-            <div className="flex items-center justify-between">
-              <SectionHeader title={title} guideAnchor={guideAnchor} />
-              {!showAllInputs && (
-                <button
-                  type="button"
-                  onClick={() => onToggle(false)}
-                  className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-                  aria-label={`Collapse ${title.toLowerCase()}`}
-                >
-                  <ChevronUpIcon className="h-5 w-5" />
-                </button>
-              )}
-            </div>
+            {!showAllInputs ? (
+              <button
+                type="button"
+                onClick={() => onToggle(false)}
+                className="flex w-full items-center justify-between gap-2 text-left rounded-lg p-1 -m-1 hover:bg-stone-100 dark:hover:bg-stone-800/50"
+                aria-label={`Collapse ${title.toLowerCase()}`}
+              >
+                <SectionHeader
+                  title={title}
+                  guideAnchor={guideAnchor}
+                  onLinkClick={(e) => e.stopPropagation()}
+                />
+                <ChevronUpIcon className="h-5 w-5 text-stone-400 shrink-0" />
+              </button>
+            ) : (
+              <div className="flex items-center justify-between">
+                <SectionHeader title={title} guideAnchor={guideAnchor} />
+              </div>
+            )}
             <div className="space-y-7">{children}</div>
+            {footer}
           </>
         )}
 
-        {footer}
       </section>
     </Card>
   );

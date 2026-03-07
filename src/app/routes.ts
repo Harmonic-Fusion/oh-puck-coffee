@@ -23,6 +23,7 @@ export const AppRoutes = routesBuilder({
     path: "/settings",
     integrations: "/integrations",
     billing: "/billing",
+    advance: "/advance",
   },
   tasting: "/tasting",
   login: { path: "/login", _is_public: true },
@@ -41,6 +42,13 @@ export const AppRoutes = routesBuilder({
     _is_public: true,
     uid: {
       path: "/:uid",
+    },
+    beans: {
+      path: "/beans",
+      slug: {
+        path: "/:slug",
+        _is_public: true,
+      },
     },
   },
   puckingAdmin: {
@@ -86,6 +94,16 @@ export const ApiRoutes = routesBuilder({
     compare: "/compare",
     beanId: {
       path: "/:id",
+      shares: "/shares",
+      shareId: {
+        path: "/shares/:shareId",
+        accept: "/accept",
+      },
+      generalAccess: "/general-access",
+      addToCollection: "/add-to-collection",
+      shareMyShots: "/share-my-shots",
+      duplicate: "/duplicate",
+      shots: "/shots",
     },
   },
   // Equipment
@@ -132,7 +150,11 @@ export const ApiRoutes = routesBuilder({
       path: "/users",
       userId: { path: "/:id" },
     },
-    subscriptions: { path: "/subscriptions" },
+    subscriptions: {
+      path: "/subscriptions",
+      fixEntitlements: { path: "/fix-entitlements" },
+      mismatchCount: { path: "/mismatch-count" },
+    },
     billing: {
       path: "/billing",
       catalog: { path: "/catalog" },
@@ -165,8 +187,16 @@ export const ApiRoutes = routesBuilder({
   // Shares
   shares: {
     path: "/api/shares",
+    invites: "/invites",
     shareId: {
       path: "/:uid",
+    },
+    beans: {
+      path: "/beans",
+      slug: {
+        path: "/:slug",
+        stats: "/stats",
+      },
     },
   },
   // Integrations

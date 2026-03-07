@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
   // Clamp limit + offset so free-tier users cannot paginate past their cap
   let effectiveLimit = limit;
-  let effectiveOffset = offset;
+  const effectiveOffset = offset;
   if (!hasUnlimitedShots) {
     if (effectiveOffset >= shotLimit) {
       // Entirely past the cap — return empty

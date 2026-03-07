@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { NumberStepper } from "@/components/common/NumberStepper";
 import { EditOrderModal } from "@/components/common/EditOrderModal";
@@ -56,6 +56,12 @@ function getSavedTempUnit(): "C" | "F" {
   return (localStorage.getItem(TEMP_UNIT_KEY) as "C" | "F") || "F";
 }
 
+function subscribeTempUnit(callback: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  return () => window.removeEventListener("storage", callback);
+}
+
 interface SectionRecipeProps {
   previousShotId?: string | null;
   onViewShot?: (shot: ShotWithJoins) => void;
@@ -74,9 +80,14 @@ export function SectionRecipe({
     formState: { errors },
   } = useFormContext<CreateShot>();
 
-  // ── Persisted temp-unit preference ──
-  const [tempUnit, setTempUnit] = useState<"C" | "F">("F");
-  const [tempFValue, setTempFValue] = useState<number | undefined>(undefined);
+  // ── Persisted temp-unit preference (useSyncExternalStore for hydration) ──
+  const tempUnitFromStore = useSyncExternalStore(
+    subscribeTempUnit,
+    getSavedTempUnit,
+    () => "F",
+  );
+  const [tempUnitOverride, setTempUnitOverride] = useState<"C" | "F" | null>(null);
+  const tempUnit = tempUnitOverride ?? tempUnitFromStore;
   const [activeRatio, setActiveRatio] = useState<number | null>(null);
   const [activeDose, setActiveDose] = useState<number | null>(null);
   const [activePressure, setActivePressure] = useState<number | null>(9);
@@ -89,27 +100,23 @@ export function SectionRecipe({
     showAllInputs,
   });
 
-  // Hydrate temp unit from localStorage
-  useEffect(() => {
-    setTempUnit(getSavedTempUnit());
-  }, []);
-
-  // Watch brewTempC early so it can be used in useEffect
   const brewTempC = watch("brewTempC");
 
-  // Sync tempFValue when brewTempC is set from external sources (pre-population)
-  // If brewTempC is ever unset, fall back to 200°F
+  // Derive tempFValue during render (avoids setState in effect)
+  const tempFValue =
+    tempUnit === "F"
+      ? brewTempC != null
+        ? cToF(brewTempC)
+        : DEFAULT_BREW_TEMP_F
+      : undefined;
+
+  // Set default brewTempC when unset
   useEffect(() => {
-    if (brewTempC != null) {
-      if (tempUnit === "F") {
-        setTempFValue(cToF(brewTempC));
-      }
-    } else {
+    if (brewTempC == null) {
       const defaultC = fToC(DEFAULT_BREW_TEMP_F);
       setValue("brewTempC", defaultC, { shouldValidate: true });
-      setTempFValue(DEFAULT_BREW_TEMP_F);
     }
-  }, [brewTempC, tempUnit, setValue]);
+  }, [brewTempC, setValue]);
 
   const dose = watch("doseGrams");
   const yieldG = watch("yieldGrams");
@@ -131,8 +138,6 @@ export function SectionRecipe({
       setValue("grindLevel", undefined, { shouldValidate: false });
     }
   }, [isPreGround, grindLevel, setValue]);
-
-  const computedRatio = dose && yieldG ? (yieldG / dose).toFixed(2) : "—";
 
   const beanName = useMemo(
     () => beans?.find((b) => b.id === beanId)?.name ?? null,
@@ -212,18 +217,12 @@ export function SectionRecipe({
   // ── Temp unit toggle (persisted) ──
   const handleTempUnitToggle = useCallback(() => {
     const next = tempUnit === "C" ? "F" : "C";
-    setTempUnit(next);
+    setTempUnitOverride(next);
     localStorage.setItem(TEMP_UNIT_KEY, next);
-    if (next === "F" && brewTempC) {
-      setTempFValue(cToF(brewTempC));
-    } else {
-      setTempFValue(undefined);
-    }
-  }, [tempUnit, brewTempC]);
+  }, [tempUnit]);
 
   const handleTempFChange = useCallback(
     (val: number | undefined) => {
-      setTempFValue(val);
       if (val != null) {
         setValue("brewTempC", fToC(val), { shouldValidate: true });
       } else {

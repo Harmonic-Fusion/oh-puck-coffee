@@ -15,6 +15,15 @@ function getCommitSha(): string {
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        pathname: "/**",
+      },
+    ],
+  },
   env: {
     NEXT_PUBLIC_COMMIT_SHA: getCommitSha(),
     NEXT_PUBLIC_ENABLE_DEBUGGING: process.env.ENABLE_DEBUGGING ?? "false",

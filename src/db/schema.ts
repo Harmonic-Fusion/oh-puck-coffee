@@ -9,6 +9,7 @@ import {
   jsonb,
   primaryKey,
   serial,
+  unique,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
 
@@ -99,15 +100,68 @@ export const beans = pgTable("beans", {
   processingMethod: text("processing_method"),
   roastLevel: text("roast_level").notNull(),
   roastDate: timestamp("roast_date", { mode: "date" }),
-  openBagDate: timestamp("open_bag_date", { mode: "date" }),
   isRoastDateBestGuess: boolean("is_roast_date_best_guess")
     .default(false)
     .notNull(),
-  userId: uuid("user_id")
+  createdBy: uuid("created_by")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
+  generalAccess: text("general_access")
+    .$type<"restricted" | "anyone_with_link" | "public">()
+    .default("restricted")
+    .notNull(),
+  generalAccessShareShots: boolean("general_access_share_shots")
+    .default(false)
+    .notNull(),
+  shareSlug: text("share_slug").unique(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
+
+export const userBeans = pgTable(
+  "user_beans",
+  {
+    beanId: uuid("bean_id")
+      .notNull()
+      .references(() => beans.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    openBagDate: timestamp("open_bag_date", { mode: "date" }),
+    shareMyShotsPublicly: boolean("share_my_shots_publicly").default(false).notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.beanId, t.userId] })],
+);
+
+export const beansShare = pgTable(
+  "beans_share",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    beanId: uuid("bean_id")
+      .notNull()
+      .references(() => beans.id, { onDelete: "cascade" }),
+    // The member who has access to this bean
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    // Who invited this member (null = owner/creator, no inviter)
+    invitedBy: uuid("invited_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    status: text("status")
+      .$type<"pending" | "accepted">()
+      .default("pending")
+      .notNull(),
+    // Member's own choice: share my shots with all accepted members
+    shareShotHistory: boolean("share_shot_history").default(false).notNull(),
+    // Owner-granted permission: can this member invite others?
+    reshareEnabled: boolean("reshare_enabled").default(false).notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    // Set when the owner removes a member. Member retains read-only access to their own shots.
+    unsharedAt: timestamp("unshared_at", { mode: "date" }),
+  },
+  (t) => [unique("beans_share_bean_user_key").on(t.beanId, t.userId)],
+);
 
 export const grinders = pgTable("grinders", {
   id: uuid("id").defaultRandom().primaryKey(),

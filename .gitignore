@@ -9,8 +9,13 @@
 !.yarn/versions
 .pnpm-store/
 
+# playwright
+/playwright-report
+/playwright-video
+
 # testing
 /coverage
+/test-results
 
 # next.js
 /.next/

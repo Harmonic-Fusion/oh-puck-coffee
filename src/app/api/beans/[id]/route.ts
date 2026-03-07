@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { validateMemberAccess } from "@/lib/api-auth";
+import { beans, userBeans } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
+import { canAccessBean } from "@/lib/api-auth";
 import { createBeanSchema } from "@/shared/beans/schema";
 
 export async function GET(
@@ -17,25 +17,30 @@ export async function GET(
 
   const { id } = await params;
 
-  const [bean] = await db
-    .select()
-    .from(beans)
-    .where(eq(beans.id, id))
-    .limit(1);
+  const result = await canAccessBean(
+    session.user.id,
+    id,
+    session.user.role,
+  );
 
-  if (!bean) {
-    return NextResponse.json({ error: "Bean not found" }, { status: 404 });
+  if (!result.allowed) {
+    return result.error;
   }
 
-  // Check if member can access this bean
-  const accessError = validateMemberAccess(
-    session.user.id,
-    bean.userId,
-    session.user.role
-  );
-  if (accessError) return accessError;
+  const userBean = result.userBean
+    ? {
+        beanId: result.userBean.beanId,
+        userId: result.userBean.userId,
+        openBagDate: result.userBean.openBagDate,
+        shareMyShotsPublicly: result.userBean.shareMyShotsPublicly,
+        createdAt: result.userBean.createdAt,
+      }
+    : null;
 
-  return NextResponse.json(bean);
+  return NextResponse.json({
+    ...result.bean,
+    userBean,
+  });
 }
 
 export async function PATCH(
@@ -49,26 +54,18 @@ export async function PATCH(
 
   const { id } = await params;
 
-  const [existingBean] = await db
-    .select()
-    .from(beans)
-    .where(eq(beans.id, id))
-    .limit(1);
+  const result = await canAccessBean(
+    session.user.id,
+    id,
+    session.user.role,
+  );
 
-  if (!existingBean) {
-    return NextResponse.json({ error: "Bean not found" }, { status: 404 });
+  if (!result.allowed) {
+    return result.error;
   }
 
-  // Check if member can access this bean
-  const accessError = validateMemberAccess(
-    session.user.id,
-    existingBean.userId,
-    session.user.role
-  );
-  if (accessError) return accessError;
-
   const body = await request.json();
-  const parsed = createBeanSchema.safeParse(body);
+  const parsed = createBeanSchema.partial().safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -77,11 +74,76 @@ export async function PATCH(
     );
   }
 
-  const [updatedBean] = await db
-    .update(beans)
-    .set(parsed.data)
-    .where(eq(beans.id, id))
-    .returning();
+  const { openBagDate, ...canonicalFields } = parsed.data;
 
-  return NextResponse.json(updatedBean);
+  const isCreatorOrAdmin =
+    result.bean.createdBy === session.user.id ||
+    session.user.role === "admin" ||
+    session.user.role === "super-admin";
+
+  if (
+    Object.keys(canonicalFields).length > 0 &&
+    !isCreatorOrAdmin
+  ) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (Object.keys(canonicalFields).length > 0) {
+    await db
+      .update(beans)
+      .set(canonicalFields)
+      .where(eq(beans.id, id));
+  }
+
+  if (openBagDate !== undefined && result.userBean) {
+    await db
+      .update(userBeans)
+      .set({ openBagDate: openBagDate ?? null })
+      .where(
+        and(
+          eq(userBeans.beanId, id),
+          eq(userBeans.userId, session.user.id),
+        ),
+      );
+  }
+
+  const [updatedBean] = await db
+    .select()
+    .from(beans)
+    .where(eq(beans.id, id))
+    .limit(1);
+
+  if (!updatedBean) {
+    return NextResponse.json({ error: "Bean not found" }, { status: 404 });
+  }
+
+  let userBeanRow = result.userBean;
+  if (openBagDate !== undefined && result.userBean) {
+    const [ub] = await db
+      .select()
+      .from(userBeans)
+      .where(
+        and(
+          eq(userBeans.beanId, id),
+          eq(userBeans.userId, session.user.id),
+        ),
+      )
+      .limit(1);
+    userBeanRow = ub ?? null;
+  }
+
+  const userBean = userBeanRow
+    ? {
+        beanId: userBeanRow.beanId,
+        userId: userBeanRow.userId,
+        openBagDate: userBeanRow.openBagDate,
+        shareMyShotsPublicly: userBeanRow.shareMyShotsPublicly,
+        createdAt: userBeanRow.createdAt,
+      }
+    : null;
+
+  return NextResponse.json({
+    ...updatedBean,
+    userBean,
+  });
 }

@@ -74,7 +74,7 @@ export function LongPressShareButton({
     }
   }, [isMenuOpen]);
 
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+  const handlePointerDown = useCallback(() => {
     hasTriggeredLongPressRef.current = false;
     clickEventRef.current = null;
     longPressTimerRef.current = setTimeout(() => {

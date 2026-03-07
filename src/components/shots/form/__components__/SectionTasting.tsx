@@ -14,6 +14,8 @@ import type { CreateShot } from "@/shared/shots/schema";
 import { RATING_LABELS } from "@/lib/format-rating";
 import { getRequiredStepIds, type ReorderableStepConfig } from "../step-config";
 import { useReorderableSteps } from "../hooks/useReorderableSteps";
+import { no_pucking_swearing } from "@/lib/no-pucking";
+import { useState } from "react";
 
 // ── Step configuration ──
 
@@ -86,8 +88,11 @@ export function SectionTasting({ showAllInputs = false }: SectionTastingProps) {
     register,
     control,
     watch,
+    setValue,
     formState: { errors },
   } = useFormContext<CreateShot>();
+
+  const [showSwearBanner, setShowSwearBanner] = useState(false);
 
   const rating = watch("rating");
   const flavors = watch("flavors");
@@ -250,18 +255,39 @@ export function SectionTasting({ showAllInputs = false }: SectionTastingProps) {
           />
         );
 
-      case "notes":
+      case "notes": {
+        const { onBlur: rhfOnBlur, ...notesProps } = register("notes");
         return (
-          <Textarea
-            key="notes"
-            label="Notes"
-            placeholder="Any additional observations..."
-            error={errors.notes?.message}
-            rows={4}
-            id="notes"
-            {...register("notes")}
-          />
+          <div key="notes" className="space-y-2">
+            <Textarea
+              label="Notes"
+              placeholder="Any additional observations..."
+              error={errors.notes?.message}
+              rows={4}
+              id="notes"
+              {...notesProps}
+              onBlur={(e) => {
+                const originalText = e.target.value;
+                const filteredText = no_pucking_swearing(originalText);
+                if (originalText !== filteredText) {
+                  setValue("notes", filteredText, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  setShowSwearBanner(true);
+                }
+                rhfOnBlur(e);
+              }}
+            />
+            {showSwearBanner && (
+              <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-sm font-medium text-amber-800 animate-in fade-in slide-in-from-top-1 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+                <span className="text-lg">🚫</span>
+                <span>No pucking swearing! 😂</span>
+              </div>
+            )}
+          </div>
         );
+      }
 
       default:
         return null;

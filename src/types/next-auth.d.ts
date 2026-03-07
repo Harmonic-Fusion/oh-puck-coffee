@@ -6,6 +6,7 @@ declare module "next-auth" {
     id: string;
     role?: "member" | "admin" | "super-admin";
     entitlements?: string[];
+    subType?: "free" | "pro";
   }
 
   interface Session {
@@ -13,6 +14,7 @@ declare module "next-auth" {
       id: string;
       role?: "member" | "admin" | "super-admin";
       entitlements?: string[];
+      subType?: "free" | "pro";
     } & DefaultSession["user"];
   }
 }
@@ -22,5 +24,6 @@ declare module "next-auth/jwt" {
     id: string;
     role: "member" | "admin" | "super-admin";
     entitlements?: string[];
+    subType?: "free" | "pro";
   }
 }
