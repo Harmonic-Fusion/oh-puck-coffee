@@ -60,7 +60,9 @@ export function ApiHealthErrorBoundary({ children }: ApiHealthErrorBoundaryProps
     runHealthCheck();
   }, [runHealthCheck]);
 
-  function handleError(_error: Error, _errorInfo: ErrorInfo) {
+  function handleError(error: Error, errorInfo: ErrorInfo) {
+    void error;
+    void errorInfo;
     runHealthCheck();
   }
 
