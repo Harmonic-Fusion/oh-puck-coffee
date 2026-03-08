@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beansShare } from "@/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
-import { canAccessBean } from "@/lib/api-auth";
+import { eq, and } from "drizzle-orm";
+import { canAccessBean, isBeanOwner, unshareMemberAndDescendants } from "@/lib/beans-access";
 import { updateBeanShareSchema } from "@/shared/beans/schema";
 import { Entitlements, hasEntitlement } from "@/shared/entitlements";
 
 /**
- * PATCH /api/beans/:id/shares/:shareId — Update a person's access (shareShotHistory, reshareEnabled).
- * Only bean creator or admin can update.
+ * PATCH /api/beans/:id/shares/:shareId — Update a person's access (shotHistoryAccess, reshareAllowed).
+ * Only bean owner or admin can update.
  */
 export async function PATCH(
   request: NextRequest,
@@ -35,7 +35,7 @@ export async function PATCH(
   }
 
   const isCreatorOrAdmin =
-    result.bean.createdBy === session.user.id ||
+    isBeanOwner(result) ||
     session.user.role === "admin" ||
     session.user.role === "super-admin";
 
@@ -62,15 +62,15 @@ export async function PATCH(
 
   const isSelf = share.userId === session.user.id;
 
-  // Owner/admin can update any field. Members can only update their own shareShotHistory.
+  // Owner/admin can update any field. Members can only update their own shotHistoryAccess.
   if (!isCreatorOrAdmin && !isSelf) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const { shareShotHistory, reshareEnabled } = parsed.data;
+  const { shotHistoryAccess, reshareAllowed } = parsed.data;
 
-  // Members cannot change reshareEnabled — only the owner/admin can
-  if (!isCreatorOrAdmin && reshareEnabled !== undefined) {
+  // Members cannot change reshareAllowed — only the owner/admin can
+  if (!isCreatorOrAdmin && reshareAllowed !== undefined) {
     return NextResponse.json(
       { error: "Only the owner can change reshare permission" },
       { status: 403 },
@@ -78,7 +78,7 @@ export async function PATCH(
   }
 
   if (
-    reshareEnabled === true &&
+    reshareAllowed === true &&
     !hasEntitlement(session.user.entitlements, Entitlements.BEAN_SHARE)
   ) {
     return NextResponse.json(
@@ -90,9 +90,14 @@ export async function PATCH(
     );
   }
 
-  const updates: { shareShotHistory?: boolean; reshareEnabled?: boolean } = {};
-  if (shareShotHistory !== undefined) updates.shareShotHistory = shareShotHistory;
-  if (reshareEnabled !== undefined) updates.reshareEnabled = reshareEnabled;
+  const updates: {
+    shotHistoryAccess?: "none" | "restricted" | "anyone_with_link" | "public";
+    reshareAllowed?: boolean;
+    updatedAt?: Date;
+  } = {};
+  if (shotHistoryAccess !== undefined) updates.shotHistoryAccess = shotHistoryAccess;
+  if (reshareAllowed !== undefined) updates.reshareAllowed = reshareAllowed;
+  if (Object.keys(updates).length > 0) updates.updatedAt = new Date();
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json(share);
@@ -111,8 +116,7 @@ export async function PATCH(
 
 /**
  * DELETE /api/beans/:id/shares/:shareId — Revoke an individual share.
- * Bean creator or admin: revoke and optionally remove receiver's user_beans.
- * Receiver: may delete a pending share (decline).
+ * Bean owner or admin: recursively unshare member and all descendants. Receiver: may delete a pending share (decline).
  */
 export async function DELETE(
   _request: NextRequest,
@@ -141,20 +145,59 @@ export async function DELETE(
 
   const isReceiver = share.userId === session.user.id;
 
-  // Receiver may only delete (decline) when status is pending
+  // Receiver: pending = decline (delete); accepted/self = unfollow (set status unfollowed, repoint descendants)
   if (isReceiver) {
-    if (share.status !== "pending") {
-      return NextResponse.json(
-        { error: "Only pending invites can be declined" },
-        { status: 403 },
-      );
+    if (share.status === "pending") {
+      await db
+        .delete(beansShare)
+        .where(
+          and(eq(beansShare.id, shareId), eq(beansShare.beanId, beanId)),
+        );
+      return new NextResponse(null, { status: 204 });
     }
-    await db
-      .delete(beansShare)
-      .where(
-        and(eq(beansShare.id, shareId), eq(beansShare.beanId, beanId)),
-      );
-    return new NextResponse(null, { status: 204 });
+    if (share.status === "accepted" || share.status === "self") {
+      const [ownerRow] = await db
+        .select({ userId: beansShare.userId })
+        .from(beansShare)
+        .where(
+          and(
+            eq(beansShare.beanId, beanId),
+            eq(beansShare.status, "owner"),
+          ),
+        )
+        .limit(1);
+      const ownerId = ownerRow?.userId ?? null;
+      if (ownerId) {
+        await db
+          .update(beansShare)
+          .set({
+            invitedBy: ownerId,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(beansShare.beanId, beanId),
+              eq(beansShare.invitedBy, session.user.id),
+            ),
+          );
+      }
+      const now = new Date();
+      await db
+        .update(beansShare)
+        .set({
+          status: "unfollowed",
+          unsharedAt: now,
+          updatedAt: now,
+        })
+        .where(
+          and(eq(beansShare.id, shareId), eq(beansShare.beanId, beanId)),
+        );
+      return new NextResponse(null, { status: 204 });
+    }
+    return NextResponse.json(
+      { error: "Only pending invites can be declined" },
+      { status: 403 },
+    );
   }
 
   const result = await canAccessBean(
@@ -167,7 +210,7 @@ export async function DELETE(
   }
 
   const isCreatorOrAdmin =
-    result.bean.createdBy === session.user.id ||
+    isBeanOwner(result) ||
     session.user.role === "admin" ||
     session.user.role === "super-admin";
 
@@ -175,17 +218,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Soft-delete: member retains read access to their own shots but loses sharing privileges
-  await db
-    .update(beansShare)
-    .set({ unsharedAt: new Date() })
-    .where(
-      and(
-        eq(beansShare.id, shareId),
-        eq(beansShare.beanId, beanId),
-        isNull(beansShare.unsharedAt),
-      ),
-    );
+  await unshareMemberAndDescendants(beanId, shareId);
 
   return new NextResponse(null, { status: 204 });
 }

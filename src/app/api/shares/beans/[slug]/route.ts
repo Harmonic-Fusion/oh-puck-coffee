@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, shots, users, grinders, machines, userBeans } from "@/db/schema";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { beans, shots, users, grinders, machines, beansShare } from "@/db/schema";
+import { eq, and, desc, inArray, isNull, or } from "drizzle-orm";
 
 /**
  * GET /api/shares/beans/:slug — Public endpoint to fetch a bean by share slug.
- * No authentication required. Returns bean metadata and optionally creator's non-hidden shots.
+ * No auth required when bean is public; when bean is anyone_with_link, auth optional.
+ * Returns bean metadata and shots: unauthenticated = public only; authenticated = anyone_with_link + public.
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
+  const session = await getSession();
+  const isAuthenticated = Boolean(session?.user?.id);
 
   const [bean] = await db
     .select()
@@ -27,11 +31,22 @@ export async function GET(
     return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }
 
+  const [ownerRow] = await db
+    .select({ userId: beansShare.userId })
+    .from(beansShare)
+    .where(
+      and(
+        eq(beansShare.beanId, bean.id),
+        eq(beansShare.status, "owner"),
+      ),
+    )
+    .limit(1);
+
+  const ownerId = ownerRow?.userId ?? null;
+
   const beanPayload = {
     id: bean.id,
     name: bean.name,
-    origin: bean.origin,
-    roaster: bean.roaster,
     originId: bean.originId,
     roasterId: bean.roasterId,
     originDetails: bean.originDetails,
@@ -39,55 +54,41 @@ export async function GET(
     roastLevel: bean.roastLevel,
     roastDate: bean.roastDate,
     isRoastDateBestGuess: bean.isRoastDateBestGuess,
-    createdBy: bean.createdBy,
     generalAccess: bean.generalAccess,
-    generalAccessShareShots: bean.generalAccessShareShots,
     shareSlug: bean.shareSlug,
     createdAt: bean.createdAt,
   };
 
-  if (!bean.generalAccessShareShots) {
+  if (!ownerId) {
     return NextResponse.json({ bean: beanPayload, shots: [] });
   }
 
   const beanId = bean.id;
 
-  // User IDs who opted in to share their shots on the public page (excluding creator)
+  // Unauthenticated: only public. Authenticated: anyone_with_link + public. Exclude unshared members.
   const optedInRows = await db
-    .select({ userId: userBeans.userId })
-    .from(userBeans)
+    .select({ userId: beansShare.userId })
+    .from(beansShare)
     .where(
       and(
-        eq(userBeans.beanId, beanId),
-        eq(userBeans.shareMyShotsPublicly, true),
+        eq(beansShare.beanId, beanId),
+        isNull(beansShare.unsharedAt),
+        isAuthenticated
+          ? or(
+              eq(beansShare.shotHistoryAccess, "public"),
+              eq(beansShare.shotHistoryAccess, "anyone_with_link"),
+            )
+          : eq(beansShare.shotHistoryAccess, "public"),
       ),
     );
-  const optedInUserIds = optedInRows
-    .map((r) => r.userId)
-    .filter((id) => id !== bean.createdBy);
+  const optedInUserIds = optedInRows.map((r) => r.userId);
 
-  const allShots: Array<{
-    id: string;
-    doseGrams: string | null;
-    yieldGrams: string | null;
-    grindLevel: string | null;
-    brewTimeSecs: string | null;
-    brewTempC: string | null;
-    shotQuality: string | null;
-    rating: string | null;
-    bitter: string | null;
-    sour: string | null;
-    notes: string | null;
-    flavors: string[] | null;
-    bodyTexture: string[] | null;
-    adjectives: string[] | null;
-    isReferenceShot: boolean;
-    createdAt: Date;
-    userName: string | null;
-    userImage: string | null;
-    grinderName: string | null;
-    machineName: string | null;
-  }> = [];
+  if (optedInUserIds.length === 0) {
+    return NextResponse.json({
+      bean: beanPayload,
+      shots: [],
+    });
+  }
 
   const shotSelect = {
     id: shots.id,
@@ -112,7 +113,7 @@ export async function GET(
     machineName: machines.name,
   };
 
-  const creatorShots = await db
+  const allShotsQuery = await db
     .select(shotSelect)
     .from(shots)
     .leftJoin(users, eq(shots.userId, users.id))
@@ -121,34 +122,14 @@ export async function GET(
     .where(
       and(
         eq(shots.beanId, beanId),
-        eq(shots.userId, bean.createdBy),
+        inArray(shots.userId, optedInUserIds),
         eq(shots.isHidden, false),
       ),
     )
     .orderBy(desc(shots.createdAt))
     .limit(100);
 
-  allShots.push(...creatorShots);
-
-  if (optedInUserIds.length > 0) {
-    const contributorShots = await db
-      .select(shotSelect)
-      .from(shots)
-      .leftJoin(users, eq(shots.userId, users.id))
-      .leftJoin(grinders, eq(shots.grinderId, grinders.id))
-      .leftJoin(machines, eq(shots.machineId, machines.id))
-      .where(
-        and(
-          eq(shots.beanId, beanId),
-          inArray(shots.userId, optedInUserIds),
-          eq(shots.isHidden, false),
-        ),
-      )
-      .orderBy(desc(shots.createdAt))
-      .limit(100);
-
-    allShots.push(...contributorShots);
-  }
+  const allShots = [...allShotsQuery];
 
   allShots.sort(
     (a, b) =>

@@ -14,18 +14,12 @@ const SHARE_ID = "00000000-0000-4000-c000-000000000001";
 // ─── Hoisted mutable state ────────────────────────────────────────────────────
 //
 // The route issues these DB queries in order:
-//   [0] myShots      — own shots, always fetched
-//   [1] incomingShares — beansShare WHERE receiverUserId=me AND status=accepted
-//                        AND shareShotHistory=true
-//   [2] sharedShots  — shots from sharer user IDs (only when [1] non-empty)
+//   [0] myShots         — own shots, always fetched
+//   [1] sharingMembers  — beansShare WHERE status IN (accepted, owner, self) AND unsharedAt IS NULL
+//                         AND shot_history_access IN ('restricted', 'anyone_with_link', 'public')
+//   [2] sharedShots     — shots from sharer user IDs (only when [1] non-empty)
 //
-// shareShotHistory on beansShare  = the SHARER's opt-in that they set when
-//                                   creating/editing the individual share.
-// shareMyShotsPublicly on userBeans = the FOLLOWER's own opt-in for the public
-//                                     share page (/share/beans/:slug).
-//                                     The private /beans/:id/shots route does
-//                                     NOT currently check this field at all —
-//                                     which is the bug this test suite exposes.
+// shotHistoryAccess: none = never share; restricted = only other bean members; anyone_with_link = + authenticated with link; public = public page.
 const mock = vi.hoisted(() => ({
   session: null as unknown,
   canAccessBeanResult: null as unknown,
@@ -38,7 +32,7 @@ vi.mock("@/auth", () => ({
   getSession: vi.fn().mockImplementation(() => Promise.resolve(mock.session)),
 }));
 
-vi.mock("@/lib/api-auth", () => ({
+vi.mock("@/lib/beans-access", () => ({
   canAccessBean: vi
     .fn()
     .mockImplementation(() => Promise.resolve(mock.canAccessBeanResult)),
@@ -114,23 +108,25 @@ function makeSession(userId: string) {
   };
 }
 
-function makeAccessAllowed(createdBy = ALICE_ID) {
+function makeAccessAllowed(_ownerId = ALICE_ID) {
   return {
     allowed: true as const,
     bean: {
       id: BEAN_ID,
       name: "Ethiopian Yirgacheffe",
-      createdBy,
       generalAccess: "restricted" as const,
-      generalAccessShareShots: false,
       shareSlug: null as string | null,
     },
     userBean: {
       beanId: BEAN_ID,
-      userId: createdBy,
-      openBagDate: null as Date | null,
-      shareMyShotsPublicly: false,
+      userId: ALICE_ID,
+      status: "owner" as const,
+      shotHistoryAccess: "restricted" as const,
+      reshareAllowed: false,
+      beansOpenDate: null as Date | null,
       createdAt: new Date("2024-01-01"),
+      updatedAt: new Date("2024-01-01"),
+      unsharedAt: null as Date | null,
     },
   };
 }
@@ -164,8 +160,7 @@ function makeShot(id: string, userId: string, isHidden = false) {
   };
 }
 
-// A sharingMembers row: an accepted member who has opted in (shareShotHistory=true).
-// Their shots are visible to all other accepted members.
+// A sharingMembers row: member with shotHistoryAccess IN ('restricted', 'anyone_with_link', 'public').
 function makeIncomingShare(userId: string) {
   return {
     userId,
@@ -186,23 +181,11 @@ beforeEach(() => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// shareShotHistory vs shareMyShotsPublicly
-//
-// beansShare.shareShotHistory  — the SHARER's (Alice's) flag set when creating
-//                                or editing the individual share to Bob. Controls
-//                                whether Alice's shots appear for Bob on the
-//                                private /beans/:id/shots endpoint.
-//
-// userBeans.shareMyShotsPublicly — the OWNER/FOLLOWER's own opt-in flag.
-//                                  Controls whether their shots appear on the
-//                                  public /share/beans/:slug page AND gates the
-//                                  private endpoint (the route joins user_beans
-//                                  and requires this to be true before including
-//                                  a sharer's shots).
-//
-// BOTH flags must be true for a sharer's shots to be visible to the receiver:
-//   beansShare.shareShotHistory = true   (sharer enabled it on the share record)
-//   userBeans.shareMyShotsPublicly = true  (sharer opted in on their own row)
+// shotHistoryAccess on beans_share — per-member control:
+//   none = never share (excluded from sharingMembers)
+//   restricted = only other bean members (included when viewer is member)
+//   anyone_with_link = other members + any authenticated user with the link
+//   public = anyone on the public share page
 // ─────────────────────────────────────────────────────────────────────────────
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -214,7 +197,7 @@ describe("Scenario: Alice owns bean, no share relationship", () => {
     mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
 
     // [0] myShots for Bob → none
-    // [1] incomingShares for Bob → none (no share record exists)
+    // [1] sharingMembers for Bob → none (no accepted share with non-restricted access)
     mock.dbResults = [[], []];
 
     const res = await GET(makeRequest(BEAN_ID), {
@@ -231,7 +214,7 @@ describe("Scenario: Alice owns bean, no share relationship", () => {
     mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
 
     // [0] myShots for Alice → her own shot
-    // [1] incomingShares for Alice → none (Bob never created a share to Alice)
+    // [1] sharingMembers for Alice → none (Bob never created a share to Alice)
     mock.dbResults = [[makeShot(ALICE_SHOT_ID, ALICE_ID)], []];
 
     const res = await GET(makeRequest(BEAN_ID), {
@@ -247,21 +230,17 @@ describe("Scenario: Alice owns bean, no share relationship", () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario 2: Alice shares with Bob, Bob accepts.
-// shareShotHistory is the flag on beansShare set by ALICE (the sharer).
-// shareMyShotsPublicly is the flag on user_beans set by ALICE (the owner).
-// These are DIFFERENT fields and the route only checks shareShotHistory.
+// shotHistoryAccess = 'none' → never share; 'restricted' → only other bean members (included here).
 // ─────────────────────────────────────────────────────────────────────────────
-describe("Scenario: Alice shares with Bob (accepted) — shareShotHistory controls visibility for Bob", () => {
-  it("Bob cannot see Alice's shots when shareShotHistory=false on the share record", async () => {
+describe("Scenario: Alice shares with Bob (accepted) — shotHistoryAccess controls visibility for Bob", () => {
+  it("Bob cannot see Alice's shots when Alice has shotHistoryAccess=none (none = never share)", async () => {
     mock.session = makeSession(BOB_ID);
     mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
 
-    // The share exists (Alice→Bob, accepted) but shareShotHistory=false.
-    // The incomingShares query includes WHERE shareShotHistory=true, so it
-    // returns nothing — correctly blocking Bob from seeing Alice's shots.
+    // sharingMembers only includes restricted/anyone_with_link/public; Alice has none so not included.
     mock.dbResults = [
       [makeShot(BOB_SHOT_ID, BOB_ID)], // myShots for Bob
-      [], // incomingShares: shareShotHistory=false filtered out
+      [], // sharingMembers: empty (Alice has none)
     ];
 
     const res = await GET(makeRequest(BEAN_ID), {
@@ -274,15 +253,36 @@ describe("Scenario: Alice shares with Bob (accepted) — shareShotHistory contro
     expect(body.shots.filter((s) => s.userId === BOB_ID)).toHaveLength(1);
   });
 
-  it("Bob CAN see Alice's shots when shareShotHistory=true on the share record", async () => {
+  it("Bob CAN see Alice's shots when Alice has shotHistoryAccess=restricted (only other members)", async () => {
     mock.session = makeSession(BOB_ID);
     mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
 
-    // Alice set shareShotHistory=true when she created or edited the share.
-    // The incomingShares query returns Alice's row.
+    // restricted = only other bean members; Bob is a member so sharingMembers includes Alice.
     mock.dbResults = [
       [makeShot(BOB_SHOT_ID, BOB_ID)], // myShots for Bob
-      [makeIncomingShare(ALICE_ID)], // incomingShares: shareShotHistory=true
+      [makeIncomingShare(ALICE_ID)], // sharingMembers: Alice has restricted
+      [makeShot(ALICE_SHOT_ID, ALICE_ID)], // sharedShots from Alice
+    ];
+
+    const res = await GET(makeRequest(BEAN_ID), {
+      params: Promise.resolve({ id: BEAN_ID }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { shots: Array<{ userId: string }> };
+    expect(body.shots.filter((s) => s.userId === ALICE_ID)).toHaveLength(1);
+    expect(body.shots.filter((s) => s.userId === BOB_ID)).toHaveLength(1);
+  });
+
+  it("Bob CAN see Alice's shots when shotHistoryAccess is anyone_with_link or public", async () => {
+    mock.session = makeSession(BOB_ID);
+    mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
+
+    // Alice set shotHistoryAccess to anyone_with_link or public when she created or edited the share.
+    // The sharingMembers query returns Alice's row.
+    mock.dbResults = [
+      [makeShot(BOB_SHOT_ID, BOB_ID)], // myShots for Bob
+      [makeIncomingShare(ALICE_ID)], // sharingMembers: shotHistoryAccess anyone_with_link or public
       [makeShot(ALICE_SHOT_ID, ALICE_ID)], // sharedShots from Alice
     ];
 
@@ -298,37 +298,17 @@ describe("Scenario: Alice shares with Bob (accepted) — shareShotHistory contro
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THE BUG: shareMyShotsPublicly=false on user_beans is NOT respected by the
-// private /beans/:id/shots endpoint.
-//
-// "Share my shot history" in the UI (ShareBeanVisitorActions and the bean
-// detail page) mutates userBeans.shareMyShotsPublicly via PATCH
-// /api/beans/:id/share-my-shots. The route at /api/beans/:id/shots never
-// reads that column. It only reads beansShare.shareShotHistory.
-//
-// So if Alice set shareShotHistory=true when sharing with Bob, then later
-// toggles "Share my shot history" to OFF (shareMyShotsPublicly=false), Bob
-// STILL sees Alice's shots — because the route never re-checks
-// shareMyShotsPublicly.
+// shotHistoryAccess=none: member's shots are NOT visible to anyone else.
+// shotHistoryAccess=restricted: member's shots ARE visible to other bean members.
 // ─────────────────────────────────────────────────────────────────────────────
-describe("shareMyShotsPublicly=false on user_beans blocks shared-shot visibility", () => {
-  it("Bob cannot see Alice's shots when Alice has shareShotHistory=true but shareMyShotsPublicly=false", async () => {
-    // Alice's beansShare.shareShotHistory=true (she set this when creating the
-    // share), but her userBeans.shareMyShotsPublicly=false (she toggled "Share
-    // my shot history" off). The route joins user_beans in the incomingShares
-    // query and requires shareMyShotsPublicly=true, so Alice's row is excluded
-    // and Bob sees no shots from Alice.
-    const accessResult = makeAccessAllowed(ALICE_ID);
-    accessResult.userBean.shareMyShotsPublicly = false;
-    mock.canAccessBeanResult = accessResult;
+describe("shotHistoryAccess none vs restricted", () => {
+  it("Bob cannot see Alice's shots when Alice has shotHistoryAccess=none", async () => {
+    mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
     mock.session = makeSession(BOB_ID);
 
-    // The incomingShares query now joins user_beans and adds
-    // AND user_beans.share_my_shots_publicly = true.  Alice's row is filtered
-    // out, so the DB returns [] and sharedShots is never fetched.
     mock.dbResults = [
       [makeShot(BOB_SHOT_ID, BOB_ID)], // myShots for Bob
-      [], // incomingShares: Alice filtered out because shareMyShotsPublicly=false
+      [], // sharingMembers: empty (Alice has none)
     ];
 
     const res = await GET(makeRequest(BEAN_ID), {
@@ -341,18 +321,35 @@ describe("shareMyShotsPublicly=false on user_beans blocks shared-shot visibility
     expect(body.shots.filter((s) => s.userId === BOB_ID)).toHaveLength(1);
   });
 
-  it("Bob CAN see Alice's shots when both shareShotHistory=true AND shareMyShotsPublicly=true", async () => {
-    // Both flags are true: the share record has shareShotHistory=true and
-    // Alice's user_beans row has shareMyShotsPublicly=true.  The incomingShares
-    // query returns Alice's row and sharedShots includes her non-hidden shot.
-    const accessResult = makeAccessAllowed(ALICE_ID);
-    accessResult.userBean.shareMyShotsPublicly = true;
-    mock.canAccessBeanResult = accessResult;
+  it("Bob CAN see Alice's shots when Alice has shotHistoryAccess=restricted (only other members)", async () => {
+    mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
+    mock.session = makeSession(BOB_ID);
+
+    mock.dbResults = [
+      [makeShot(BOB_SHOT_ID, BOB_ID)], // myShots for Bob
+      [makeIncomingShare(ALICE_ID)], // sharingMembers: restricted included
+      [makeShot(ALICE_SHOT_ID, ALICE_ID)], // sharedShots
+    ];
+
+    const res = await GET(makeRequest(BEAN_ID), {
+      params: Promise.resolve({ id: BEAN_ID }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { shots: Array<{ userId: string }> };
+    expect(body.shots.filter((s) => s.userId === ALICE_ID)).toHaveLength(1);
+    expect(body.shots.filter((s) => s.userId === BOB_ID)).toHaveLength(1);
+  });
+
+  it("Bob CAN see Alice's shots when Alice is in sharingMembers (shotHistoryAccess restricted or broader)", async () => {
+    // Alice's beans_share row has shotHistoryAccess <> 'restricted', so she
+    // appears in sharingMembers and her shots are included.
+    mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
     mock.session = makeSession(BOB_ID);
 
     mock.dbResults = [
       [makeShot(BOB_SHOT_ID, BOB_ID)],
-      [makeIncomingShare(ALICE_ID)], // both flags true → row returned
+      [makeIncomingShare(ALICE_ID)], // shotHistoryAccess not restricted → row returned
       [makeShot(ALICE_SHOT_ID, ALICE_ID)],
     ];
 
@@ -364,6 +361,51 @@ describe("shareMyShotsPublicly=false on user_beans blocks shared-shot visibility
     const body = (await res.json()) as { shots: Array<{ userId: string }> };
     expect(body.shots.filter((s) => s.userId === ALICE_ID)).toHaveLength(1);
     expect(body.shots.filter((s) => s.userId === BOB_ID)).toHaveLength(1);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Unshared members' shots excluded (sharingMembers query filters unsharedAt IS NULL)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("Unshared members' shots excluded from shared view", () => {
+  it("Bob sees only his own shots when Alice has been unshared (sharingMembers excludes unshared)", async () => {
+    mock.session = makeSession(BOB_ID);
+    mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
+
+    // Alice was unshared → sharingMembers query (unsharedAt IS NULL) returns [].
+    // Bob's own shots still returned; no shared shots from Alice.
+    mock.dbResults = [
+      [makeShot(BOB_SHOT_ID, BOB_ID)], // myShots for Bob
+      [], // sharingMembers: empty because Alice has unsharedAt set
+    ];
+
+    const res = await GET(makeRequest(BEAN_ID), {
+      params: Promise.resolve({ id: BEAN_ID }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { shots: Array<{ userId: string }> };
+    expect(body.shots).toHaveLength(1);
+    expect(body.shots[0].userId).toBe(BOB_ID);
+  });
+
+  it("when all members have shotHistoryAccess=none, user sees only their own shots", async () => {
+    mock.session = makeSession(BOB_ID);
+    mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
+
+    mock.dbResults = [
+      [makeShot(BOB_SHOT_ID, BOB_ID)], // myShots
+      [], // sharingMembers: empty (all none)
+    ];
+
+    const res = await GET(makeRequest(BEAN_ID), {
+      params: Promise.resolve({ id: BEAN_ID }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { shots: Array<{ userId: string }> };
+    expect(body.shots).toHaveLength(1);
+    expect(body.shots[0].userId).toBe(BOB_ID);
   });
 });
 
@@ -377,7 +419,7 @@ describe("Scenario: Alice queries shots — no reverse share from Bob", () => {
 
     mock.dbResults = [
       [makeShot(ALICE_SHOT_ID, ALICE_ID)], // myShots for Alice
-      [], // incomingShares: no Bob→Alice share
+      [], // sharingMembers: no Bob→Alice share
     ];
 
     const res = await GET(makeRequest(BEAN_ID), {
@@ -390,17 +432,34 @@ describe("Scenario: Alice queries shots — no reverse share from Bob", () => {
     expect(body.shots.filter((s) => s.userId === ALICE_ID)).toHaveLength(1);
   });
 
-  it("Alice cannot see Bob's shots even after Bob accepted Alice's share to him (sharing is one-directional)", async () => {
-    // Alice→Bob share exists and is accepted. Bob can see Alice's shots (if
-    // shareShotHistory=true). But Alice CANNOT see Bob's shots — there is no
-    // Bob→Alice share. The route checks receiverUserId=session.user.id, so
-    // Alice's incomingShares query finds nothing.
+  it("Alice can see Bob's shots when Bob has shotHistoryAccess=restricted (only other members)", async () => {
+    // Alice→Bob share exists and Bob accepted. Bob set shotHistoryAccess to restricted (or broader).
+    // sharingMembers returns Bob, so Alice sees Bob's shots.
     mock.session = makeSession(ALICE_ID);
     mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
 
     mock.dbResults = [
       [makeShot(ALICE_SHOT_ID, ALICE_ID)],
-      [], // no Bob→Alice share row
+      [makeIncomingShare(BOB_ID)], // Bob is a member with restricted or broader
+      [makeShot(BOB_SHOT_ID, BOB_ID)],
+    ];
+
+    const res = await GET(makeRequest(BEAN_ID), {
+      params: Promise.resolve({ id: BEAN_ID }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { shots: Array<{ userId: string }> };
+    expect(body.shots.filter((s) => s.userId === BOB_ID)).toHaveLength(1);
+  });
+
+  it("Alice cannot see Bob's shots when Bob has shotHistoryAccess=none", async () => {
+    mock.session = makeSession(ALICE_ID);
+    mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
+
+    mock.dbResults = [
+      [makeShot(ALICE_SHOT_ID, ALICE_ID)],
+      [], // sharingMembers: Bob has none so not included
     ];
 
     const res = await GET(makeRequest(BEAN_ID), {
@@ -410,21 +469,21 @@ describe("Scenario: Alice queries shots — no reverse share from Bob", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as { shots: Array<{ userId: string }> };
     expect(body.shots.filter((s) => s.userId === BOB_ID)).toHaveLength(0);
+    expect(body.shots.filter((s) => s.userId === ALICE_ID)).toHaveLength(1);
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario 5: Bob shares history with Alice via a reverse share.
-// Bob creates a share (Bob→Alice) with shareShotHistory=true and Alice accepts.
 // ─────────────────────────────────────────────────────────────────────────────
-describe("Scenario: Bob creates a reverse share to Alice with shareShotHistory=true", () => {
-  it("Alice can see Bob's shots once Bob's reverse share has shareShotHistory=true", async () => {
+describe("Scenario: Bob creates a reverse share to Alice", () => {
+  it("Alice can see Bob's shots when Bob has shotHistoryAccess restricted or broader", async () => {
     mock.session = makeSession(ALICE_ID);
     mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
 
     mock.dbResults = [
       [makeShot(ALICE_SHOT_ID, ALICE_ID)],
-      [makeIncomingShare(BOB_ID)], // Bob→Alice share with shareShotHistory=true
+      [makeIncomingShare(BOB_ID)], // Bob→Alice share with shotHistoryAccess <> restricted
       [makeShot(BOB_SHOT_ID, BOB_ID)],
     ];
 
@@ -440,37 +499,13 @@ describe("Scenario: Bob creates a reverse share to Alice with shareShotHistory=t
     expect(userIds).toContain(BOB_ID);
   });
 
-  it("Alice cannot see Bob's shots when Bob's reverse share has shareShotHistory=false", async () => {
-    mock.session = makeSession(ALICE_ID);
-    mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
-
-    // Bob created a share to Alice but left shareShotHistory=false.
-    // The incomingShares query (WHERE shareShotHistory=true) returns nothing.
-    mock.dbResults = [
-      [makeShot(ALICE_SHOT_ID, ALICE_ID)],
-      [], // Bob's share has shareShotHistory=false → filtered out
-    ];
-
-    const res = await GET(makeRequest(BEAN_ID), {
-      params: Promise.resolve({ id: BEAN_ID }),
-    });
-
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as { shots: Array<{ userId: string }> };
-    expect(body.shots.filter((s) => s.userId === BOB_ID)).toHaveLength(0);
-  });
-
-  it("Alice cannot see Bob's shots when Bob has shareShotHistory=true but shareMyShotsPublicly=false", async () => {
-    // Bob created a reverse share to Alice with shareShotHistory=true, but his
-    // userBeans.shareMyShotsPublicly=false.  The route's incomingShares query
-    // joins user_beans and requires shareMyShotsPublicly=true, so Bob's row is
-    // excluded and Alice sees no shots from Bob.
+  it("Alice cannot see Bob's shots when Bob has shotHistoryAccess=none", async () => {
     mock.session = makeSession(ALICE_ID);
     mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
 
     mock.dbResults = [
       [makeShot(ALICE_SHOT_ID, ALICE_ID)],
-      [], // Bob filtered out by shareMyShotsPublicly=false
+      [], // sharingMembers: Bob has none so not included
     ];
 
     const res = await GET(makeRequest(BEAN_ID), {
@@ -482,13 +517,33 @@ describe("Scenario: Bob creates a reverse share to Alice with shareShotHistory=t
     expect(body.shots.filter((s) => s.userId === BOB_ID)).toHaveLength(0);
     expect(body.shots.filter((s) => s.userId === ALICE_ID)).toHaveLength(1);
   });
+
+  it("Alice can see Bob's shots when Bob has shotHistoryAccess restricted or broader", async () => {
+    mock.session = makeSession(ALICE_ID);
+    mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
+
+    mock.dbResults = [
+      [makeShot(ALICE_SHOT_ID, ALICE_ID)],
+      [makeIncomingShare(BOB_ID)],
+      [makeShot(BOB_SHOT_ID, BOB_ID)],
+    ];
+
+    const res = await GET(makeRequest(BEAN_ID), {
+      params: Promise.resolve({ id: BEAN_ID }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { shots: Array<{ userId: string }> };
+    expect(body.shots.filter((s) => s.userId === BOB_ID)).toHaveLength(1);
+    expect(body.shots.filter((s) => s.userId === ALICE_ID)).toHaveLength(1);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Hidden shots: the isHidden flag is always respected for shared shots.
 // ─────────────────────────────────────────────────────────────────────────────
 describe("Hidden shots are never leaked to other users", () => {
-  it("Bob does NOT see Alice's hidden shots even when shareShotHistory=true", async () => {
+  it("Bob does NOT see Alice's hidden shots even when shotHistoryAccess is not restricted", async () => {
     mock.session = makeSession(BOB_ID);
     mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
 
@@ -551,7 +606,7 @@ describe("contributors list", () => {
     expect(self?.isCurrentUser).toBe(true);
   });
 
-  it("includes the sharer when shareShotHistory=true", async () => {
+  it("includes the sharer when shotHistoryAccess is not restricted", async () => {
     mock.session = makeSession(BOB_ID);
     mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
 
@@ -570,11 +625,12 @@ describe("contributors list", () => {
     expect(alice?.isCurrentUser).toBe(false);
   });
 
-  it("does NOT include the sharer when shareShotHistory=false (incomingShares is empty)", async () => {
+  it("does not include other members in contributors when they have shotHistoryAccess=none", async () => {
     mock.session = makeSession(BOB_ID);
     mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
 
-    mock.dbResults = [[makeShot(BOB_SHOT_ID, BOB_ID)], []];
+    // Alice has none so not in sharingMembers; contributors = only Bob.
+    mock.dbResults = [[], []];
 
     const res = await GET(makeRequest(BEAN_ID), {
       params: Promise.resolve({ id: BEAN_ID }),
@@ -582,11 +638,11 @@ describe("contributors list", () => {
 
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
-      contributors: Array<{ userId: string }>;
+      contributors: Array<{ userId: string; isCurrentUser: boolean }>;
     };
-    expect(
-      body.contributors.find((c) => c.userId === ALICE_ID),
-    ).toBeUndefined();
+    expect(body.contributors).toHaveLength(1);
+    expect(body.contributors[0].userId).toBe(BOB_ID);
+    expect(body.contributors[0].isCurrentUser).toBe(true);
   });
 });
 

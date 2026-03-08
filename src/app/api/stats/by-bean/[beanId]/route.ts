@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { shots } from "@/db/schema";
+import { shots, origins, roasters } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { canAccessBean } from "@/lib/api-auth";
+import { canAccessBean } from "@/lib/beans-access";
 
 export async function GET(
   _request: NextRequest,
@@ -28,8 +28,6 @@ export async function GET(
 
   const { bean } = result;
 
-  // Get shot stats for this bean (excluding hidden)
-  // Members can only see their own shots for this bean
   const shotConditions = [
     eq(shots.beanId, beanId),
     eq(shots.isHidden, false),
@@ -114,13 +112,26 @@ export async function GET(
       )
     : null;
 
+  let originName: string | null = null;
+  let roasterName: string | null = null;
+  if (bean.originId || bean.roasterId) {
+    const [o] = bean.originId
+      ? await db.select({ name: origins.name }).from(origins).where(eq(origins.id, bean.originId!)).limit(1)
+      : [null];
+    const [r] = bean.roasterId
+      ? await db.select({ name: roasters.name }).from(roasters).where(eq(roasters.id, bean.roasterId!)).limit(1)
+      : [null];
+    originName = o?.name ?? null;
+    roasterName = r?.name ?? null;
+  }
+
   return NextResponse.json({
     bean: {
       id: bean.id,
       name: bean.name,
       roastLevel: bean.roastLevel,
-      origin: bean.origin,
-      roaster: bean.roaster,
+      origin: originName,
+      roaster: roasterName,
     },
     shotCount,
     avgQuality,

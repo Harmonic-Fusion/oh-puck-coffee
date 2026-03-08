@@ -18,13 +18,13 @@ export const createToolSchema = z.object({
 });
 
 export const grinderSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1),
   name: z.string(),
   createdAt: z.coerce.date(),
 });
 
 export const machineSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1),
   name: z.string(),
   createdAt: z.coerce.date(),
 });

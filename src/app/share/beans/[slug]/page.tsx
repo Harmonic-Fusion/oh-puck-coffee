@@ -4,7 +4,7 @@ import Link from "next/link";
 import { getSession } from "@/auth";
 import { config } from "@/shared/config";
 import { ApiRoutes, AppRoutes, resolvePath } from "@/app/routes";
-import { ShareBeanVisitorActions } from "./ShareBeanVisitorActions";
+import { ShareBeanSessionBlock } from "./ShareBeanSessionBlock";
 
 interface ShareBeanPageProps {
   params: Promise<{ slug: string }>;
@@ -13,16 +13,16 @@ interface ShareBeanPageProps {
 interface SharedBeanPayload {
   id: string;
   name: string;
-  origin: string | null;
-  roaster: string | null;
+  originId?: number | null;
+  roasterId?: number | null;
+  origin?: string | null;
+  roaster?: string | null;
   originDetails: string | null;
   processingMethod: string | null;
   roastLevel: string;
   roastDate: string | null;
   isRoastDateBestGuess: boolean;
-  createdBy: string;
   generalAccess: string;
-  generalAccessShareShots: boolean;
   shareSlug: string | null;
   createdAt: string;
 }
@@ -138,7 +138,6 @@ export default async function ShareBeanPage({ params }: ShareBeanPageProps) {
   }
 
   const { bean, shots } = data;
-  const isOwner = session?.user?.id != null && session.user.id === bean.createdBy;
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -293,21 +292,8 @@ export default async function ShareBeanPage({ params }: ShareBeanPageProps) {
           </div>
         )}
 
-        {session != null && isOwner && (
-          <div className="mt-6">
-            <Link
-              href={resolvePath(AppRoutes.beans.beanId, { id: bean.id }, { sharing: "true" })}
-              className="inline-flex items-center text-sm font-medium text-stone-600 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
-            >
-              Manage sharing →
-            </Link>
-          </div>
-        )}
-
-        {session != null && !isOwner && (
-          <div className="mt-6">
-            <ShareBeanVisitorActions beanId={bean.id} slug={slug} />
-          </div>
+        {session != null && (
+          <ShareBeanSessionBlock beanId={bean.id} slug={slug} />
         )}
 
         {shots.length > 0 && (
@@ -369,7 +355,7 @@ export default async function ShareBeanPage({ params }: ShareBeanPageProps) {
           </div>
         )}
 
-        {shots.length === 0 && bean.generalAccessShareShots && (
+        {shots.length === 0 && (
           <p className="mt-8 text-center text-sm text-stone-500 dark:text-stone-400">
             No shots shared for this bean yet.
           </p>

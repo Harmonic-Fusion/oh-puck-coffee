@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, userBeans } from "@/db/schema";
+import { beans, beansShare } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { canAccessBean } from "@/lib/api-auth";
+import { canAccessBean, isBeanOwner } from "@/lib/beans-access";
 import { createBeanSchema } from "@/shared/beans/schema";
 
 export async function GET(
@@ -17,6 +17,12 @@ export async function GET(
 
   const { id } = await params;
 
+  console.error("[GET /api/beans/:id]", {
+    beanId: id,
+    userId: session.user.id,
+    userRole: session.user.role,
+  });
+
   const result = await canAccessBean(
     session.user.id,
     id,
@@ -24,6 +30,10 @@ export async function GET(
   );
 
   if (!result.allowed) {
+    console.error("[GET /api/beans/:id] access denied", {
+      beanId: id,
+      userId: session.user.id,
+    });
     return result.error;
   }
 
@@ -31,9 +41,13 @@ export async function GET(
     ? {
         beanId: result.userBean.beanId,
         userId: result.userBean.userId,
-        openBagDate: result.userBean.openBagDate,
-        shareMyShotsPublicly: result.userBean.shareMyShotsPublicly,
+        openBagDate: result.userBean.beansOpenDate,
+        beansOpenDate: result.userBean.beansOpenDate,
+        shotHistoryAccess: result.userBean.shotHistoryAccess,
+        reshareAllowed: result.userBean.reshareAllowed,
+        status: result.userBean.status,
         createdAt: result.userBean.createdAt,
+        unsharedAt: result.userBean.unsharedAt,
       }
     : null;
 
@@ -77,7 +91,7 @@ export async function PATCH(
   const { openBagDate, ...canonicalFields } = parsed.data;
 
   const isCreatorOrAdmin =
-    result.bean.createdBy === session.user.id ||
+    isBeanOwner(result) ||
     session.user.role === "admin" ||
     session.user.role === "super-admin";
 
@@ -97,12 +111,12 @@ export async function PATCH(
 
   if (openBagDate !== undefined && result.userBean) {
     await db
-      .update(userBeans)
-      .set({ openBagDate: openBagDate ?? null })
+      .update(beansShare)
+      .set({ beansOpenDate: openBagDate ?? null, updatedAt: new Date() })
       .where(
         and(
-          eq(userBeans.beanId, id),
-          eq(userBeans.userId, session.user.id),
+          eq(beansShare.beanId, id),
+          eq(beansShare.userId, session.user.id),
         ),
       );
   }
@@ -121,11 +135,11 @@ export async function PATCH(
   if (openBagDate !== undefined && result.userBean) {
     const [ub] = await db
       .select()
-      .from(userBeans)
+      .from(beansShare)
       .where(
         and(
-          eq(userBeans.beanId, id),
-          eq(userBeans.userId, session.user.id),
+          eq(beansShare.beanId, id),
+          eq(beansShare.userId, session.user.id),
         ),
       )
       .limit(1);
@@ -136,9 +150,13 @@ export async function PATCH(
     ? {
         beanId: userBeanRow.beanId,
         userId: userBeanRow.userId,
-        openBagDate: userBeanRow.openBagDate,
-        shareMyShotsPublicly: userBeanRow.shareMyShotsPublicly,
+        openBagDate: userBeanRow.beansOpenDate,
+        beansOpenDate: userBeanRow.beansOpenDate,
+        shotHistoryAccess: userBeanRow.shotHistoryAccess,
+        reshareAllowed: userBeanRow.reshareAllowed,
+        status: userBeanRow.status,
         createdAt: userBeanRow.createdAt,
+        unsharedAt: userBeanRow.unsharedAt,
       }
     : null;
 

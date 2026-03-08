@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, userBeans, beansShare, shots } from "@/db/schema";
+import { beans, beansShare, shots } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { canAccessBean } from "@/lib/api-auth";
+import { canAccessBean } from "@/lib/beans-access";
 import { z } from "zod";
 
+/** Generate a unique id with prefix (avoids importing nanoid-ids so tests can run without nanoid resolve). */
+function prefixedId(prefix: string): string {
+  return `${prefix}${crypto.randomUUID().replace(/-/g, "").slice(0, 21)}`;
+}
+
 const duplicateBeanSchema = z.object({
-  includeShots: z.boolean().default(false),
+  shotOption: z
+    .enum(["duplicate", "migrate", "none"])
+    .default("duplicate"),
 });
 
 /**
  * POST /api/beans/:id/duplicate — Duplicate a bean, creating a new owned copy.
  * Available to any user who can access the bean (including unshared members).
- * If includeShots=true, reassigns the caller's shots from the original to the new bean.
+ * shotOption: 'duplicate' = copy user's shots to new bean; 'migrate' = move user's shots; 'none' = no shots.
  */
 export async function POST(
   request: NextRequest,
@@ -45,16 +52,15 @@ export async function POST(
     );
   }
 
-  const { includeShots } = parsed.data;
+  const { shotOption } = parsed.data;
   const original = result.bean;
 
   // Create the new bean owned by the current user
   const [newBean] = await db
     .insert(beans)
     .values({
+      id: prefixedId("b_"),
       name: original.name,
-      origin: original.origin,
-      roaster: original.roaster,
       originId: original.originId ?? undefined,
       roasterId: original.roasterId ?? undefined,
       originDetails: original.originDetails,
@@ -62,9 +68,7 @@ export async function POST(
       roastLevel: original.roastLevel,
       roastDate: original.roastDate,
       isRoastDateBestGuess: original.isRoastDateBestGuess,
-      createdBy: session.user.id,
       generalAccess: "restricted",
-      generalAccessShareShots: false,
     })
     .returning();
 
@@ -75,44 +79,49 @@ export async function POST(
     );
   }
 
-  // Get the original openBagDate from user_beans (original owner or current user)
-  const [originalUserBean] = await db
-    .select({ openBagDate: userBeans.openBagDate })
-    .from(userBeans)
-    .where(
-      and(
-        eq(userBeans.beanId, beanId),
-        eq(userBeans.userId, session.user.id),
-      ),
-    )
-    .limit(1);
+  const beansOpenDate = result.userBean?.beansOpenDate ?? null;
 
-  // Create user_beans row for the new bean
-  await db.insert(userBeans).values({
-    beanId: newBean.id,
-    userId: session.user.id,
-    openBagDate: originalUserBean?.openBagDate ?? undefined,
-  });
-
-  // Create owner beans_share row
   await db.insert(beansShare).values({
+    id: prefixedId("b2u_"),
     beanId: newBean.id,
     userId: session.user.id,
     invitedBy: null,
-    status: "accepted",
-    shareShotHistory: false,
-    reshareEnabled: true,
+    status: "owner",
+    shotHistoryAccess: "restricted",
+    reshareAllowed: true,
+    beansOpenDate,
   });
 
-  // Reassign shots to the new bean if requested
-  if (includeShots) {
+  if (shotOption === "migrate") {
     await db
       .update(shots)
-      .set({ beanId: newBean.id })
+      .set({ beanId: newBean.id, updatedAt: new Date() })
       .where(
         and(eq(shots.beanId, beanId), eq(shots.userId, session.user.id)),
       );
+  } else if (shotOption === "duplicate") {
+    const myShots = await db
+      .select()
+      .from(shots)
+      .where(
+        and(eq(shots.beanId, beanId), eq(shots.userId, session.user.id)),
+      );
+    const now = new Date();
+    for (const shot of myShots) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit id, beanId, shareSlug, createdAt, updatedAt from rest
+      const { id, beanId, shareSlug, createdAt, updatedAt, ...rest } = shot;
+      await db.insert(shots).values({
+        id: prefixedId("s_"),
+        ...rest,
+        beanId: newBean.id,
+        userId: session.user.id,
+        shareSlug: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
   }
+  // shotOption === "none": skip
 
   return NextResponse.json(newBean, { status: 201 });
 }

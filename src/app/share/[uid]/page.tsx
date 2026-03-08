@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { db } from "@/db";
-import { shotShares, shots, beans, users, grinders, machines } from "@/db/schema";
+import { shots, beans, users, grinders, machines } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { SharedShotDetail } from "@/components/shots/SharedShotDetail";
 
@@ -10,16 +10,6 @@ interface SharePageProps {
 }
 
 async function getSharedShot(uid: string) {
-  // Look up the share
-  const [share] = await db
-    .select()
-    .from(shotShares)
-    .where(eq(shotShares.id, uid))
-    .limit(1);
-
-  if (!share) return null;
-
-  // Fetch shot with related data
   const [result] = await db
     .select({
       id: shots.id,
@@ -58,7 +48,7 @@ async function getSharedShot(uid: string) {
     .leftJoin(beans, eq(shots.beanId, beans.id))
     .leftJoin(grinders, eq(shots.grinderId, grinders.id))
     .leftJoin(machines, eq(shots.machineId, machines.id))
-    .where(eq(shots.id, share.shotId))
+    .where(eq(shots.shareSlug, uid))
     .limit(1);
 
   if (!result) return null;

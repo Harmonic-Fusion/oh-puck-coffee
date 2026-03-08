@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { machines, shots } from "@/db/schema";
 import { createMachineSchema } from "@/shared/equipment/schema";
 import { asc, desc, eq, max, sql, and } from "drizzle-orm";
+import { createMachineId } from "@/lib/nanoid-ids";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
 
   const [machine] = await db
     .insert(machines)
-    .values(parsed.data)
+    .values({ ...parsed.data, id: createMachineId() })
     .returning();
 
   return NextResponse.json(machine, { status: 201 });

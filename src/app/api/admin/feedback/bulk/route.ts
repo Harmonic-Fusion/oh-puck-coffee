@@ -6,7 +6,7 @@ import { inArray } from "drizzle-orm";
 import { z } from "zod";
 
 const bulkSchema = z.object({
-  ids: z.array(z.string().uuid()).min(1),
+  ids: z.array(z.string().min(1)).min(1),
   status: z
     .enum(["new", "reviewed", "in_progress", "complete", "wont_implement"])
     .optional(),

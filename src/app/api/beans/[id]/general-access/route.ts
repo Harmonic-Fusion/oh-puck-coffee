@@ -3,14 +3,15 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beans, beansShare } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { canAccessBean } from "@/lib/api-auth";
+import { canAccessBean, isBeanOwner, unshareSelfMembersOnRestricted } from "@/lib/beans-access";
 import { updateGeneralAccessSchema } from "@/shared/beans/schema";
 import { generateShortUid } from "@/lib/short-uid";
 import { config } from "@/shared/config";
 
 /**
- * PATCH /api/beans/:id/general-access — Update general access and shot history toggle.
- * Creator-only. Generates shareSlug when non-restricted, clears when restricted. Enforces maxBeanShares.
+ * PATCH /api/beans/:id/general-access — Update general access.
+ * Owner-only. Generates shareSlug when non-restricted, clears when restricted. Enforces maxBeanShares.
+ * When downgrading to restricted, unshares all self-status members.
  */
 export async function PATCH(
   request: NextRequest,
@@ -33,7 +34,7 @@ export async function PATCH(
     return result.error;
   }
 
-  if (result.bean.createdBy !== session.user.id) {
+  if (!isBeanOwner(result)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -46,26 +47,21 @@ export async function PATCH(
     );
   }
 
-  const { generalAccess, generalAccessShareShots } = parsed.data;
+  const { generalAccess } = parsed.data;
+  const wasRestricted = result.bean.generalAccess === "restricted";
 
   if (
     generalAccess !== "restricted" &&
-    (result.bean.generalAccess === "restricted" || !result.bean.shareSlug)
+    (wasRestricted || !result.bean.shareSlug)
   ) {
     const individualShareCount = await db
       .select()
       .from(beansShare)
       .where(eq(beansShare.invitedBy, session.user.id));
-    const allMyBeans = await db
-      .select({ id: beans.id, generalAccess: beans.generalAccess })
-      .from(beans)
-      .where(eq(beans.createdBy, session.user.id));
-    const withGeneralAccess = allMyBeans.filter(
-      (b) => b.generalAccess !== "restricted",
-    );
-    const totalShares =
-      individualShareCount.length + withGeneralAccess.length;
-    if (totalShares >= config.maxBeanShares) {
+    const directInviteCount = individualShareCount.filter(
+      (r) => r.status !== "owner",
+    ).length;
+    if (directInviteCount >= config.maxBeanShares) {
       return NextResponse.json(
         {
           error: "Maximum bean share limit reached",
@@ -76,21 +72,24 @@ export async function PATCH(
     }
   }
 
+  if (generalAccess === "restricted" && !wasRestricted) {
+    await unshareSelfMembersOnRestricted(beanId);
+  }
+
   const updates: {
     generalAccess: "restricted" | "anyone_with_link" | "public";
-    generalAccessShareShots?: boolean;
     shareSlug: string | null;
+    updatedAt: Date;
+    updatedBy: string | null;
   } = {
     generalAccess,
     shareSlug:
       generalAccess === "restricted"
         ? null
         : result.bean.shareSlug ?? generateShortUid(),
+    updatedAt: new Date(),
+    updatedBy: session.user.id,
   };
-
-  if (generalAccessShareShots !== undefined) {
-    updates.generalAccessShareShots = generalAccessShareShots;
-  }
 
   await db
     .update(beans)

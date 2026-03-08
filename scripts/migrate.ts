@@ -13,13 +13,18 @@ import { join } from "path";
 import { createHash } from "crypto";
 import { sql } from "drizzle-orm";
 
-// Optional dotenv import - not needed in production where env vars are set directly
-let dotenvConfig: ((options?: { path?: string; override?: boolean }) => void) | null = null;
-try {
-  const dotenv = await import("dotenv");
-  dotenvConfig = dotenv.config;
-} catch {
-  // dotenv not available (e.g., in production) - that's fine, we'll use process.env directly
+// Optional dotenv - loaded when available (e.g. not in production). No top-level await for CJS compatibility.
+/** Load .env and .env.local into process.env when dotenv is available. */
+function loadEnv(): void {
+  // Synchronous require for dotenv so we avoid top-level await (CJS compatibility)
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const dotenv = require("dotenv") as { config: (options?: { path?: string; override?: boolean }) => void };
+    dotenv.config({ path: ".env" });
+    dotenv.config({ path: ".env.local", override: false });
+  } catch {
+    // dotenv not available - use process.env directly
+  }
 }
 
 function maskDatabaseUrl(url: string): string {
@@ -160,26 +165,6 @@ async function checkMigrationsFolder(): Promise<void> {
   }
 }
 
-
-/**
- * Load environment variables using dotenv with standard resolution order:
- * 1. .env (lowest priority)
- * 2. .env.local (overrides .env)
- * 3. process.env (highest priority, overrides all)
- * 
- * dotenv.config() will not override existing process.env values.
- * If dotenv is not available (e.g., in production), this is a no-op.
- */
-function loadEnv(): void {
-  if (!dotenvConfig) {
-    // dotenv not available - that's fine, we'll use process.env directly
-    return;
-  }
-  // Load .env first (lower priority)
-  dotenvConfig({ path: ".env" });
-  // Load .env.local (higher priority, but won't override process.env)
-  dotenvConfig({ path: ".env.local", override: false });
-}
 
 /**
  * Get DATABASE_URL from environment variables.
@@ -353,10 +338,20 @@ async function runMigrations() {
         const filePath = join("./drizzle/migrations", file);
         
         try {
-          // Read and execute the migration SQL
+          // Read and execute the migration SQL (split by Drizzle statement breakpoints so
+          // each statement runs separately; avoids driver issues with $$ and multi-statement raw SQL)
           const migrationSQL = readFileSync(filePath, "utf-8");
-          console.log(`   📝 Executing ${file}...`);
-          await db.execute(sql.raw(migrationSQL));
+          const statements = migrationSQL
+            .split(/--> statement-breakpoint\n?/i)
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0 && !s.replace(/^[\s\-]*/, "").startsWith("--"));
+          console.log(`   📝 Executing ${file} (${statements.length} statement(s))...`);
+          for (let i = 0; i < statements.length; i++) {
+            const stmt = statements[i].trim();
+            if (stmt) {
+              await db.execute(sql.raw(stmt));
+            }
+          }
           
           // Record the migration in the migrations table
           // created_at is a bigint (Unix timestamp in milliseconds)
@@ -420,6 +415,9 @@ async function runMigrations() {
         } catch (error) {
           console.error(`   ❌ Failed to apply ${file}:`);
           console.error(`      Error: ${error instanceof Error ? error.message : String(error)}`);
+          if (error instanceof Error && "cause" in error && error.cause instanceof Error) {
+            console.error(`      Cause: ${error.cause.message}`);
+          }
         }
       }
       

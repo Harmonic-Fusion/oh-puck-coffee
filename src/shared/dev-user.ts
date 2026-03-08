@@ -6,7 +6,7 @@
  * can be safely imported from middleware (Edge Runtime).
  */
 
-/** Deterministic UUID so all FK references are stable across restarts. */
-export const DEV_USER_ID = "00000000-0000-0000-0000-000000000000";
+/** Fixed id in nanoid format (u_ prefix) so all FK references are stable across restarts. */
+export const DEV_USER_ID = "u_dev0000000000000000000";
 export const DEV_USER_EMAIL = "kevin@coffee.local";
 export const DEV_USER_NAME = "Kevin";

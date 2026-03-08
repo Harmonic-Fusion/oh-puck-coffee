@@ -61,6 +61,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { exportToCsv, type CSVColumn } from "@/lib/export-csv";
 import { useTempUnit } from "@/lib/use-temp-unit";
 
@@ -911,6 +912,7 @@ export default function ShotsPage() {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteIds, setBulkDeleteIds] = useState<string[] | null>(null);
   const isSelecting = selectedIds.size > 0;
   const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
   const [openInEditMode, setOpenInEditMode] = useState(false);
@@ -1337,13 +1339,7 @@ export default function ShotsPage() {
               {selectedIds.size > 0 && (
                 <>
                   <button
-                    onClick={() => {
-                      const ids = Array.from(selectedIds);
-                      if (confirm(`Delete ${ids.length} shot(s)?`)) {
-                        handleBulkDelete(ids);
-                        setSelectedIds(new Set());
-                      }
-                    }}
+                    onClick={() => setBulkDeleteIds(Array.from(selectedIds))}
                     className="rounded-md bg-white px-3 py-1.5 text-xs font-medium text-amber-700 shadow-sm transition-colors hover:bg-amber-100 dark:bg-stone-800 dark:text-amber-300 dark:hover:bg-stone-700"
                   >
                     Delete
@@ -1621,6 +1617,34 @@ export default function ShotsPage() {
           setOpenInEditMode(false);
         }}
         initialEditMode={openInEditMode}
+      />
+      <ConfirmDialog
+        open={bulkDeleteIds !== null}
+        onOpenChange={(open) => {
+          if (!open) setBulkDeleteIds(null);
+        }}
+        title="Delete shots?"
+        description={
+          bulkDeleteIds?.length
+            ? bulkDeleteIds.length === 1
+              ? "Delete this shot? This cannot be undone."
+              : `Delete ${bulkDeleteIds.length} shots? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={() => {
+          if (!bulkDeleteIds?.length) return;
+          handleBulkDelete(bulkDeleteIds);
+          setSelectedIds(new Set());
+          showToast(
+            "success",
+            bulkDeleteIds.length === 1
+              ? "Shot deleted."
+              : `Deleted ${bulkDeleteIds.length} shots.`,
+          );
+          setBulkDeleteIds(null);
+        }}
       />
     </div>
   );

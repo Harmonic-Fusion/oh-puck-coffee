@@ -8,7 +8,6 @@ import {
   numeric,
   jsonb,
   primaryKey,
-  serial,
   unique,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
@@ -16,7 +15,7 @@ import type { AdapterAccountType } from "next-auth/adapters";
 // ============ Auth.js Tables ============
 
 export const users = pgTable("users", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: text("id").primaryKey(),
   name: text("name"),
   email: text("email").unique(),
   emailVerified: timestamp("email_verified", { mode: "date" }),
@@ -32,7 +31,7 @@ export const users = pgTable("users", {
 export const accounts = pgTable(
   "accounts",
   {
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     type: text("type").$type<AdapterAccountType>().notNull(),
@@ -57,7 +56,7 @@ export const accounts = pgTable(
 // explicitly want to drop the table from the database.
 export const sessions = pgTable("sessions", {
   sessionToken: text("session_token").primaryKey(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   expires: timestamp("expires", { mode: "date" }).notNull(),
@@ -80,22 +79,20 @@ export const verificationTokens = pgTable(
 // ============ Domain Tables ============
 
 export const origins = pgTable("origins", {
-  id: serial("id").primaryKey(),
+  id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
 });
 
 export const roasters = pgTable("roasters", {
-  id: serial("id").primaryKey(),
+  id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
 });
 
 export const beans = pgTable("beans", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: text("id").primaryKey(),
   name: text("name").notNull(),
-  origin: text("origin"), // legacy text column — kept for historical reference
-  roaster: text("roaster"), // legacy text column — kept for historical reference
-  originId: integer("origin_id").references(() => origins.id),
-  roasterId: integer("roaster_id").references(() => roasters.id),
+  originId: text("origin_id").references(() => origins.id),
+  roasterId: text("roaster_id").references(() => roasters.id),
   originDetails: text("origin_details"),
   processingMethod: text("processing_method"),
   roastLevel: text("roast_level").notNull(),
@@ -103,60 +100,44 @@ export const beans = pgTable("beans", {
   isRoastDateBestGuess: boolean("is_roast_date_best_guess")
     .default(false)
     .notNull(),
-  createdBy: uuid("created_by")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
   generalAccess: text("general_access")
     .$type<"restricted" | "anyone_with_link" | "public">()
     .default("restricted")
     .notNull(),
-  generalAccessShareShots: boolean("general_access_share_shots")
-    .default(false)
-    .notNull(),
   shareSlug: text("share_slug").unique(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
 });
-
-export const userBeans = pgTable(
-  "user_beans",
-  {
-    beanId: uuid("bean_id")
-      .notNull()
-      .references(() => beans.id, { onDelete: "cascade" }),
-    userId: uuid("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    openBagDate: timestamp("open_bag_date", { mode: "date" }),
-    shareMyShotsPublicly: boolean("share_my_shots_publicly").default(false).notNull(),
-    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-  },
-  (t) => [primaryKey({ columns: [t.beanId, t.userId] })],
-);
 
 export const beansShare = pgTable(
   "beans_share",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
-    beanId: uuid("bean_id")
+    id: text("id").primaryKey(),
+    beanId: text("bean_id")
       .notNull()
       .references(() => beans.id, { onDelete: "cascade" }),
     // The member who has access to this bean
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     // Who invited this member (null = owner/creator, no inviter)
-    invitedBy: uuid("invited_by").references(() => users.id, {
+    invitedBy: text("invited_by").references(() => users.id, {
       onDelete: "set null",
     }),
     status: text("status")
-      .$type<"pending" | "accepted">()
-      .default("pending")
+      .$type<"owner" | "pending" | "accepted" | "self" | "unfollowed">()
       .notNull(),
-    // Member's own choice: share my shots with all accepted members
-    shareShotHistory: boolean("share_shot_history").default(false).notNull(),
+    // Member's shot visibility: none | restricted | anyone_with_link | public
+    shotHistoryAccess: text("shot_history_access")
+      .$type<"none" | "restricted" | "anyone_with_link" | "public">()
+      .default("restricted")
+      .notNull(),
     // Owner-granted permission: can this member invite others?
-    reshareEnabled: boolean("reshare_enabled").default(false).notNull(),
+    reshareAllowed: boolean("reshare_allowed").default(false).notNull(),
+    beansOpenDate: timestamp("beans_open_date", { mode: "date" }),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
     // Set when the owner removes a member. Member retains read-only access to their own shots.
     unsharedAt: timestamp("unshared_at", { mode: "date" }),
   },
@@ -164,13 +145,13 @@ export const beansShare = pgTable(
 );
 
 export const grinders = pgTable("grinders", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
 export const machines = pgTable("machines", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
@@ -184,16 +165,16 @@ export const tools = pgTable("tools", {
 });
 
 export const shots = pgTable("shots", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  id: text("id").primaryKey(),
   // Foreign keys
-  userId: uuid("user_id")
+  userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
-  beanId: uuid("bean_id")
+  beanId: text("bean_id")
     .notNull()
     .references(() => beans.id, { onDelete: "cascade" }),
-  grinderId: uuid("grinder_id").references(() => grinders.id),
-  machineId: uuid("machine_id").references(() => machines.id),
+  grinderId: text("grinder_id").references(() => grinders.id),
+  machineId: text("machine_id").references(() => machines.id),
   // Recipe
   doseGrams: numeric("dose_grams", { precision: 5, scale: 1 }),
   yieldGrams: numeric("yield_grams", { precision: 5, scale: 1 }),
@@ -231,24 +212,14 @@ export const shots = pgTable("shots", {
   // Meta
   isReferenceShot: boolean("is_reference_shot").default(false).notNull(),
   isHidden: boolean("is_hidden").default(false).notNull(),
+  shareSlug: text("share_slug").unique(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
 
-export const shotShares = pgTable("shot_shares", {
-  id: text("id").primaryKey(), // short random uid for URL
-  shotId: uuid("shot_id")
-    .notNull()
-    .references(() => shots.id, { onDelete: "cascade" }),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
-});
-
 export const integrations = pgTable("integrations", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .notNull()
     .unique()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -261,8 +232,8 @@ export const integrations = pgTable("integrations", {
 });
 
 export const feedback = pgTable("feedback", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id")
+  id: text("id").primaryKey(),
+  userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   type: text("type").$type<"bug" | "feature" | "other">().notNull(),
@@ -280,7 +251,7 @@ export const feedback = pgTable("feedback", {
 
 export const subscriptions = pgTable("subscriptions", {
   id: uuid("id").defaultRandom().primaryKey(),
-  userId: uuid("user_id")
+  userId: text("user_id")
     .notNull()
     .unique()
     .references(() => users.id, { onDelete: "cascade" }),
@@ -300,11 +271,12 @@ export const subscriptions = pgTable("subscriptions", {
 export const userEntitlements = pgTable(
   "user_entitlements",
   {
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     lookupKey: text("lookup_key").notNull(),
     grantedAt: timestamp("granted_at", { mode: "date" }).defaultNow().notNull(),
+    deletedAt: timestamp("deleted_at", { mode: "date" }),
   },
   (t) => [
     primaryKey({ columns: [t.userId, t.lookupKey] }),

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { shotShares, shots, beans, users, grinders, machines } from "@/db/schema";
+import { shots, beans, users, grinders, machines } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 /**
- * GET /api/shares/:uid — Public endpoint to fetch a shared shot.
+ * GET /api/shares/:uid — Public endpoint to fetch a shared shot by share_slug.
  * No authentication required.
  */
 export async function GET(
@@ -13,18 +13,6 @@ export async function GET(
 ) {
   const { uid } = await params;
 
-  // Look up the share
-  const [share] = await db
-    .select()
-    .from(shotShares)
-    .where(eq(shotShares.id, uid))
-    .limit(1);
-
-  if (!share) {
-    return NextResponse.json({ error: "Share not found" }, { status: 404 });
-  }
-
-  // Fetch the shot with related data
   const [result] = await db
     .select({
       id: shots.id,
@@ -61,7 +49,7 @@ export async function GET(
     .leftJoin(beans, eq(shots.beanId, beans.id))
     .leftJoin(grinders, eq(shots.grinderId, grinders.id))
     .leftJoin(machines, eq(shots.machineId, machines.id))
-    .where(eq(shots.id, share.shotId))
+    .where(eq(shots.shareSlug, uid))
     .limit(1);
 
   if (!result) {
@@ -91,4 +79,42 @@ export async function GET(
     daysPostRoast,
     shareId: uid,
   });
+}
+
+/**
+ * DELETE /api/shares/:uid — Remove share link for a shot (clears shots.share_slug).
+ * Requires authentication; only the shot owner can remove the share.
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> },
+) {
+  const { getSession } = await import("@/auth");
+  const session = await getSession();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { uid } = await params;
+
+  const [shot] = await db
+    .select({ id: shots.id, userId: shots.userId })
+    .from(shots)
+    .where(eq(shots.shareSlug, uid))
+    .limit(1);
+
+  if (!shot) {
+    return NextResponse.json({ error: "Shot not found" }, { status: 404 });
+  }
+
+  if (shot.userId !== session.user.id) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  await db
+    .update(shots)
+    .set({ shareSlug: null, updatedAt: new Date() })
+    .where(eq(shots.id, shot.id));
+
+  return new Response(null, { status: 204 });
 }

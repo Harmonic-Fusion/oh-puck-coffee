@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, userBeans, shots } from "@/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { beans, beansShare, shots, origins, roasters } from "@/db/schema";
+import { eq, and, inArray, isNull } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -24,37 +24,44 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Maximum 5 beans can be compared at once" }, { status: 400 });
   }
 
-  // Fetch beans (only beans user has via user_beans unless admin)
   const beanRows = await db
     .select({
       id: beans.id,
       name: beans.name,
-      origin: beans.origin,
-      roaster: beans.roaster,
+      originId: beans.originId,
+      roasterId: beans.roasterId,
+      originName: origins.name,
+      roasterName: roasters.name,
       originDetails: beans.originDetails,
       processingMethod: beans.processingMethod,
       roastLevel: beans.roastLevel,
       roastDate: beans.roastDate,
       isRoastDateBestGuess: beans.isRoastDateBestGuess,
       createdAt: beans.createdAt,
-      openBagDate: userBeans.openBagDate,
-      userBeanCreatedAt: userBeans.createdAt,
-      beanId: userBeans.beanId,
-      userId: userBeans.userId,
-      shareMyShotsPublicly: userBeans.shareMyShotsPublicly,
+      beansOpenDate: beansShare.beansOpenDate,
+      userBeanCreatedAt: beansShare.createdAt,
+      beanId: beansShare.beanId,
+      userId: beansShare.userId,
+      shotHistoryAccess: beansShare.shotHistoryAccess,
     })
     .from(beans)
     .innerJoin(
-      userBeans,
-      and(eq(beans.id, userBeans.beanId), eq(userBeans.userId, session.user.id)),
+      beansShare,
+      and(
+        eq(beans.id, beansShare.beanId),
+        eq(beansShare.userId, session.user.id),
+        inArray(beansShare.status, ["owner", "accepted", "self"]),
+        isNull(beansShare.unsharedAt),
+      ),
     )
+    .leftJoin(origins, eq(beans.originId, origins.id))
+    .leftJoin(roasters, eq(beans.roasterId, roasters.id))
     .where(inArray(beans.id, beanIds));
 
   if (beanRows.length === 0) {
     return NextResponse.json({ beans: [] });
   }
 
-  // Fetch non-hidden shots for these beans
   const shotConditions = [
     inArray(shots.beanId, beanIds),
     eq(shots.isHidden, false),
@@ -183,8 +190,8 @@ export async function GET(request: NextRequest) {
     return {
       id: bean.id,
       name: bean.name,
-      origin: bean.origin,
-      roaster: bean.roaster,
+      origin: bean.originName ?? null,
+      roaster: bean.roasterName ?? null,
       originDetails: bean.originDetails,
       processingMethod: bean.processingMethod,
       roastLevel: bean.roastLevel,
@@ -194,8 +201,9 @@ export async function GET(request: NextRequest) {
       userBean: {
         beanId: bean.beanId,
         userId: bean.userId,
-        openBagDate: bean.openBagDate,
-        shareMyShotsPublicly: bean.shareMyShotsPublicly,
+        openBagDate: bean.beansOpenDate,
+        beansOpenDate: bean.beansOpenDate,
+        shotHistoryAccess: bean.shotHistoryAccess,
         createdAt: bean.userBeanCreatedAt,
       },
       shotComparisons: {

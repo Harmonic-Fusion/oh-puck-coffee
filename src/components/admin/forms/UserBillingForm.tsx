@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Modal } from "@/components/common/Modal";
 import { Button } from "@/components/common/Button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/common/Toast";
 import { Entitlements } from "@/shared/entitlements";
 
 const SUBSCRIPTION_STATUSES = ["active", "trialing", "past_due", "incomplete", "canceled"] as const;
@@ -36,6 +38,8 @@ export function UserBillingForm({
   queryKey,
 }: UserBillingFormProps) {
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   // Subscription form state
   const [status, setStatus] = useState<SubscriptionStatus>(
@@ -90,7 +94,6 @@ export function UserBillingForm({
   }
 
   async function handleDeleteSubscription() {
-    if (!confirm("Delete this subscription record? This only removes the DB record, not the Stripe subscription.")) return;
     setDeleteLoading(true);
     setSubError("");
     try {
@@ -101,6 +104,7 @@ export function UserBillingForm({
         return;
       }
       await invalidate();
+      showToast("success", "Subscription record deleted.");
       onClose();
     } catch {
       setSubError("Network error");
@@ -156,6 +160,7 @@ export function UserBillingForm({
   }
 
   return (
+    <>
     <Modal open={open} onClose={onClose} title="Manage Billing">
       <div className="space-y-6">
 
@@ -213,7 +218,7 @@ export function UserBillingForm({
               {subscription && (
                 <button
                   type="button"
-                  onClick={handleDeleteSubscription}
+                  onClick={() => setConfirmDeleteOpen(true)}
                   disabled={deleteLoading}
                   className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50 dark:text-red-400 dark:hover:text-red-300"
                 >
@@ -284,5 +289,17 @@ export function UserBillingForm({
 
       </div>
     </Modal>
+    <ConfirmDialog
+      open={confirmDeleteOpen}
+      onOpenChange={setConfirmDeleteOpen}
+      title="Delete subscription record?"
+      description="This only removes the DB record, not the Stripe subscription."
+      confirmLabel="Delete"
+      cancelLabel="Cancel"
+      variant="danger"
+      loading={deleteLoading}
+      onConfirm={handleDeleteSubscription}
+    />
+    </>
   );
 }

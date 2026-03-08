@@ -15,10 +15,11 @@ import {
   useBeans,
   useBeanShares,
   useDuplicateBean,
+  useDeleteBeanShare,
 } from "@/components/beans/hooks";
 import { BeanFormModal } from "@/components/beans/BeanSelector";
 import { ShareBeanDialog } from "@/components/beans/ShareBeanDialog";
-import { AppRoutes } from "@/app/routes";
+import { AppRoutes, resolvePath } from "@/app/routes";
 import { ROAST_LEVELS } from "@/shared/beans/constants";
 import type { RoastLevel, ProcessingMethod } from "@/shared/beans/constants";
 import {
@@ -26,6 +27,7 @@ import {
   PencilSquareIcon,
   ShareIcon,
   DocumentDuplicateIcon,
+  UserMinusIcon,
 } from "@heroicons/react/24/outline";
 
 // ── Sub-components ────────────────────────────────────────────────────
@@ -35,6 +37,8 @@ import { FlavorRatingsChart } from "./__components__/FlavorRatingsChart";
 import { ComparisonMatrix } from "./__components__/ComparisonMatrix";
 import type { SlotConfig } from "./__components__/ComparisonMatrix";
 import { ShotHistory } from "./__components__/ShotHistory";
+import { UnfollowConfirmDialog } from "./__components__/UnfollowConfirmDialog";
+import { DuplicateBeanModal } from "./__components__/DuplicateBeanModal";
 
 // ── Page ──────────────────────────────────────────────────────────────
 
@@ -51,6 +55,7 @@ export default function BeanDetailPage() {
   const { data: sharesData } = useBeanShares(id);
   const updateBean = useUpdateBean();
   const duplicateBean = useDuplicateBean();
+  const deleteBeanShare = useDeleteBeanShare(id);
 
   const shots = shotsData?.shots ?? [];
   const contributors = shotsData?.contributors ?? [];
@@ -131,16 +136,31 @@ export default function BeanDetailPage() {
   const myMembership = sharesData?.members.find(
     (m) => m.userId === currentUserId,
   );
-  const isUnshared = !!myMembership?.unsharedAt;
+  const isOwner = bean?.userBean?.status === "owner";
+  const isUnshared =
+    bean?.userBean?.status === "unfollowed" || !!bean?.userBean?.unsharedAt;
 
-  const [duplicateIncludeShots, setDuplicateIncludeShots] = useState(false);
+  const [duplicateShotOption, setDuplicateShotOption] = useState<
+    "duplicate" | "migrate" | "none"
+  >("duplicate");
   const handleDuplicate = useCallback(async () => {
     const newBean = await duplicateBean.mutateAsync({
       beanId: id,
-      includeShots: duplicateIncludeShots,
+      shotOption: duplicateShotOption,
     });
-    router.push(`/beans/${newBean.id}`);
-  }, [id, duplicateIncludeShots, duplicateBean, router]);
+    router.push(resolvePath(AppRoutes.beans.beanId, { id: newBean.id }));
+  }, [id, duplicateShotOption, duplicateBean, router]);
+
+  const [unfollowConfirmOpen, setUnfollowConfirmOpen] = useState(false);
+  const [duplicateModalOpen, setDuplicateModalOpen] = useState(false);
+  const openUnfollowConfirm = useCallback(() => setUnfollowConfirmOpen(true), []);
+
+  const handleUnfollow = useCallback(async () => {
+    if (!myMembership?.id) return;
+    await deleteBeanShare.mutateAsync(myMembership.id);
+    setUnfollowConfirmOpen(false);
+    refetch();
+  }, [myMembership, deleteBeanShare, refetch]);
 
   // ── Share ──────────────────────────────────────────────────────────
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -243,15 +263,19 @@ export default function BeanDetailPage() {
         <div className="flex shrink-0 items-center gap-2">
           {isUnshared ? (
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1.5 text-sm text-stone-500 dark:text-stone-400">
-                <input
-                  type="checkbox"
-                  checked={duplicateIncludeShots}
-                  onChange={(e) => setDuplicateIncludeShots(e.target.checked)}
-                  className="rounded border-stone-300"
-                />
-                Include shots
-              </label>
+              <select
+                value={duplicateShotOption}
+                onChange={(e) =>
+                  setDuplicateShotOption(
+                    e.target.value as "duplicate" | "migrate" | "none",
+                  )
+                }
+                className="rounded border border-stone-300 bg-white px-2 py-1.5 text-sm text-stone-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300"
+              >
+                <option value="duplicate">Copy my shots</option>
+                <option value="migrate">Move my shots</option>
+                <option value="none">No shots</option>
+              </select>
               <button
                 type="button"
                 onClick={handleDuplicate}
@@ -273,14 +297,36 @@ export default function BeanDetailPage() {
                 <ShareIcon className="h-4 w-4" />
                 Share
               </button>
-              <button
-                type="button"
-                onClick={handleEditOpen}
-                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
-              >
-                <PencilSquareIcon className="h-4 w-4" />
-                Edit
-              </button>
+              {!isOwner && (
+                <button
+                  type="button"
+                  onClick={() => setDuplicateModalOpen(true)}
+                  className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
+                >
+                  <DocumentDuplicateIcon className="h-4 w-4" />
+                  Duplicate
+                </button>
+              )}
+              {isOwner ? (
+                <button
+                  type="button"
+                  onClick={handleEditOpen}
+                  className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
+                >
+                  <PencilSquareIcon className="h-4 w-4" />
+                  Edit
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={openUnfollowConfirm}
+                  disabled={deleteBeanShare.isPending || !myMembership?.id}
+                  className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 disabled:opacity-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
+                >
+                  <UserMinusIcon className="h-4 w-4" />
+                  Unfollow
+                </button>
+              )}
             </>
           )}
         </div>
@@ -289,8 +335,9 @@ export default function BeanDetailPage() {
       {/* Unshared notice */}
       {isUnshared && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-300">
-          Your access to this bean has been removed. You can duplicate it to
-          create your own editable copy.
+          Your access to this bean has been removed. You can still view your own
+          shots (read-only). Duplicate the bean below to create your own editable
+          copy.
         </div>
       )}
 
@@ -349,6 +396,26 @@ export default function BeanDetailPage() {
           beanName={bean.name}
         />
       )}
+
+      {/* Unfollow confirmation */}
+      <UnfollowConfirmDialog
+        open={unfollowConfirmOpen}
+        onClose={() => setUnfollowConfirmOpen(false)}
+        beanName={bean.name}
+        onConfirm={handleUnfollow}
+        isPending={deleteBeanShare.isPending}
+      />
+
+      {/* Duplicate bean modal (for active non-owner members) */}
+      <DuplicateBeanModal
+        open={duplicateModalOpen}
+        onClose={() => setDuplicateModalOpen(false)}
+        beanName={bean.name}
+        shotOption={duplicateShotOption}
+        onShotOptionChange={setDuplicateShotOption}
+        onDuplicate={handleDuplicate}
+        isPending={duplicateBean.isPending}
+      />
 
       {/* Edit modal */}
       <BeanFormModal

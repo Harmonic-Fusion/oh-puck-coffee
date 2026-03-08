@@ -24,6 +24,7 @@ import {
   count,
 } from "drizzle-orm";
 import { appendShotRow } from "@/lib/google-sheets";
+import { createShotId } from "@/lib/nanoid-ids";
 import { config } from "@/shared/config";
 import { Entitlements, hasEntitlement } from "@/lib/entitlements";
 
@@ -382,6 +383,7 @@ export async function POST(request: NextRequest) {
     const [shot] = await db
       .insert(shots)
       .values({
+        id: createShotId(),
         userId: session.user.id,
         beanId: data.beanId,
         grinderId: data.grinderId || null,

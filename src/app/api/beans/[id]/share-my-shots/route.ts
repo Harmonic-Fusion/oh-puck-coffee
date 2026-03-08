@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { userBeans } from "@/db/schema";
+import { beansShare } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { canAccessBean } from "@/lib/api-auth";
+import { canAccessBean } from "@/lib/beans-access";
 import { z } from "zod";
 
-const bodySchema = z.object({ shareMyShotsPublicly: z.boolean() });
+const bodySchema = z.object({
+  shotHistoryAccess: z.enum(["none", "restricted", "anyone_with_link", "public"]),
+});
 
 /**
  * PATCH /api/beans/:id/share-my-shots
- * Updates the current user's "share my shot history" preference for this bean.
- * Requires the user to have the bean in their collection (user_beans row).
+ * Updates the current user's shot history visibility for this bean (beans_share.shot_history_access).
+ * Requires the user to have a beans_share row (member) for this bean.
  */
 export async function PATCH(
   request: NextRequest,
@@ -51,22 +53,25 @@ export async function PATCH(
   }
 
   await db
-    .update(userBeans)
-    .set({ shareMyShotsPublicly: parsed.data.shareMyShotsPublicly })
+    .update(beansShare)
+    .set({
+      shotHistoryAccess: parsed.data.shotHistoryAccess,
+      updatedAt: new Date(),
+    })
     .where(
       and(
-        eq(userBeans.beanId, beanId),
-        eq(userBeans.userId, session.user.id),
+        eq(beansShare.beanId, beanId),
+        eq(beansShare.userId, session.user.id),
       ),
     );
 
   const [updated] = await db
     .select()
-    .from(userBeans)
+    .from(beansShare)
     .where(
       and(
-        eq(userBeans.beanId, beanId),
-        eq(userBeans.userId, session.user.id),
+        eq(beansShare.beanId, beanId),
+        eq(beansShare.userId, session.user.id),
       ),
     )
     .limit(1);
@@ -76,8 +81,10 @@ export async function PATCH(
       ? {
           beanId: updated.beanId,
           userId: updated.userId,
-          openBagDate: updated.openBagDate,
-          shareMyShotsPublicly: updated.shareMyShotsPublicly,
+          openBagDate: updated.beansOpenDate,
+          beansOpenDate: updated.beansOpenDate,
+          shotHistoryAccess: updated.shotHistoryAccess,
+          reshareAllowed: updated.reshareAllowed,
           createdAt: updated.createdAt,
         }
       : result.userBean,

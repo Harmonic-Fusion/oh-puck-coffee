@@ -108,7 +108,8 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
       icon: PlusCircleIcon,
       onClick: () => {
         onClose();
-        router.push(`${AppRoutes.log.path}?previousShotId=${summary.shotId}#recipe`);
+        const logUrl = resolvePath(AppRoutes.log, {}, { previousShotId: summary.shotId });
+        router.push(`${logUrl}#recipe`);
       },
       title: "Log Another",
       variant: "default",

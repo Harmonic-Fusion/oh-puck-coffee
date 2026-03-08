@@ -5,8 +5,8 @@ export const createBeanSchema = z.object({
   name: z.string().min(1, "Bean name is required"),
   origin: z.string().optional(),
   roaster: z.string().optional(),
-  originId: z.number().int().positive().optional(),
-  roasterId: z.number().int().positive().optional(),
+  originId: z.string().optional(),
+  roasterId: z.string().optional(),
   originDetails: z.string().optional(),
   processingMethod: z.enum(PROCESSING_METHODS).optional(),
   roastLevel: z.enum(ROAST_LEVELS),
@@ -16,53 +16,61 @@ export const createBeanSchema = z.object({
 });
 
 export const beanSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1),
   name: z.string(),
-  origin: z.string().nullable(),
-  roaster: z.string().nullable(),
-  originId: z.number().nullable(),
-  roasterId: z.number().nullable(),
+  originId: z.string().nullable(),
+  roasterId: z.string().nullable(),
+  origin: z.string().nullable().optional(),
+  roaster: z.string().nullable().optional(),
   originDetails: z.string().nullable(),
   processingMethod: z.string().nullable(),
   roastLevel: z.string(),
   roastDate: z.coerce.date().nullable(),
   isRoastDateBestGuess: z.boolean(),
-  createdBy: z.string().uuid(),
   generalAccess: z.enum(["restricted", "anyone_with_link", "public"]),
-  generalAccessShareShots: z.boolean(),
   shareSlug: z.string().nullable(),
   createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  updatedBy: z.string().nullable(),
 });
 
-export const userBeanSchema = z.object({
-  beanId: z.string().uuid(),
-  userId: z.string().uuid(),
-  openBagDate: z.coerce.date().nullable(),
-  shareMyShotsPublicly: z.boolean(),
+/** Schema for a beans_share row (participation: owner, pending, accepted, or self). */
+export const beanShareRowSchema = z.object({
+  id: z.string().min(1),
+  beanId: z.string().min(1),
+  userId: z.string().min(1),
+  invitedBy: z.string().nullable(),
+  status: z.enum(["owner", "pending", "accepted", "self", "unfollowed"]),
+  shotHistoryAccess: z.enum(["none", "restricted", "anyone_with_link", "public"]),
+  reshareAllowed: z.boolean(),
+  beansOpenDate: z.coerce.date().nullable(),
+  openBagDate: z.coerce.date().nullable().optional(),
   createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  unsharedAt: z.coerce.date().nullable(),
 });
 
 export type CreateBean = z.infer<typeof createBeanSchema>;
 export type Bean = z.infer<typeof beanSchema>;
-export type UserBean = z.infer<typeof userBeanSchema>;
-export type BeanWithUserData = Bean & { userBean: UserBean | null };
+export type BeanShareRow = z.infer<typeof beanShareRowSchema>;
+/** Bean plus the current user's participation row (beans_share). Property name kept as userBean for Phase 5 migration. */
+export type BeanWithUserData = Bean & { userBean: BeanShareRow | null };
 
 /** Request body for POST /api/beans/:id/shares */
 export const createBeanShareSchema = z.object({
-  userId: z.string().uuid(),
-  reshareEnabled: z.boolean().default(false),
+  userId: z.string().min(1),
+  reshareAllowed: z.boolean().default(false),
 });
 
 /** Request body for PATCH /api/beans/:id/general-access */
 export const updateGeneralAccessSchema = z.object({
   generalAccess: z.enum(["restricted", "anyone_with_link", "public"]),
-  generalAccessShareShots: z.boolean().optional(),
 });
 
 /** Request body for PATCH /api/beans/:id/shares/:shareId — update a person's access. */
 export const updateBeanShareSchema = z.object({
-  shareShotHistory: z.boolean().optional(),
-  reshareEnabled: z.boolean().optional(),
+  shotHistoryAccess: z.enum(["none", "restricted", "anyone_with_link", "public"]).optional(),
+  reshareAllowed: z.boolean().optional(),
 });
 
 export type CreateBeanShare = z.infer<typeof createBeanShareSchema>;

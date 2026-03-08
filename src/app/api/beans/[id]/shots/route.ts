@@ -3,17 +3,18 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots, beans, users, beansShare } from "@/db/schema";
 import { eq, and, desc, inArray, isNull } from "drizzle-orm";
-import { canAccessBean } from "@/lib/api-auth";
+import { canAccessBean } from "@/lib/beans-access";
 
 /**
  * GET /api/beans/:id/shots
  *
  * Returns all shots for this bean that the authenticated user has permission to see:
  *   - The user's own shots (always included, including hidden ones)
- *   - Shots from any accepted member who has opted in (shareShotHistory=true), non-hidden only.
- *
- * Each shot row includes the user's name and image so the UI can group / label
- * shots by contributor.
+ *   - Shots from other members with unsharedAt IS NULL and shotHistoryAccess:
+ *     - none: never include
+ *     - restricted: include (caller is a bean member, so "only other members" = include)
+ *     - anyone_with_link: include (caller is authenticated)
+ *     - public: include
  */
 export async function GET(
   _request: NextRequest,
@@ -73,9 +74,8 @@ export async function GET(
     .orderBy(desc(shots.createdAt))
     .limit(500);
 
-  // Find all accepted members of this bean who have opted in to share their shot history.
-  // Any accepted member with shareShotHistory=true has their shots visible to all other
-  // accepted members. Exclude self (already fetched above, including hidden shots).
+  // Find members who share shot history: none = never; restricted = only other bean members;
+  // anyone_with_link = authenticated; public = always. Caller is a member, so include restricted+.
   const sharingMembers = await db
     .select({
       userId: beansShare.userId,
@@ -86,9 +86,13 @@ export async function GET(
     .where(
       and(
         eq(beansShare.beanId, beanId),
-        eq(beansShare.status, "accepted"),
-        eq(beansShare.shareShotHistory, true),
+        inArray(beansShare.status, ["accepted", "owner", "self"]),
         isNull(beansShare.unsharedAt),
+        inArray(beansShare.shotHistoryAccess, [
+          "restricted",
+          "anyone_with_link",
+          "public",
+        ]),
       ),
     );
 

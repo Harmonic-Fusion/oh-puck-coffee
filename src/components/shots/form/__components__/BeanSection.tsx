@@ -67,9 +67,30 @@ export function BeanSection({ error }: BeanSectionProps) {
     if (beans.find((b) => b.id === beanId)) return;
     let cancelled = false;
     fetch(resolvePath(ApiRoutes.beans.beanId, { id: beanId }))
-      .then((res) => res.json())
-      .then((data) => { if (!cancelled) setFetchedBean(data); })
-      .catch(() => { if (!cancelled) setFetchedBean(null); });
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          const payload = {
+            status: res.status,
+            beanId,
+            error: (data as { error?: string }).error,
+          };
+          console.error(
+            "[BeanSection] GET /api/beans/:id failed",
+            JSON.stringify(payload),
+          );
+          if (!cancelled) setFetchedBean(null);
+          return;
+        }
+        if (!cancelled) setFetchedBean(data as BeanWithUserData);
+      })
+      .catch((err) => {
+        console.error(
+          "[BeanSection] GET /api/beans/:id fetch error",
+          JSON.stringify({ beanId, err: err instanceof Error ? err.message : String(err) }),
+        );
+        if (!cancelled) setFetchedBean(null);
+      });
     return () => { cancelled = true; };
   }, [beanId, beans]);
 

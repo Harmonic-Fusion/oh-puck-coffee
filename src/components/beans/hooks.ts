@@ -84,8 +84,10 @@ export function useBeansList() {
 export interface PublicBeanSummary {
   id: string;
   name: string;
-  origin: string | null;
-  roaster: string | null;
+  originId?: number | null;
+  roasterId?: number | null;
+  origin?: string | null;
+  roaster?: string | null;
   originDetails: string | null;
   processingMethod: string | null;
   roastLevel: string;
@@ -131,8 +133,8 @@ export function useAddBeanToCollection() {
         bean: {
           id: string;
           name: string;
-          origin?: string;
-          roaster?: string;
+          originId?: number | null;
+          roasterId?: number | null;
           roastLevel: string;
           shareSlug?: string | null;
         };
@@ -150,11 +152,13 @@ export function useUpdateShareMyShots(beanId: string) {
     ApiRoutes.beans.beanId as unknown as { shareMyShots: { path: string } }
   ).shareMyShots;
   return useMutation({
-    mutationFn: async (shareMyShotsPublicly: boolean) => {
+    mutationFn: async (
+      shotHistoryAccess: "none" | "restricted" | "anyone_with_link" | "public",
+    ) => {
       const res = await fetch(resolvePath(shareMyShotsPath, { id: beanId }), {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ shareMyShotsPublicly }),
+        body: JSON.stringify({ shotHistoryAccess }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -340,10 +344,12 @@ export interface BeanShareItem {
   beanId: string;
   userId: string;
   invitedBy: string | null;
-  status: "pending" | "accepted";
-  shareShotHistory: boolean;
-  reshareEnabled: boolean;
+  status: "owner" | "pending" | "accepted" | "self" | "unfollowed";
+  shotHistoryAccess: "none" | "restricted" | "anyone_with_link" | "public";
+  reshareAllowed: boolean;
+  beansOpenDate: string | null;
   createdAt: string;
+  updatedAt: string;
   unsharedAt: string | null;
   userName: string | null;
   userImage: string | null;
@@ -353,7 +359,6 @@ export interface BeanSharesData {
   members: BeanShareItem[];
   createdBy: string;
   generalAccess: "restricted" | "anyone_with_link" | "public";
-  generalAccessShareShots: boolean;
   shareSlug: string | null;
   isOwner: boolean;
 }
@@ -380,7 +385,7 @@ export function useCreateBeanShare(beanId: string) {
   return useMutation({
     mutationFn: async (data: {
       userId: string;
-      reshareEnabled: boolean;
+      reshareAllowed: boolean;
     }) => {
       const sharesRoute = (
         ApiRoutes.beans.beanId as unknown as {
@@ -438,12 +443,12 @@ export function useUpdateBeanShare(beanId: string) {
   return useMutation({
     mutationFn: async ({
       shareId,
-      shareShotHistory,
-      reshareEnabled,
+      shotHistoryAccess,
+      reshareAllowed,
     }: {
       shareId: string;
-      shareShotHistory?: boolean;
-      reshareEnabled?: boolean;
+      shotHistoryAccess?: "none" | "restricted" | "anyone_with_link" | "public";
+      reshareAllowed?: boolean;
     }) => {
       const shareIdRoute = (
         ApiRoutes.beans.beanId as unknown as {
@@ -456,8 +461,8 @@ export function useUpdateBeanShare(beanId: string) {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...(shareShotHistory !== undefined && { shareShotHistory }),
-            ...(reshareEnabled !== undefined && { reshareEnabled }),
+            ...(shotHistoryAccess !== undefined && { shotHistoryAccess }),
+            ...(reshareAllowed !== undefined && { reshareAllowed }),
           }),
         },
       );
@@ -479,7 +484,6 @@ export function useUpdateGeneralAccess(beanId: string) {
   return useMutation({
     mutationFn: async (data: {
       generalAccess: "restricted" | "anyone_with_link" | "public";
-      generalAccessShareShots?: boolean;
     }) => {
       const generalAccessRoute = (
         ApiRoutes.beans.beanId as unknown as {
@@ -531,12 +535,12 @@ export interface ShareInvite {
   id: string;
   beanId: string;
   invitedBy: string | null;
-  shareShotHistory: boolean;
-  reshareEnabled: boolean;
+  shotHistoryAccess: "none" | "restricted" | "anyone_with_link" | "public";
+  reshareAllowed: boolean;
   createdAt: string;
   beanName: string;
-  beanRoaster: string | null;
-  beanOrigin: string | null;
+  beanRoasterId: number | null;
+  beanOriginId: number | null;
   sharerName: string | null;
   sharerImage: string | null;
 }
@@ -596,10 +600,10 @@ export function useDuplicateBean() {
   return useMutation({
     mutationFn: async ({
       beanId,
-      includeShots,
+      shotOption,
     }: {
       beanId: string;
-      includeShots: boolean;
+      shotOption: "duplicate" | "migrate" | "none";
     }) => {
       const duplicateRoute = (
         ApiRoutes.beans.beanId as unknown as {
@@ -609,7 +613,7 @@ export function useDuplicateBean() {
       const res = await fetch(resolvePath(duplicateRoute, { id: beanId }), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ includeShots }),
+        body: JSON.stringify({ shotOption }),
       });
       const data = await res.json();
       if (!res.ok) {

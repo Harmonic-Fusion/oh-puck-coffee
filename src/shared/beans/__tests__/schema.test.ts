@@ -13,31 +13,32 @@ describe("createBeanShareSchema", () => {
   it("accepts valid payload with all fields", () => {
     const result = createBeanShareSchema.safeParse({
       userId: validUuid,
-      reshareEnabled: true,
+      reshareAllowed: true,
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.userId).toBe(validUuid);
-      expect(result.data.reshareEnabled).toBe(true);
+      expect(result.data.reshareAllowed).toBe(true);
     }
   });
 
-  it("accepts minimal payload and defaults reshareEnabled to false", () => {
+  it("accepts minimal payload and defaults reshareAllowed to false", () => {
     const result = createBeanShareSchema.safeParse({
       userId: validUuid,
     });
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.userId).toBe(validUuid);
-      expect(result.data.reshareEnabled).toBe(false);
+      expect(result.data.reshareAllowed).toBe(false);
     }
   });
 
-  it("rejects invalid UUID for userId", () => {
+  it("accepts any non-empty string for userId (no longer UUID)", () => {
     const result = createBeanShareSchema.safeParse({
       userId: "not-a-uuid",
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.userId).toBe("not-a-uuid");
   });
 
   it("rejects missing userId", () => {
@@ -45,10 +46,10 @@ describe("createBeanShareSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects non-boolean reshareEnabled", () => {
+  it("rejects non-boolean reshareAllowed", () => {
     const result = createBeanShareSchema.safeParse({
       userId: validUuid,
-      reshareEnabled: 1,
+      reshareAllowed: 1,
     });
     expect(result.success).toBe(false);
   });
@@ -64,7 +65,6 @@ describe("updateGeneralAccessSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.generalAccess).toBe("restricted");
-      expect(result.data.generalAccessShareShots).toBeUndefined();
     }
   });
 
@@ -82,17 +82,6 @@ describe("updateGeneralAccessSchema", () => {
     });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.generalAccess).toBe("public");
-  });
-
-  it("accepts optional generalAccessShareShots", () => {
-    const result = updateGeneralAccessSchema.safeParse({
-      generalAccess: "public",
-      generalAccessShareShots: true,
-    });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.data.generalAccessShareShots).toBe(true);
-    }
   });
 
   it("rejects invalid generalAccess value", () => {
@@ -115,52 +104,52 @@ describe("updateBeanShareSchema", () => {
     const result = updateBeanShareSchema.safeParse({});
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.shareShotHistory).toBeUndefined();
-      expect(result.data.reshareEnabled).toBeUndefined();
+      expect(result.data.shotHistoryAccess).toBeUndefined();
+      expect(result.data.reshareAllowed).toBeUndefined();
     }
   });
 
-  it("accepts shareShotHistory only", () => {
+  it("accepts shotHistoryAccess only", () => {
     const result = updateBeanShareSchema.safeParse({
-      shareShotHistory: true,
+      shotHistoryAccess: "anyone_with_link",
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.shareShotHistory).toBe(true);
-      expect(result.data.reshareEnabled).toBeUndefined();
+      expect(result.data.shotHistoryAccess).toBe("anyone_with_link");
+      expect(result.data.reshareAllowed).toBeUndefined();
     }
   });
 
-  it("accepts reshareEnabled only", () => {
+  it("accepts reshareAllowed only", () => {
     const result = updateBeanShareSchema.safeParse({
-      reshareEnabled: true,
+      reshareAllowed: true,
     });
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.reshareEnabled).toBe(true);
+    if (result.success) expect(result.data.reshareAllowed).toBe(true);
   });
 
   it("accepts both fields", () => {
     const result = updateBeanShareSchema.safeParse({
-      shareShotHistory: false,
-      reshareEnabled: true,
+      shotHistoryAccess: "restricted",
+      reshareAllowed: true,
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.shareShotHistory).toBe(false);
-      expect(result.data.reshareEnabled).toBe(true);
+      expect(result.data.shotHistoryAccess).toBe("restricted");
+      expect(result.data.reshareAllowed).toBe(true);
     }
   });
 
-  it("rejects non-boolean shareShotHistory", () => {
+  it("rejects invalid shotHistoryAccess", () => {
     const result = updateBeanShareSchema.safeParse({
-      shareShotHistory: "yes",
+      shotHistoryAccess: "open",
     });
     expect(result.success).toBe(false);
   });
 
-  it("rejects non-boolean reshareEnabled", () => {
+  it("rejects non-boolean reshareAllowed", () => {
     const result = updateBeanShareSchema.safeParse({
-      reshareEnabled: "yes",
+      reshareAllowed: "yes",
     });
     expect(result.success).toBe(false);
   });

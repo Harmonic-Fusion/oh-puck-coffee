@@ -6,7 +6,7 @@ export const linkSheetSchema = z.object({
 
 export const integrationSchema = z.object({
   id: z.string().uuid(),
-  userId: z.string().uuid(),
+  userId: z.string().min(1),
   provider: z.string(),
   spreadsheetId: z.string().nullable(),
   spreadsheetName: z.string().nullable(),

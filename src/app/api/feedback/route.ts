@@ -3,6 +3,7 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { feedback } from "@/db/schema";
 import { createFeedbackSchema } from "@/shared/feedback/schema";
+import { createFeedbackId } from "@/lib/nanoid-ids";
 
 export async function POST(request: NextRequest) {
   const session = await getSession();
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
   const [result] = await db
     .insert(feedback)
     .values({
+      id: createFeedbackId(),
       ...parsed.data,
       userId: session.user.id,
     })

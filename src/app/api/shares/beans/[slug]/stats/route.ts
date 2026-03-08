@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, shots, userBeans } from "@/db/schema";
-import { eq, and, count, inArray } from "drizzle-orm";
+import { beans, shots, beansShare } from "@/db/schema";
+import { eq, and, count, inArray, isNull, or } from "drizzle-orm";
 
 /**
  * GET /api/shares/beans/:slug/stats — Public stats for a shared bean.
  * No auth required when bean is public or anyone_with_link.
- * Returns shotCount, followerCount, averageRating, flavorsByAverageRating.
+ * Unauthenticated: stats from members with shot_history_access = 'public' only.
+ * Authenticated: stats from members with 'public' or 'anyone_with_link'.
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
+  const session = await getSession();
+  const isAuthenticated = Boolean(session?.user?.id);
 
   const [bean] = await db
     .select()
@@ -30,49 +34,38 @@ export async function GET(
 
   const beanId = bean.id;
 
-  // Follower count = number of user_beans rows for this bean
-  const [followerResult] = await db
+  const followerResult = await db
     .select({ count: count() })
-    .from(userBeans)
-    .where(eq(userBeans.beanId, beanId));
-  const followerCount = followerResult?.count ?? 0;
-
-  if (!bean.generalAccessShareShots) {
-    return NextResponse.json({
-      shotCount: 0,
-      followerCount,
-      averageRating: null,
-      flavorsByAverageRating: [],
-    });
-  }
+    .from(beansShare)
+    .where(
+      and(
+        eq(beansShare.beanId, beanId),
+        inArray(beansShare.status, ["accepted", "self"]),
+        isNull(beansShare.unsharedAt),
+      ),
+    );
+  const followerCount = followerResult[0]?.count ?? 0;
 
   const optedInRows = await db
-    .select({ userId: userBeans.userId })
-    .from(userBeans)
+    .select({ userId: beansShare.userId })
+    .from(beansShare)
     .where(
       and(
-        eq(userBeans.beanId, beanId),
-        eq(userBeans.shareMyShotsPublicly, true),
+        eq(beansShare.beanId, beanId),
+        isNull(beansShare.unsharedAt),
+        isAuthenticated
+          ? or(
+              eq(beansShare.shotHistoryAccess, "public"),
+              eq(beansShare.shotHistoryAccess, "anyone_with_link"),
+            )
+          : eq(beansShare.shotHistoryAccess, "public"),
       ),
     );
-  const optedInUserIds = optedInRows
-    .map((r) => r.userId)
-    .filter((id) => id !== bean.createdBy);
+  const optedInUserIds = optedInRows.map((r) => r.userId);
 
-  const creatorShots = await db
-    .select({ rating: shots.rating, flavors: shots.flavors })
-    .from(shots)
-    .where(
-      and(
-        eq(shots.beanId, beanId),
-        eq(shots.userId, bean.createdBy),
-        eq(shots.isHidden, false),
-      ),
-    );
-
-  let contributorShots: { rating: string | null; flavors: string[] | null }[] = [];
+  let beanShots: { rating: string | null; flavors: string[] | null }[] = [];
   if (optedInUserIds.length > 0) {
-    contributorShots = await db
+    beanShots = await db
       .select({ rating: shots.rating, flavors: shots.flavors })
       .from(shots)
       .where(
@@ -83,8 +76,6 @@ export async function GET(
         ),
       );
   }
-
-  const beanShots = [...creatorShots, ...contributorShots];
 
   const shotCount = beanShots.length;
 
@@ -101,7 +92,6 @@ export async function GET(
         )
       : null;
 
-  // Per-flavor average rating: for each flavor present in shots, average the shot's rating
   const flavorToRatings: Record<string, number[]> = {};
   for (const s of beanShots) {
     const r = s.rating != null ? parseFloat(s.rating) : null;

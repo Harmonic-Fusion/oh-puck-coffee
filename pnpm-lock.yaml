@@ -47,6 +47,9 @@ importers:
       googleapis:
         specifier: ^148
         version: 148.0.0
+      nanoid:
+        specifier: ^3
+        version: 3.3.11
       next:
         specifier: 16.1.6
         version: 16.1.6(@babel/core@7.29.0)(@playwright/test@1.58.2)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)

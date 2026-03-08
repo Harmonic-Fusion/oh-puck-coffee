@@ -22,9 +22,7 @@ function InviteRow({
   isAccepting: boolean;
   isDeclining: boolean;
 }) {
-  const beanLabel = [invite.beanName, invite.beanRoaster, invite.beanOrigin]
-    .filter(Boolean)
-    .join(" · ");
+  const beanLabel = invite.beanName;
   const sharerLabel = invite.sharerName ?? "Someone";
 
   return (
@@ -34,7 +32,7 @@ function InviteRow({
           {sharerLabel} shared a bean with you
         </p>
         <p className="truncate text-xs text-stone-500 dark:text-stone-400">
-          {beanLabel || invite.beanName}
+          {beanLabel}
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">

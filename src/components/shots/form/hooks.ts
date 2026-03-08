@@ -63,6 +63,21 @@ function applyRecipeToForm(
   if (values.brewPressure !== undefined) methods.setValue("brewPressure", values.brewPressure);
 }
 
+/** Reset Brewing and Tasting fields to defaults so they are never carried over from a previous shot. */
+function resetBrewingAndTastingToDefaults(methods: UseFormReturn<CreateShot>): void {
+  methods.setValue("yieldActualGrams", undefined);
+  methods.setValue("brewTimeSecs", undefined);
+  methods.setValue("estimateMaxPressure", undefined);
+  methods.setValue("shotQuality", undefined);
+  methods.setValue("rating", undefined);
+  methods.setValue("bitter", undefined);
+  methods.setValue("sour", undefined);
+  methods.setValue("flavors", undefined);
+  methods.setValue("bodyTexture", undefined);
+  methods.setValue("adjectives", undefined);
+  methods.setValue("notes", "");
+}
+
 /** Read individual recipe params from URLSearchParams (QR code / direct link). */
 function applyUrlParamsToForm(
   methods: UseFormReturn<CreateShot>,
@@ -119,12 +134,13 @@ function applyUrlParamsToForm(
  *
  * Priority order:
  *   0. `previousShotId=` (empty) in URL → start fresh, no pre-population
- *   1. `previousShotId=<id>` or `shotId=<id>` in URL → fetch & apply that shot
+ *   1. `previousShotId=<id>` or `shotId=<id>` in URL → fetch & apply that shot (Setup + Recipe only)
  *   2. Individual recipe params in URL (QR code / direct link)
  *   3. Duplicate shot data in sessionStorage (`duplicateShot` key)
  *   4. Last shot from the database (most recent)
  *
- * Results and Tasting Notes fields are intentionally never pre-populated.
+ * Only Setup and Recipe are populated from the previous shot. Brewing and Tasting
+ * are explicitly reset to defaults every time we pre-populate.
  */
 export function useShotPrePopulation(
   methods: UseFormReturn<CreateShot>,
@@ -199,6 +215,7 @@ export function useShotPrePopulation(
 
       hasPrePopulated.current = true;
       setPreviousShotId(shotIdFromUrl);
+      resetBrewingAndTastingToDefaults(methods);
       applyRecipeToForm(methods, shotToRecipeValues(previousShot));
       return;
     }
@@ -207,6 +224,7 @@ export function useShotPrePopulation(
     const urlParams = new URLSearchParams(searchParams.toString());
     if (urlParams.toString()) {
       hasPrePopulated.current = true;
+      resetBrewingAndTastingToDefaults(methods);
       applyUrlParamsToForm(methods, urlParams);
 
       // Clear URL params after reading
@@ -227,6 +245,7 @@ export function useShotPrePopulation(
         if (duplicateData.shotId) {
           setPreviousShotId(duplicateData.shotId);
         }
+        resetBrewingAndTastingToDefaults(methods);
         applyRecipeToForm(methods, duplicateData);
         return;
       } catch {
@@ -239,10 +258,10 @@ export function useShotPrePopulation(
     if (lastShot) {
       hasPrePopulated.current = true;
       setPreviousShotId(lastShot.id);
+      resetBrewingAndTastingToDefaults(methods);
       applyRecipeToForm(methods, shotToRecipeValues(lastShot));
     }
 
-    // Results and Tasting Notes fields are intentionally NOT pre-populated
   }, [
     searchParams,
     lastShot,

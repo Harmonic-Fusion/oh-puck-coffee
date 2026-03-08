@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { grinders } from "@/db/schema";
 import { asc, count } from "drizzle-orm";
 import { createGrinderSchema } from "@/shared/equipment/schema";
+import { createGrinderId } from "@/lib/nanoid-ids";
 
 export async function GET(request: NextRequest) {
   const { error } = await requireSuperAdmin();
@@ -31,6 +32,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const [grinder] = await db.insert(grinders).values(parsed.data).returning();
+  const [grinder] = await db.insert(grinders).values({ ...parsed.data, id: createGrinderId() }).returning();
   return NextResponse.json(grinder, { status: 201 });
 }

@@ -5,6 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
 import { Modal } from "@/components/common/Modal";
+import { useToast } from "@/components/common/Toast";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   useBeanShares,
   useBeanShotsWithShared,
@@ -168,6 +170,7 @@ export function ShareBeanDialog({
   beanName,
 }: ShareBeanDialogProps) {
   const { data: session } = useSession();
+  const { showToast } = useToast();
   const hasBeanShareEntitlement = hasEntitlement(
     session?.user?.entitlements,
     Entitlements.BEAN_SHARE,
@@ -181,15 +184,18 @@ export function ShareBeanDialog({
   const updateGeneralAccess = useUpdateGeneralAccess(beanId);
 
   const [editingShareId, setEditingShareId] = useState<string | null>(null);
-  const [editShareShotHistory, setEditShareShotHistory] = useState(false);
-  const [editReshareEnabled, setEditReshareEnabled] = useState(false);
+  const [editShotHistoryAccess, setEditShotHistoryAccess] = useState<
+    "none" | "restricted" | "anyone_with_link" | "public"
+  >("restricted");
+  const [editReshareAllowed, setEditReshareAllowed] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(
     null,
   );
-  const [reshareEnabled, setReshareEnabled] = useState(false);
+  const [reshareAllowed, setReshareAllowed] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [restrictConfirmOpen, setRestrictConfirmOpen] = useState(false);
 
   const { data: searchResults = [], isFetching: searchLoading } =
     useUserSearch(userSearchQuery);
@@ -205,16 +211,16 @@ export function ShareBeanDialog({
     try {
       await createShare.mutateAsync({
         userId: selectedUser.id,
-        reshareEnabled,
+        reshareAllowed,
       });
       setSelectedUser(null);
       setUserSearchQuery("");
-      setReshareEnabled(false);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to add";
+      setReshareAllowed(false);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
       setErrorMessage(message);
     }
-  }, [selectedUser, reshareEnabled, createShare]);
+  }, [selectedUser, reshareAllowed, createShare]);
 
   const handleRemoveShare = useCallback(
     async (share: BeanShareItem) => {
@@ -222,18 +228,34 @@ export function ShareBeanDialog({
       if (editingShareId === share.id) setEditingShareId(null);
       try {
         await deleteShare.mutateAsync(share.id);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to remove";
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         setErrorMessage(message);
       }
     },
     [deleteShare, editingShareId],
   );
 
+  const isLinkSharing = sharesData?.generalAccess === "anyone_with_link";
+  const handleRemoveOrExplain = useCallback(
+    (member: BeanShareItem) => {
+      if (isLinkSharing) {
+        showToast(
+          "info",
+          "With \"Anyone with the link\" anyone with the link already has access. To remove specific people, change General access to \"Restricted\" (Only people added) first.",
+          0,
+        );
+        return;
+      }
+      void handleRemoveShare(member);
+    },
+    [isLinkSharing, handleRemoveShare, showToast],
+  );
+
   const startEditingShare = useCallback((share: BeanShareItem) => {
     setEditingShareId(share.id);
-    setEditShareShotHistory(share.shareShotHistory);
-    setEditReshareEnabled(share.reshareEnabled);
+    setEditShotHistoryAccess(share.shotHistoryAccess);
+    setEditReshareAllowed(share.reshareAllowed);
     setErrorMessage(null);
   }, []);
 
@@ -248,34 +270,39 @@ export function ShareBeanDialog({
       try {
         await updateShare.mutateAsync({
           shareId: share.id,
-          // Members can only update their own shareShotHistory
-          ...(isSelf && { shareShotHistory: editShareShotHistory }),
-          // Owner can update reshareEnabled on other members' rows
-          ...(isOwner && !isSelf && { reshareEnabled: editReshareEnabled }),
+          ...(isSelf && { shotHistoryAccess: editShotHistoryAccess }),
+          ...(isOwner && !isSelf && { reshareAllowed: editReshareAllowed }),
         });
         setEditingShareId(null);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to update";
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         setErrorMessage(message);
       }
     },
-    [updateShare, editShareShotHistory, editReshareEnabled, isOwner, session?.user?.id],
+    [updateShare, editShotHistoryAccess, editReshareAllowed, isOwner, session?.user?.id],
   );
 
   const handleGeneralAccessChange = useCallback(
     async (value: "restricted" | "anyone_with_link" | "public") => {
       setErrorMessage(null);
+      const current = sharesData?.generalAccess ?? "restricted";
+      if (
+        value === "restricted" &&
+        (current === "public" || current === "anyone_with_link")
+      ) {
+        setRestrictConfirmOpen(true);
+        return;
+      }
       try {
         await updateGeneralAccess.mutateAsync({
           generalAccess: value,
-          generalAccessShareShots: sharesData?.generalAccessShareShots ?? false,
         });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Failed to update";
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
         setErrorMessage(message);
       }
     },
-    [updateGeneralAccess, sharesData],
+    [updateGeneralAccess, sharesData?.generalAccess],
   );
 
   const handleCopyLink = useCallback(() => {
@@ -306,6 +333,7 @@ export function ShareBeanDialog({
     errorMessage?.toLowerCase().includes("limit");
 
   return (
+    <>
     <Modal
       open={open}
       onClose={onClose}
@@ -401,10 +429,10 @@ export function ShareBeanDialog({
               </div>
               {selectedUser && (
                 <div className="grid grid-cols-1 gap-3 border-t border-stone-200 pt-3 dark:border-stone-700">
-                  <div>
+                    <div>
                     <ShareCheckbox
-                      checked={reshareEnabled}
-                      onChange={setReshareEnabled}
+                      checked={reshareAllowed}
+                      onChange={setReshareAllowed}
                       disabled={!hasBeanShareEntitlement}
                       label="Allow reshare"
                     />
@@ -466,6 +494,8 @@ export function ShareBeanDialog({
                 const isSelf = member.userId === session?.user?.id;
                 const canEdit = isSelf || isOwner;
                 const canDelete = isOwner && !isOwnerRow;
+                const removeDisabledByLinkSharing =
+                  canDelete && sharesData.generalAccess === "anyone_with_link";
                 const isEditing = editingShareId === member.id;
 
                 return (
@@ -526,18 +556,25 @@ export function ShareBeanDialog({
                           >
                             {member.status === "pending"
                               ? "Pending"
-                              : "Accepted"}
+                              : member.status === "self"
+                                ? "Follower"
+                                : "Accepted"}
                           </span>
                         )}
                         {!isEditing &&
-                          (member.shareShotHistory || member.reshareEnabled) && (
+                          (member.shotHistoryAccess === "anyone_with_link" ||
+                            member.shotHistoryAccess === "public" ||
+                            member.reshareAllowed) && (
                             <span className="shrink-0 text-xs text-stone-400">
-                              {member.shareShotHistory && "Shares shots"}
-                              {member.shareShotHistory &&
-                                member.reshareEnabled &&
+                              {(member.shotHistoryAccess === "anyone_with_link" ||
+                                member.shotHistoryAccess === "public") &&
+                                "Shares shots"}
+                              {(member.shotHistoryAccess === "anyone_with_link" ||
+                                member.shotHistoryAccess === "public") &&
+                                member.reshareAllowed &&
                                 " · "}
                               {!isOwnerRow &&
-                                member.reshareEnabled &&
+                                member.reshareAllowed &&
                                 "Can reshare"}
                             </span>
                           )}
@@ -575,10 +612,19 @@ export function ShareBeanDialog({
                               {canDelete && (
                                 <button
                                   type="button"
-                                  onClick={() => handleRemoveShare(member)}
+                                  onClick={() => handleRemoveOrExplain(member)}
                                   disabled={deleteShare.isPending}
-                                  className="rounded p-1 text-stone-400 hover:bg-stone-200 hover:text-stone-600 dark:hover:bg-stone-700 dark:hover:text-stone-300 disabled:opacity-50"
-                                  aria-label="Remove access"
+                                  className={cn(
+                                    "rounded p-1",
+                                    removeDisabledByLinkSharing
+                                      ? "cursor-default text-stone-300 hover:bg-transparent dark:text-stone-600 dark:hover:bg-transparent"
+                                      : "text-stone-400 hover:bg-stone-200 hover:text-stone-600 disabled:opacity-50 dark:hover:bg-stone-700 dark:hover:text-stone-300",
+                                  )}
+                                  aria-label={
+                                    removeDisabledByLinkSharing
+                                      ? "Explain why remove is unavailable"
+                                      : "Remove access"
+                                  }
                                 >
                                   <TrashIcon className="h-4 w-4" />
                                 </button>
@@ -590,20 +636,38 @@ export function ShareBeanDialog({
                     </div>
                     {isEditing && (
                       <div className="flex flex-col gap-2 border-t border-stone-200 pt-2 dark:border-stone-700">
-                        {/* Members edit their own shot history preference */}
                         {isSelf && (
-                          <ShareCheckbox
-                            checked={editShareShotHistory}
-                            onChange={setEditShareShotHistory}
-                            label="Share my shot history"
-                          />
+                          <div className="flex flex-col gap-1">
+                            <span className="text-xs font-medium text-stone-600 dark:text-stone-400">
+                              Share my shot history
+                            </span>
+                            <select
+                              value={editShotHistoryAccess}
+                              onChange={(e) =>
+                                setEditShotHistoryAccess(
+                                  e.target.value as
+                                    | "none"
+                                    | "restricted"
+                                    | "anyone_with_link"
+                                    | "public",
+                                )
+                              }
+                              className="rounded border border-stone-200 bg-white px-2 py-1.5 text-sm dark:border-stone-700 dark:bg-stone-900"
+                            >
+                              <option value="none">No</option>
+                              <option value="restricted">Restricted</option>
+                              <option value="anyone_with_link">
+                                Anyone with the link
+                              </option>
+                              <option value="public">Public</option>
+                            </select>
+                          </div>
                         )}
-                        {/* Owner edits reshare permission for other members */}
                         {isOwner && !isSelf && (
                           <div>
                             <ShareCheckbox
-                              checked={editReshareEnabled}
-                              onChange={setEditReshareEnabled}
+                              checked={editReshareAllowed}
+                              onChange={setEditReshareAllowed}
                               disabled={!hasBeanShareEntitlement}
                               label="Allow reshare"
                             />
@@ -626,15 +690,21 @@ export function ShareBeanDialog({
           </section>
         )}
 
-        {/* Shot History — visible when current user has opted in to share their shots */}
-        {myMembership?.shareShotHistory && (
+        {/* Shot History — visible for all share levels; copy reflects who can see */}
+        {myMembership && (
           <section>
             <h3 className="mb-2 text-sm font-semibold text-stone-700 dark:text-stone-300">
               Shot History
             </h3>
             <div className="rounded-lg border border-stone-200 bg-stone-50/50 px-3 py-2 dark:border-stone-700 dark:bg-stone-800/30">
               <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
-                These shots are visible to other members of this bean.
+                {myMembership.shotHistoryAccess === "none"
+                  ? "Your shots are never shared. Only you can see them."
+                  : myMembership.shotHistoryAccess === "restricted"
+                    ? "Only other members of this bean can see your shots."
+                    : myMembership.shotHistoryAccess === "anyone_with_link"
+                      ? "Visible to other members and any authenticated user with the link."
+                      : "Visible to other members and on the public share page."}
               </p>
               <ShotHistoryPreview beanId={beanId} />
             </div>
@@ -703,5 +773,25 @@ export function ShareBeanDialog({
         )}
       </div>
     </Modal>
+    <ConfirmDialog
+      open={restrictConfirmOpen}
+      onOpenChange={setRestrictConfirmOpen}
+      title="Set access to Restricted?"
+      description="Setting this bean to Restricted will remove access for everyone who added it via the link. They will no longer see the shared bean page or other members' shots (they keep access to their own shots only). Continue?"
+      confirmLabel="Continue"
+      variant="danger"
+      loading={updateGeneralAccess.isPending}
+      onConfirm={async () => {
+        try {
+          await updateGeneralAccess.mutateAsync({
+            generalAccess: "restricted",
+          });
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          setErrorMessage(message);
+        }
+      }}
+    />
+    </>
   );
 }

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { machines } from "@/db/schema";
 import { asc, count } from "drizzle-orm";
 import { createMachineSchema } from "@/shared/equipment/schema";
+import { createMachineId } from "@/lib/nanoid-ids";
 
 export async function GET(request: NextRequest) {
   const { error } = await requireSuperAdmin();
@@ -31,6 +32,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const [machine] = await db.insert(machines).values(parsed.data).returning();
+  const [machine] = await db.insert(machines).values({ ...parsed.data, id: createMachineId() }).returning();
   return NextResponse.json(machine, { status: 201 });
 }

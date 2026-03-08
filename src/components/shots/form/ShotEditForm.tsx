@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useForm, FormProvider, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createShotSchema, type CreateShot } from "@/shared/shots/schema";
@@ -12,6 +13,7 @@ import type { ShotWithJoins } from "@/components/shots/hooks";
 import { useToast } from "@/components/common/Toast";
 import { ValidationBanner } from "@/components/common/ValidationBanner";
 import { ActionButtonBar } from "@/components/shots/ActionButtonBar";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TrashIcon, XMarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 
 interface ShotEditFormProps {
@@ -25,6 +27,7 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
   const updateShot = useUpdateShot();
   const deleteShot = useDeleteShot();
   const { showToast } = useToast();
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   const methods = useForm<CreateShot>({
     resolver: zodResolver(createShotSchema) as Resolver<CreateShot>,
@@ -110,20 +113,7 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
                       {
                         key: "delete",
                         icon: TrashIcon,
-                        onClick: () => {
-                          if (confirm("Delete this shot?")) {
-                            deleteShot.mutate(shot.id, {
-                              onSuccess: () => {
-                                showToast("success", "Shot deleted successfully!");
-                                if (onDelete) onDelete(shot.id);
-                                if (onSuccess) onSuccess();
-                              },
-                              onError: (error) => {
-                                showToast("error", error instanceof Error ? error.message : "Failed to delete shot");
-                              },
-                            });
-                          }
-                        },
+                        onClick: () => setConfirmDeleteOpen(true),
                         title: "Delete shot",
                         variant: "danger" as const,
                         className: deleteShot.isPending ? "opacity-50 cursor-not-allowed pointer-events-none" : "",
@@ -158,6 +148,27 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
           </div>
         </div>
       </form>
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        title="Delete this shot?"
+        description="This cannot be undone."
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleteShot.isPending}
+        onConfirm={() => {
+          deleteShot.mutate(shot.id, {
+            onSuccess: () => {
+              showToast("success", "Shot deleted successfully!");
+              if (onDelete) onDelete(shot.id);
+              if (onSuccess) onSuccess();
+            },
+            onError: (error) => {
+              showToast("error", error instanceof Error ? error.message : "Failed to delete shot");
+            },
+          });
+        }}
+      />
     </FormProvider>
   );
 }

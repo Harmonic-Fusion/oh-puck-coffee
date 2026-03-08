@@ -1,22 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, beansShare, userBeans } from "@/db/schema";
-import { and, desc, eq, ilike, isNotNull, or, inArray } from "drizzle-orm";
+import { beans, beansShare } from "@/db/schema";
+import { and, desc, eq, ilike, isNotNull, or, inArray, isNull } from "drizzle-orm";
 
-type BeanRow = {
-  id: string;
-  name: string;
-  origin: string | null;
-  roaster: string | null;
-  originDetails: string | null;
-  processingMethod: string | null;
-  roastLevel: string;
-  roastDate: Date | null;
-  isRoastDateBestGuess: boolean;
-  shareSlug: string | null;
-  createdAt: Date;
-};
+type BeanRow = Pick<
+  typeof beans.$inferSelect,
+  "id" | "name" | "originId" | "roasterId" | "originDetails" | "processingMethod" | "roastLevel" | "roastDate" | "isRoastDateBestGuess" | "shareSlug" | "createdAt"
+>;
 
 /**
  * GET /api/shares/beans — List beans the user can add: public beans and (when authenticated) beans shared with the user.
@@ -36,12 +27,10 @@ export async function GET(request: NextRequest) {
   const searchCondition = searchPattern
     ? or(
         ilike(beans.name, searchPattern),
-        ilike(beans.origin, searchPattern),
-        ilike(beans.roaster, searchPattern),
+        ilike(beans.originDetails, searchPattern),
       )
     : undefined;
 
-  // 1) Public beans (general_access = 'public', has share_slug)
   const publicConditions = [
     eq(beans.generalAccess, "public"),
     isNotNull(beans.shareSlug),
@@ -52,8 +41,8 @@ export async function GET(request: NextRequest) {
     .select({
       id: beans.id,
       name: beans.name,
-      origin: beans.origin,
-      roaster: beans.roaster,
+      originId: beans.originId,
+      roasterId: beans.roasterId,
       originDetails: beans.originDetails,
       processingMethod: beans.processingMethod,
       roastLevel: beans.roastLevel,
@@ -72,7 +61,6 @@ export async function GET(request: NextRequest) {
     beanMap.set(r.id, r);
   }
 
-  // 2) When authenticated, add beans shared with the user (accepted only; pending need to be accepted first)
   if (session?.user?.id) {
     const sharedRows = await db
       .select({ beanId: beansShare.beanId })
@@ -80,7 +68,8 @@ export async function GET(request: NextRequest) {
       .where(
         and(
           eq(beansShare.userId, session.user.id),
-          eq(beansShare.status, "accepted"),
+          inArray(beansShare.status, ["accepted", "self"]),
+          isNull(beansShare.unsharedAt),
         ),
       );
 
@@ -93,8 +82,8 @@ export async function GET(request: NextRequest) {
         .select({
           id: beans.id,
           name: beans.name,
-          origin: beans.origin,
-          roaster: beans.roaster,
+          originId: beans.originId,
+          roasterId: beans.roasterId,
           originDetails: beans.originDetails,
           processingMethod: beans.processingMethod,
           roastLevel: beans.roastLevel,
@@ -118,16 +107,17 @@ export async function GET(request: NextRequest) {
   );
   const limited = combined.slice(0, limit);
 
-  // 3) When authenticated, add inCollection for each bean
   if (session?.user?.id && limited.length > 0) {
     const ids = limited.map((b) => b.id);
     const inCollectionRows = await db
-      .select({ beanId: userBeans.beanId })
-      .from(userBeans)
+      .select({ beanId: beansShare.beanId })
+      .from(beansShare)
       .where(
         and(
-          eq(userBeans.userId, session.user.id),
-          inArray(userBeans.beanId, ids),
+          eq(beansShare.userId, session.user.id),
+          inArray(beansShare.beanId, ids),
+          inArray(beansShare.status, ["owner", "accepted", "self"]),
+          isNull(beansShare.unsharedAt),
         ),
       );
     const inCollectionSet = new Set(

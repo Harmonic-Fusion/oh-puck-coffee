@@ -5,6 +5,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
 import { users, accounts, verificationTokens, userEntitlements } from "./db/schema";
+import { createUserId } from "./lib/nanoid-ids";
 import { authConfig } from "./auth.config";
 import { config } from "./shared/config";
 import { createLogger } from "./lib/logger";
@@ -97,11 +98,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     strategy: "jwt",
   },
   useSecureCookies,
-  adapter: DrizzleAdapter(db, {
-    usersTable: users,
-    accountsTable: accounts,
-    verificationTokensTable: verificationTokens,
-  }),
+  adapter: (() => {
+    const base = DrizzleAdapter(db, {
+      usersTable: users,
+      accountsTable: accounts,
+      verificationTokensTable: verificationTokens,
+    });
+    return {
+      ...base,
+      async createUser(data) {
+        const createUser = base.createUser;
+        if (!createUser) throw new Error("DrizzleAdapter createUser is not available");
+        return createUser({ ...data, id: createUserId() });
+      },
+    };
+  })(),
   providers: buildProviders(),
   callbacks: {
     async jwt({ token, user }) {

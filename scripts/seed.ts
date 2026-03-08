@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { grinders, machines, tools } from "../src/db/schema";
+import { createGrinderId, createMachineId } from "../src/lib/nanoid-ids";
 import { config } from "dotenv";
 
 function loadEnv(): void {
@@ -93,7 +94,7 @@ async function seed() {
 
   if (newGrinders.length > 0) {
     for (const name of newGrinders) {
-      await db.insert(grinders).values({ name }).onConflictDoNothing({ target: grinders.name });
+      await db.insert(grinders).values({ id: createGrinderId(), name }).onConflictDoNothing({ target: grinders.name });
     }
     console.log(`  ✓ Inserted ${newGrinders.length} new grinder(s)`);
   }
@@ -108,7 +109,7 @@ async function seed() {
 
   if (newMachines.length > 0) {
     for (const name of newMachines) {
-      await db.insert(machines).values({ name }).onConflictDoNothing({ target: machines.name });
+      await db.insert(machines).values({ id: createMachineId(), name }).onConflictDoNothing({ target: machines.name });
     }
     console.log(`  ✓ Inserted ${newMachines.length} new machine(s)`);
   }

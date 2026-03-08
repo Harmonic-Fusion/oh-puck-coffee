@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, beansShare, users } from "@/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
-import { canAccessBean } from "@/lib/api-auth";
+import { beansShare, users } from "@/db/schema";
+import { eq, and, isNull, ne } from "drizzle-orm";
+import { canAccessBean, isBeanOwner } from "@/lib/beans-access";
+import { createBeansShareId } from "@/lib/nanoid-ids";
 import { createBeanShareSchema } from "@/shared/beans/schema";
 import { Entitlements, hasEntitlement } from "@/shared/entitlements";
 import { config } from "@/shared/config";
@@ -36,23 +37,27 @@ export async function GET(
   }
 
   const isCreatorOrAdmin =
-    result.bean.createdBy === session.user.id ||
+    isBeanOwner(result) ||
     session.user.role === "admin" ||
     session.user.role === "super-admin";
 
-  // Ensure the bean owner always has a row in beans_share (backfill for pre-migration beans)
-  if (result.bean.createdBy) {
-    await db
-      .insert(beansShare)
-      .values({
-        beanId,
-        userId: result.bean.createdBy,
-        invitedBy: null,
-        status: "accepted",
-        shareShotHistory: false,
-        reshareEnabled: true,
-      })
-      .onConflictDoNothing();
+  // Ensure the bean has an owner row (backfill for pre-migration data)
+  const [ownerRow] = await db
+    .select()
+    .from(beansShare)
+    .where(
+      and(
+        eq(beansShare.beanId, beanId),
+        eq(beansShare.status, "owner"),
+      ),
+    )
+    .limit(1);
+
+  if (!ownerRow) {
+    return NextResponse.json(
+      { error: "Bean has no owner row" },
+      { status: 500 },
+    );
   }
 
   const members = await db
@@ -62,21 +67,25 @@ export async function GET(
       userId: beansShare.userId,
       invitedBy: beansShare.invitedBy,
       status: beansShare.status,
-      shareShotHistory: beansShare.shareShotHistory,
-      reshareEnabled: beansShare.reshareEnabled,
+      shotHistoryAccess: beansShare.shotHistoryAccess,
+      reshareAllowed: beansShare.reshareAllowed,
+      beansOpenDate: beansShare.beansOpenDate,
       createdAt: beansShare.createdAt,
+      updatedAt: beansShare.updatedAt,
+      unsharedAt: beansShare.unsharedAt,
       userName: users.name,
       userImage: users.image,
     })
     .from(beansShare)
     .innerJoin(users, eq(beansShare.userId, users.id))
-    .where(eq(beansShare.beanId, beanId));
+    .where(
+      and(eq(beansShare.beanId, beanId), ne(beansShare.status, "unfollowed")),
+    );
 
   return NextResponse.json({
     members,
-    createdBy: result.bean.createdBy,
+    createdBy: ownerRow.userId,
     generalAccess: result.bean.generalAccess,
-    generalAccessShareShots: result.bean.generalAccessShareShots,
     shareSlug: result.bean.shareSlug,
     isOwner: isCreatorOrAdmin,
   });
@@ -84,7 +93,7 @@ export async function GET(
 
 /**
  * POST /api/beans/:id/shares — Create an individual share.
- * Requires creator or reshare permission. Enforces bean-share entitlement for reshareEnabled and maxBeanShares.
+ * Requires creator or reshare permission. Enforces bean-share entitlement for reshareAllowed and maxBeanShares.
  */
 export async function POST(
   request: NextRequest,
@@ -107,7 +116,7 @@ export async function POST(
     return result.error;
   }
 
-  const isCreator = result.bean.createdBy === session.user.id;
+  const isCreator = isBeanOwner(result);
   const isAdmin =
     session.user.role === "admin" || session.user.role === "super-admin";
 
@@ -118,7 +127,7 @@ export async function POST(
       canShare = true;
     } else {
       const [myMembership] = await db
-        .select({ reshareEnabled: beansShare.reshareEnabled })
+        .select({ reshareAllowed: beansShare.reshareAllowed })
         .from(beansShare)
         .where(
           and(
@@ -129,7 +138,7 @@ export async function POST(
           ),
         )
         .limit(1);
-      canShare = myMembership?.reshareEnabled === true;
+      canShare = myMembership?.reshareAllowed === true;
     }
   }
 
@@ -156,7 +165,7 @@ export async function POST(
     );
   }
 
-  const { userId: inviteeUserId, reshareEnabled } = parsed.data;
+  const { userId: inviteeUserId, reshareAllowed } = parsed.data;
 
   if (inviteeUserId === session.user.id) {
     return NextResponse.json(
@@ -166,7 +175,7 @@ export async function POST(
   }
 
   if (
-    reshareEnabled &&
+    reshareAllowed &&
     !hasEntitlement(session.user.entitlements, Entitlements.BEAN_SHARE)
   ) {
     return NextResponse.json(
@@ -181,16 +190,13 @@ export async function POST(
   const individualShareCount = await db
     .select()
     .from(beansShare)
-    .where(eq(beansShare.invitedBy, session.user.id));
-  const allMyBeans = await db
-    .select({ id: beans.id, generalAccess: beans.generalAccess })
-    .from(beans)
-    .where(eq(beans.createdBy, session.user.id));
-  const withGeneralAccess = allMyBeans.filter(
-    (b) => b.generalAccess !== "restricted",
-  );
-  const totalShares = individualShareCount.length + withGeneralAccess.length;
-  if (totalShares >= config.maxBeanShares) {
+    .where(
+      and(
+        eq(beansShare.invitedBy, session.user.id),
+        ne(beansShare.status, "owner"),
+      ),
+    );
+  if (individualShareCount.length >= config.maxBeanShares) {
     return NextResponse.json(
       {
         error: "Maximum bean share limit reached",
@@ -209,18 +215,35 @@ export async function POST(
     .limit(1);
 
   if (existing) {
+    if (existing.unsharedAt != null) {
+      const now = new Date();
+      const [updated] = await db
+        .update(beansShare)
+        .set({
+          unsharedAt: null,
+          status: "accepted",
+          invitedBy: session.user.id,
+          updatedAt: now,
+        })
+        .where(
+          and(eq(beansShare.beanId, beanId), eq(beansShare.userId, inviteeUserId)),
+        )
+        .returning();
+      return NextResponse.json(updated ?? existing, { status: 200 });
+    }
     return NextResponse.json(existing, { status: 200 });
   }
 
   const [share] = await db
     .insert(beansShare)
     .values({
+      id: createBeansShareId(),
       beanId,
       userId: inviteeUserId,
       invitedBy: session.user.id,
       status: "pending",
-      shareShotHistory: false,
-      reshareEnabled,
+      shotHistoryAccess: "restricted",
+      reshareAllowed: reshareAllowed ?? false,
     })
     .returning();
 
@@ -231,6 +254,6 @@ export async function POST(
     );
   }
 
-  // Receiver gets user_beans row only after they accept the share (see accept-share endpoint)
+  // Receiver gets beans_share row only after they accept the share (see accept-share endpoint)
   return NextResponse.json(share, { status: 201 });
 }

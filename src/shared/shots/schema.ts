@@ -13,9 +13,9 @@ function parseRequiredRating(value: unknown): unknown {
 }
 
 export const createShotSchema = z.object({
-  beanId: z.string().min(1, { message: "Required" }).uuid(),
-  grinderId: z.string().uuid().optional(),
-  machineId: z.string().uuid().optional(),
+  beanId: z.string().min(1, { message: "Required" }),
+  grinderId: z.string().optional(),
+  machineId: z.string().optional(),
   doseGrams: z.coerce.number().positive().max(50).optional(),
   yieldGrams: z.coerce.number().positive().max(100).optional(),
   sizeOz: z.coerce.number().positive().max(256).optional(),
@@ -45,7 +45,7 @@ export const createShotSchema = z.object({
         const normalized = Math.round(val / step) * step;
         return Math.abs(val - normalized) < 0.01;
       }, { message: "Rating must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }),
-  ),
+  ).optional(),
   bitter: z.coerce.number().min(1).max(5).refine((val) => {
     // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
     const step = 0.5;
@@ -67,11 +67,11 @@ export const createShotSchema = z.object({
 });
 
 export const shotSchema = z.object({
-  id: z.string().uuid(),
-  userId: z.string().uuid(),
-  beanId: z.string().uuid(),
-  grinderId: z.string().uuid().nullable(),
-  machineId: z.string().uuid().nullable(),
+  id: z.string().min(1),
+  userId: z.string().min(1),
+  beanId: z.string().min(1),
+  grinderId: z.string().nullable(),
+  machineId: z.string().nullable(),
   doseGrams: z.coerce.number(),
   yieldGrams: z.coerce.number(),
   sizeOz: z.coerce.number().nullable(),
@@ -96,6 +96,7 @@ export const shotSchema = z.object({
   adjectives: z.array(z.string()).nullable(),
   isReferenceShot: z.boolean(),
   isHidden: z.boolean(),
+  shareSlug: z.string().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });

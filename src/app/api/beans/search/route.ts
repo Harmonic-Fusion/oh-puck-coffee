@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, userBeans } from "@/db/schema";
-import { ilike, desc, eq, and } from "drizzle-orm";
+import { beans, beansShare } from "@/db/schema";
+import { ilike, desc, eq, and, inArray, isNull } from "drizzle-orm";
 
 /**
  * GET /api/beans/search
@@ -32,8 +32,13 @@ export async function GET(request: NextRequest) {
     })
     .from(beans)
     .innerJoin(
-      userBeans,
-      and(eq(beans.id, userBeans.beanId), eq(userBeans.userId, session.user.id)),
+      beansShare,
+      and(
+        eq(beans.id, beansShare.beanId),
+        eq(beansShare.userId, session.user.id),
+        inArray(beansShare.status, ["owner", "accepted", "self"]),
+        isNull(beansShare.unsharedAt),
+      ),
     )
     .where(searchCondition)
     .orderBy(desc(beans.createdAt))

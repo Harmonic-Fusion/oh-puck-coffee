@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { grinders, shots } from "@/db/schema";
 import { createGrinderSchema } from "@/shared/equipment/schema";
 import { asc, desc, eq, max, sql, and } from "drizzle-orm";
+import { createGrinderId } from "@/lib/nanoid-ids";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
 
   const [grinder] = await db
     .insert(grinders)
-    .values(parsed.data)
+    .values({ ...parsed.data, id: createGrinderId() })
     .returning();
 
   return NextResponse.json(grinder, { status: 201 });

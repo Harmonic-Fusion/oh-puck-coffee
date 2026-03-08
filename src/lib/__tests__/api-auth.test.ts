@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { beans, userBeans, beansShare } from "@/db/schema";
+import { beans, beansShare } from "@/db/schema";
 
 let limitCallCount = 0;
 let selectResults: unknown[][] = [];
@@ -25,28 +25,10 @@ vi.mock("@/db", () => ({
         }),
       }),
     }),
-    insert: vi.fn().mockReturnValue({
-      values: vi.fn().mockReturnValue({
-        returning: vi.fn().mockResolvedValue([
-          {
-            beanId: "b",
-            userId: "u",
-            openBagDate: null,
-            createdAt: new Date(),
-            shareMyShotsPublicly: false,
-          },
-        ]),
-      }),
-    }),
-    update: vi.fn().mockReturnValue({
-      set: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue(undefined),
-      }),
-    }),
   },
 }));
 
-import { canAccessBean } from "@/lib/api-auth";
+import { canAccessBean } from "@/lib/beans-access";
 
 const beanId = "a1b2c3d4-e5f6-7890-abcd-000000000001";
 const userId = "a1b2c3d4-e5f6-7890-abcd-000000000002";
@@ -55,8 +37,6 @@ function makeBean(overrides: Record<string, unknown> = {}) {
   return {
     id: beanId,
     name: "Test Bean",
-    origin: null,
-    roaster: null,
     originId: null,
     roasterId: null,
     originDetails: null,
@@ -64,11 +44,45 @@ function makeBean(overrides: Record<string, unknown> = {}) {
     roastLevel: "medium",
     roastDate: null,
     isRoastDateBestGuess: false,
-    createdBy: userId,
     generalAccess: "restricted",
-    generalAccessShareShots: false,
     shareSlug: null,
     createdAt: new Date(),
+    updatedAt: new Date(),
+    updatedBy: null,
+    ...overrides,
+  };
+}
+
+function makeOwnerShare(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "share-id-owner",
+    beanId,
+    userId,
+    invitedBy: null,
+    status: "owner",
+    shotHistoryAccess: "restricted",
+    reshareAllowed: false,
+    beansOpenDate: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    unsharedAt: null,
+    ...overrides,
+  };
+}
+
+function makeMemberShare(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "share-id-member",
+    beanId,
+    userId,
+    invitedBy: "other-user-id",
+    status: "accepted",
+    shotHistoryAccess: "restricted",
+    reshareAllowed: false,
+    beansOpenDate: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    unsharedAt: null,
     ...overrides,
   };
 }
@@ -90,40 +104,47 @@ describe("canAccessBean", () => {
     expect(data.error).toBe("Bean not found");
   });
 
-  it("allows access when user is the creator", async () => {
-    const bean = makeBean({ createdBy: userId });
-    selectResults = [[bean], []];
+  it("allows access when user is the owner (beans_share status owner)", async () => {
+    const bean = makeBean();
+    const ownerShare = makeOwnerShare();
+    selectResults = [[bean], [ownerShare]];
     const result = await canAccessBean(userId, beanId, "member");
     expect(result.allowed).toBe(true);
     if (result.allowed) {
       expect(result.bean.id).toBe(beanId);
-      expect(result.bean.createdBy).toBe(userId);
+      expect(result.userBean?.status).toBe("owner");
     }
   });
 
-  it("allows access when user has user_beans row", async () => {
+  it("allows access when user has beans_share row (accepted member)", async () => {
     const otherUserId = "a1b2c3d4-e5f6-7890-abcd-000000000003";
-    const bean = makeBean({ createdBy: otherUserId });
-    const userBeanRow = {
-      beanId,
-      userId,
-      openBagDate: null,
-      createdAt: new Date(),
-      shareMyShotsPublicly: false,
-    };
-    selectResults = [[bean], [userBeanRow]];
+    const bean = makeBean();
+    const memberShare = makeMemberShare({ userId, invitedBy: otherUserId });
+    selectResults = [[bean], [memberShare]];
     const result = await canAccessBean(userId, beanId, "member");
     expect(result.allowed).toBe(true);
     if (result.allowed) {
-      expect(result.userBean).toEqual(userBeanRow);
+      expect(result.userBean).toEqual(memberShare);
+    }
+  });
+
+  it("allows access when user has unfollowed status (read-only unshared view)", async () => {
+    const bean = makeBean();
+    const unfollowedShare = makeMemberShare({
+      userId,
+      status: "unfollowed",
+      unsharedAt: new Date(),
+    });
+    selectResults = [[bean], [unfollowedShare]];
+    const result = await canAccessBean(userId, beanId, "member");
+    expect(result.allowed).toBe(true);
+    if (result.allowed) {
+      expect(result.userBean?.status).toBe("unfollowed");
     }
   });
 
   it("allows access when general access is public (no auth required)", async () => {
-    const bean = makeBean({
-      createdBy: "other-user-id",
-      generalAccess: "public",
-    });
+    const bean = makeBean({ generalAccess: "public" });
     selectResults = [[bean]];
     const result = await canAccessBean(null, beanId, undefined);
     expect(result.allowed).toBe(true);
@@ -134,11 +155,7 @@ describe("canAccessBean", () => {
   });
 
   it("allows access when general access is anyone_with_link and user is authenticated", async () => {
-    const otherUserId = "a1b2c3d4-e5f6-7890-abcd-000000000003";
-    const bean = makeBean({
-      createdBy: otherUserId,
-      generalAccess: "anyone_with_link",
-    });
+    const bean = makeBean({ generalAccess: "anyone_with_link" });
     selectResults = [[bean], []];
     const result = await canAccessBean(userId, beanId, "member");
     expect(result.allowed).toBe(true);
@@ -147,10 +164,9 @@ describe("canAccessBean", () => {
     }
   });
 
-  it("denies access when bean is restricted and user is not creator or shared with", async () => {
-    const otherUserId = "a1b2c3d4-e5f6-7890-abcd-000000000003";
-    const bean = makeBean({ createdBy: otherUserId });
-    selectResults = [[bean], [], []];
+  it("denies access when bean is restricted and user has no beans_share row", async () => {
+    const bean = makeBean();
+    selectResults = [[bean], []];
     const result = await canAccessBean(userId, beanId, "member");
     expect(result.allowed).toBe(false);
     if (!result.allowed) {
@@ -160,16 +176,14 @@ describe("canAccessBean", () => {
   });
 
   it("allows access when user is admin regardless of ownership", async () => {
-    const otherUserId = "a1b2c3d4-e5f6-7890-abcd-000000000003";
-    const bean = makeBean({ createdBy: otherUserId });
+    const bean = makeBean();
     selectResults = [[bean], []];
     const result = await canAccessBean(userId, beanId, "admin");
     expect(result.allowed).toBe(true);
   });
 
   it("allows access when user is super-admin regardless of ownership", async () => {
-    const otherUserId = "a1b2c3d4-e5f6-7890-abcd-000000000003";
-    const bean = makeBean({ createdBy: otherUserId });
+    const bean = makeBean();
     selectResults = [[bean], []];
     const result = await canAccessBean(userId, beanId, "super-admin");
     expect(result.allowed).toBe(true);
@@ -177,5 +191,4 @@ describe("canAccessBean", () => {
 });
 
 void beans;
-void userBeans;
 void beansShare;

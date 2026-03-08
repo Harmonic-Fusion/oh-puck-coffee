@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/common/Button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useToast } from "@/components/common/Toast";
 import { useUnlinkSheet } from "./hooks";
 import type { Integration } from "@/shared/integrations/schema";
 
@@ -10,11 +13,17 @@ interface IntegrationStatusProps {
 
 export function IntegrationStatus({ integration }: IntegrationStatusProps) {
   const unlinkSheet = useUnlinkSheet();
+  const { showToast } = useToast();
+  const [confirmUnlinkOpen, setConfirmUnlinkOpen] = useState(false);
 
   const handleUnlink = () => {
-    if (confirm("Unlink this Google Sheet? New shots will no longer sync.")) {
-      unlinkSheet.mutate(integration.id);
-    }
+    setConfirmUnlinkOpen(true);
+  };
+
+  const handleConfirmUnlink = () => {
+    unlinkSheet.mutate(integration.id, {
+      onSuccess: () => showToast("success", "Sheet unlinked."),
+    });
   };
 
   return (
@@ -78,6 +87,16 @@ export function IntegrationStatus({ integration }: IntegrationStatusProps) {
           {unlinkSheet.error.message}
         </p>
       )}
+      <ConfirmDialog
+        open={confirmUnlinkOpen}
+        onOpenChange={setConfirmUnlinkOpen}
+        title="Unlink Google Sheet?"
+        description="New shots will no longer sync to this sheet."
+        confirmLabel="Unlink"
+        variant="danger"
+        loading={unlinkSheet.isPending}
+        onConfirm={handleConfirmUnlink}
+      />
     </div>
   );
 }
