@@ -19,13 +19,12 @@ export function SharedWith({
   if (isLoading || !sharesData) return null;
 
   const { members, createdBy, generalAccess } = sharesData;
-  const isPublic =
-    generalAccess === "public" || generalAccess === "anyone_with_link";
+  const isLinkSharing = generalAccess === "anyone_with_link";
   // Exclude the owner row from the display count — show only followers
   const followers = members.filter((m) => m.userId !== createdBy);
   const sharedUsersCount = followers.length;
 
-  if (!isPublic && sharedUsersCount === 0) {
+  if (!isLinkSharing && sharedUsersCount === 0) {
     return null;
   }
 
@@ -79,7 +78,7 @@ export function SharedWith({
         }}
         className="flex shrink-0 items-center justify-center rounded-full border-2 border-white bg-stone-100 dark:border-stone-900 dark:bg-stone-800"
       >
-        {isPublic ? (
+        {isLinkSharing ? (
           <span className="mb-0.5 text-xl leading-none text-stone-500 dark:text-stone-400">
             ∞
           </span>

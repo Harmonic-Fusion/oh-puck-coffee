@@ -65,7 +65,6 @@ function makeOwnerShare(overrides: Record<string, unknown> = {}) {
     beansOpenDate: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    unsharedAt: null,
     ...overrides,
   };
 }
@@ -82,7 +81,6 @@ function makeMemberShare(overrides: Record<string, unknown> = {}) {
     beansOpenDate: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    unsharedAt: null,
     ...overrides,
   };
 }
@@ -128,12 +126,11 @@ describe("canAccessBean", () => {
     }
   });
 
-  it("allows access when user has unfollowed status (read-only unshared view)", async () => {
+  it("allows access when user has unfollowed status (read-only)", async () => {
     const bean = makeBean();
     const unfollowedShare = makeMemberShare({
       userId,
       status: "unfollowed",
-      unsharedAt: new Date(),
     });
     selectResults = [[bean], [unfollowedShare]];
     const result = await canAccessBean(userId, beanId, "member");
@@ -143,15 +140,11 @@ describe("canAccessBean", () => {
     }
   });
 
-  it("allows access when general access is public (no auth required)", async () => {
-    const bean = makeBean({ generalAccess: "public" });
+  it("denies access when unauthenticated and general access is anyone_with_link (no public beans)", async () => {
+    const bean = makeBean({ generalAccess: "anyone_with_link" });
     selectResults = [[bean]];
     const result = await canAccessBean(null, beanId, undefined);
-    expect(result.allowed).toBe(true);
-    if (result.allowed) {
-      expect(result.bean.generalAccess).toBe("public");
-      expect(result.userBean).toBeNull();
-    }
+    expect(result.allowed).toBe(false);
   });
 
   it("allows access when general access is anyone_with_link and user is authenticated", async () => {

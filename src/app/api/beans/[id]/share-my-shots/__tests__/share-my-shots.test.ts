@@ -51,7 +51,7 @@ function makeSession(userId: string) {
   return { user: { id: userId, role: "member" as const } };
 }
 
-function makeAccessWithUserBean(beanId: string, userId: string, shotHistoryAccess: "none" | "restricted" | "anyone_with_link" | "public" = "restricted") {
+function makeAccessWithUserBean(beanId: string, userId: string, shotHistoryAccess: "none" | "restricted" | "anyone_with_link" = "restricted") {
   return {
     allowed: true as const,
     bean: { id: beanId, name: "Test Bean" },
@@ -106,32 +106,21 @@ describe("PATCH /api/beans/:id/share-my-shots — shot history access toggle", (
     expect(body.shotHistoryAccess).toBe("anyone_with_link");
   });
 
-  it("returns 200 and updated shotHistoryAccess when member sets public", async () => {
+  it("returns 400 when member sets public (removed in one-way sharing)", async () => {
     mock.session = makeSession(BOB_ID);
-    mock.canAccessBeanResult = makeAccessWithUserBean(BEAN_ID, BOB_ID, "anyone_with_link");
-    const updatedRow = {
-      beanId: BEAN_ID,
-      userId: BOB_ID,
-      beansOpenDate: null,
-      shotHistoryAccess: "public" as const,
-      reshareAllowed: false,
-      createdAt: new Date(),
-    };
-    mock.dbQueue = [[updatedRow]];
+    mock.canAccessBeanResult = makeAccessWithUserBean(BEAN_ID, BOB_ID);
 
     const res = await PATCH(
       jsonReq(SHARE_MY_SHOTS_URL, { shotHistoryAccess: "public" }),
       { params: Promise.resolve({ id: BEAN_ID }) },
     );
 
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as { shotHistoryAccess: string };
-    expect(body.shotHistoryAccess).toBe("public");
+    expect(res.status).toBe(400);
   });
 
   it("returns 200 when member sets restricted (only other members see)", async () => {
     mock.session = makeSession(BOB_ID);
-    mock.canAccessBeanResult = makeAccessWithUserBean(BEAN_ID, BOB_ID, "public");
+    mock.canAccessBeanResult = makeAccessWithUserBean(BEAN_ID, BOB_ID, "anyone_with_link");
     const updatedRow = {
       beanId: BEAN_ID,
       userId: BOB_ID,
@@ -191,7 +180,7 @@ describe("PATCH /api/beans/:id/share-my-shots — shot history access toggle", (
     mock.session = null;
 
     const res = await PATCH(
-      jsonReq(SHARE_MY_SHOTS_URL, { shotHistoryAccess: "public" }),
+      jsonReq(SHARE_MY_SHOTS_URL, { shotHistoryAccess: "anyone_with_link" }),
       { params: Promise.resolve({ id: BEAN_ID }) },
     );
 
@@ -207,7 +196,7 @@ describe("PATCH /api/beans/:id/share-my-shots — shot history access toggle", (
     };
 
     const res = await PATCH(
-      jsonReq(SHARE_MY_SHOTS_URL, { shotHistoryAccess: "public" }),
+      jsonReq(SHARE_MY_SHOTS_URL, { shotHistoryAccess: "anyone_with_link" }),
       { params: Promise.resolve({ id: BEAN_ID }) },
     );
 

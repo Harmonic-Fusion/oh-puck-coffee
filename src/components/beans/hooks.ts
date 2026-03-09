@@ -153,7 +153,7 @@ export function useUpdateShareMyShots(beanId: string) {
   ).shareMyShots;
   return useMutation({
     mutationFn: async (
-      shotHistoryAccess: "none" | "restricted" | "anyone_with_link" | "public",
+      shotHistoryAccess: "none" | "restricted" | "anyone_with_link",
     ) => {
       const res = await fetch(resolvePath(shareMyShotsPath, { id: beanId }), {
         method: "PATCH",
@@ -345,12 +345,11 @@ export interface BeanShareItem {
   userId: string;
   invitedBy: string | null;
   status: "owner" | "pending" | "accepted" | "self" | "unfollowed";
-  shotHistoryAccess: "none" | "restricted" | "anyone_with_link" | "public";
+  shotHistoryAccess: "none" | "restricted" | "anyone_with_link";
   reshareAllowed: boolean;
   beansOpenDate: string | null;
   createdAt: string;
   updatedAt: string;
-  unsharedAt: string | null;
   userName: string | null;
   userImage: string | null;
 }
@@ -358,7 +357,7 @@ export interface BeanShareItem {
 export interface BeanSharesData {
   members: BeanShareItem[];
   createdBy: string;
-  generalAccess: "restricted" | "anyone_with_link" | "public";
+  generalAccess: "restricted" | "anyone_with_link";
   shareSlug: string | null;
   isOwner: boolean;
 }
@@ -447,7 +446,7 @@ export function useUpdateBeanShare(beanId: string) {
       reshareAllowed,
     }: {
       shareId: string;
-      shotHistoryAccess?: "none" | "restricted" | "anyone_with_link" | "public";
+      shotHistoryAccess?: "none" | "restricted" | "anyone_with_link";
       reshareAllowed?: boolean;
     }) => {
       const shareIdRoute = (
@@ -483,7 +482,7 @@ export function useUpdateGeneralAccess(beanId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: {
-      generalAccess: "restricted" | "anyone_with_link" | "public";
+      generalAccess: "restricted" | "anyone_with_link";
     }) => {
       const generalAccessRoute = (
         ApiRoutes.beans.beanId as unknown as {
@@ -535,7 +534,7 @@ export interface ShareInvite {
   id: string;
   beanId: string;
   invitedBy: string | null;
-  shotHistoryAccess: "none" | "restricted" | "anyone_with_link" | "public";
+  shotHistoryAccess: "none" | "restricted" | "anyone_with_link";
   reshareAllowed: boolean;
   createdAt: string;
   beanName: string;

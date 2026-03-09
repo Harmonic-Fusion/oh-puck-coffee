@@ -3,7 +3,7 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beans, beansShare } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { canAccessBean, isBeanOwner, unshareSelfMembersOnRestricted } from "@/lib/beans-access";
+import { canAccessBean, isBeanOwner } from "@/lib/beans-access";
 import { updateGeneralAccessSchema } from "@/shared/beans/schema";
 import { generateShortUid } from "@/lib/short-uid";
 import { config } from "@/shared/config";
@@ -11,7 +11,6 @@ import { config } from "@/shared/config";
 /**
  * PATCH /api/beans/:id/general-access — Update general access.
  * Owner-only. Generates shareSlug when non-restricted, clears when restricted. Enforces maxBeanShares.
- * When downgrading to restricted, unshares all self-status members.
  */
 export async function PATCH(
   request: NextRequest,
@@ -48,7 +47,23 @@ export async function PATCH(
   }
 
   const { generalAccess } = parsed.data;
-  const wasRestricted = result.bean.generalAccess === "restricted";
+  const currentAccess = result.bean.generalAccess;
+
+  // One-way only: reject downgrade from anyone_with_link (or legacy public) to restricted
+  const isCurrentlyLinkOrPublic =
+    currentAccess === "anyone_with_link" ||
+    (currentAccess as string) === "public";
+  if (isCurrentlyLinkOrPublic && generalAccess === "restricted") {
+    return NextResponse.json(
+      {
+        error: "General access cannot be reduced once set to Anyone with the link.",
+        code: "CANNOT_DOWNGRADE_GENERAL_ACCESS",
+      },
+      { status: 400 },
+    );
+  }
+
+  const wasRestricted = currentAccess === "restricted";
 
   if (
     generalAccess !== "restricted" &&
@@ -72,12 +87,8 @@ export async function PATCH(
     }
   }
 
-  if (generalAccess === "restricted" && !wasRestricted) {
-    await unshareSelfMembersOnRestricted(beanId);
-  }
-
   const updates: {
-    generalAccess: "restricted" | "anyone_with_link" | "public";
+    generalAccess: "restricted" | "anyone_with_link";
     shareSlug: string | null;
     updatedAt: Date;
     updatedBy: string | null;

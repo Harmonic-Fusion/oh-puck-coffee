@@ -7,7 +7,7 @@ import { canAccessBean } from "@/lib/beans-access";
 import { z } from "zod";
 
 const bodySchema = z.object({
-  shotHistoryAccess: z.enum(["none", "restricted", "anyone_with_link", "public"]),
+  shotHistoryAccess: z.enum(["none", "restricted", "anyone_with_link"]),
 });
 
 /**

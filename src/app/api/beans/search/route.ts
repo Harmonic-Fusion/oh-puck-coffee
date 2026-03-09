@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beans, beansShare } from "@/db/schema";
-import { ilike, desc, eq, and, inArray, isNull } from "drizzle-orm";
+import { ilike, desc, eq, and, inArray } from "drizzle-orm";
 
 /**
  * GET /api/beans/search
@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
         eq(beans.id, beansShare.beanId),
         eq(beansShare.userId, session.user.id),
         inArray(beansShare.status, ["owner", "accepted", "self"]),
-        isNull(beansShare.unsharedAt),
       ),
     )
     .where(searchCondition)

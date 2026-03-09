@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beans, shots, users, grinders, machines, beansShare } from "@/db/schema";
-import { eq, and, desc, inArray, isNull, or } from "drizzle-orm";
+import { eq, and, desc, inArray, or } from "drizzle-orm";
 
 /**
  * GET /api/shares/beans/:slug — Public endpoint to fetch a bean by share slug.
@@ -65,20 +65,20 @@ export async function GET(
 
   const beanId = bean.id;
 
-  // Unauthenticated: only public. Authenticated: anyone_with_link + public. Exclude unshared members.
+  // Active members who opted in to share shots on this page (anyone_with_link; no public)
   const optedInRows = await db
     .select({ userId: beansShare.userId })
     .from(beansShare)
     .where(
       and(
         eq(beansShare.beanId, beanId),
-        isNull(beansShare.unsharedAt),
+        inArray(beansShare.status, ["owner", "accepted", "self"]),
         isAuthenticated
           ? or(
-              eq(beansShare.shotHistoryAccess, "public"),
               eq(beansShare.shotHistoryAccess, "anyone_with_link"),
+              eq(beansShare.shotHistoryAccess, "restricted"),
             )
-          : eq(beansShare.shotHistoryAccess, "public"),
+          : eq(beansShare.shotHistoryAccess, "anyone_with_link"),
       ),
     );
   const optedInUserIds = optedInRows.map((r) => r.userId);

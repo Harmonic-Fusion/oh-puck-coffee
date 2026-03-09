@@ -17,12 +17,6 @@ export async function GET(
 
   const { id } = await params;
 
-  console.error("[GET /api/beans/:id]", {
-    beanId: id,
-    userId: session.user.id,
-    userRole: session.user.role,
-  });
-
   const result = await canAccessBean(
     session.user.id,
     id,
@@ -30,10 +24,6 @@ export async function GET(
   );
 
   if (!result.allowed) {
-    console.error("[GET /api/beans/:id] access denied", {
-      beanId: id,
-      userId: session.user.id,
-    });
     return result.error;
   }
 
@@ -47,7 +37,6 @@ export async function GET(
         reshareAllowed: result.userBean.reshareAllowed,
         status: result.userBean.status,
         createdAt: result.userBean.createdAt,
-        unsharedAt: result.userBean.unsharedAt,
       }
     : null;
 
@@ -156,7 +145,6 @@ export async function PATCH(
         reshareAllowed: userBeanRow.reshareAllowed,
         status: userBeanRow.status,
         createdAt: userBeanRow.createdAt,
-        unsharedAt: userBeanRow.unsharedAt,
       }
     : null;
 

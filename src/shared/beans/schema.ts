@@ -27,7 +27,7 @@ export const beanSchema = z.object({
   roastLevel: z.string(),
   roastDate: z.coerce.date().nullable(),
   isRoastDateBestGuess: z.boolean(),
-  generalAccess: z.enum(["restricted", "anyone_with_link", "public"]),
+  generalAccess: z.enum(["restricted", "anyone_with_link"]),
   shareSlug: z.string().nullable(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
@@ -41,13 +41,12 @@ export const beanShareRowSchema = z.object({
   userId: z.string().min(1),
   invitedBy: z.string().nullable(),
   status: z.enum(["owner", "pending", "accepted", "self", "unfollowed"]),
-  shotHistoryAccess: z.enum(["none", "restricted", "anyone_with_link", "public"]),
+  shotHistoryAccess: z.enum(["none", "restricted", "anyone_with_link"]),
   reshareAllowed: z.boolean(),
   beansOpenDate: z.coerce.date().nullable(),
   openBagDate: z.coerce.date().nullable().optional(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
-  unsharedAt: z.coerce.date().nullable(),
 });
 
 export type CreateBean = z.infer<typeof createBeanSchema>;
@@ -64,12 +63,12 @@ export const createBeanShareSchema = z.object({
 
 /** Request body for PATCH /api/beans/:id/general-access */
 export const updateGeneralAccessSchema = z.object({
-  generalAccess: z.enum(["restricted", "anyone_with_link", "public"]),
+  generalAccess: z.enum(["restricted", "anyone_with_link"]),
 });
 
 /** Request body for PATCH /api/beans/:id/shares/:shareId — update a person's access. */
 export const updateBeanShareSchema = z.object({
-  shotHistoryAccess: z.enum(["none", "restricted", "anyone_with_link", "public"]).optional(),
+  shotHistoryAccess: z.enum(["none", "restricted", "anyone_with_link"]).optional(),
   reshareAllowed: z.boolean().optional(),
 });
 

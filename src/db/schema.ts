@@ -101,7 +101,7 @@ export const beans = pgTable("beans", {
     .default(false)
     .notNull(),
   generalAccess: text("general_access")
-    .$type<"restricted" | "anyone_with_link" | "public">()
+    .$type<"restricted" | "anyone_with_link">()
     .default("restricted")
     .notNull(),
   shareSlug: text("share_slug").unique(),
@@ -130,7 +130,7 @@ export const beansShare = pgTable(
       .notNull(),
     // Member's shot visibility: none | restricted | anyone_with_link | public
     shotHistoryAccess: text("shot_history_access")
-      .$type<"none" | "restricted" | "anyone_with_link" | "public">()
+      .$type<"none" | "restricted" | "anyone_with_link">()
       .default("restricted")
       .notNull(),
     // Owner-granted permission: can this member invite others?
@@ -138,8 +138,6 @@ export const beansShare = pgTable(
     beansOpenDate: timestamp("beans_open_date", { mode: "date" }),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
-    // Set when the owner removes a member. Member retains read-only access to their own shots.
-    unsharedAt: timestamp("unshared_at", { mode: "date" }),
   },
   (t) => [unique("beans_share_bean_user_key").on(t.beanId, t.userId)],
 );

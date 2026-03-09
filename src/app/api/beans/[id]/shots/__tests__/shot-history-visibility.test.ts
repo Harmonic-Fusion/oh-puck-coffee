@@ -15,7 +15,7 @@ const SHARE_ID = "00000000-0000-4000-c000-000000000001";
 //
 // The route issues these DB queries in order:
 //   [0] myShots         — own shots, always fetched
-//   [1] sharingMembers  — beansShare WHERE status IN (accepted, owner, self) AND unsharedAt IS NULL
+//   [1] sharingMembers  — beansShare WHERE status IN (accepted, owner, self)
 //                         AND shot_history_access IN ('restricted', 'anyone_with_link', 'public')
 //   [2] sharedShots     — shots from sharer user IDs (only when [1] non-empty)
 //
@@ -126,7 +126,6 @@ function makeAccessAllowed(_ownerId = ALICE_ID) {
       beansOpenDate: null as Date | null,
       createdAt: new Date("2024-01-01"),
       updatedAt: new Date("2024-01-01"),
-      unsharedAt: null as Date | null,
     },
   };
 }
@@ -365,18 +364,18 @@ describe("shotHistoryAccess none vs restricted", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Unshared members' shots excluded (sharingMembers query filters unsharedAt IS NULL)
+// Unfollowed / non-active members' shots excluded (sharingMembers filters by status owner|accepted|self)
 // ─────────────────────────────────────────────────────────────────────────────
-describe("Unshared members' shots excluded from shared view", () => {
-  it("Bob sees only his own shots when Alice has been unshared (sharingMembers excludes unshared)", async () => {
+describe("Unfollowed / excluded members' shots not in shared view", () => {
+  it("Bob sees only his own shots when Alice has status unfollowed (sharingMembers excludes non-active)", async () => {
     mock.session = makeSession(BOB_ID);
     mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID);
 
-    // Alice was unshared → sharingMembers query (unsharedAt IS NULL) returns [].
+    // Alice has status unfollowed → sharingMembers query (status IN owner, accepted, self) returns [].
     // Bob's own shots still returned; no shared shots from Alice.
     mock.dbResults = [
       [makeShot(BOB_SHOT_ID, BOB_ID)], // myShots for Bob
-      [], // sharingMembers: empty because Alice has unsharedAt set
+      [], // sharingMembers: empty because Alice is not in (owner, accepted, self)
     ];
 
     const res = await GET(makeRequest(BEAN_ID), {

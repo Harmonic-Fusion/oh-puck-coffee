@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { beans, beansShare } from "@/db/schema";
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 type BeanRow = typeof beans.$inferSelect;
 type BeanShareRow = typeof beansShare.$inferSelect;
@@ -20,8 +20,8 @@ function logBeanAccess(
 
 /**
  * Checks if a user (or unauthenticated visitor) can access a bean.
- * Uses only beans_share: ownership = status 'owner', membership = status 'accepted' or 'self' with unshared_at null.
- * Flow: admin → owner/member via beans_share → general_access anyone_with_link (auth) → general_access public → deny.
+ * Uses only beans_share: ownership = status 'owner', membership = status 'accepted' or 'self'.
+ * Flow: admin → owner/member via beans_share → general_access anyone_with_link (auth) → deny.
  * Returns { allowed, bean, userBean? } when allowed (userBean = user's beans_share row if any), or { allowed: false, error } when denied.
  */
 export async function canAccessBean(
@@ -72,23 +72,19 @@ export async function canAccessBean(
     return { allowed: true, bean, userBean };
   }
 
-  // 2. User has a beans_share row: owner, or accepted/self with unshared_at null, or unfollowed (read-only unshared view)
+  // 2. User has a beans_share row: owner, or accepted/self, or unfollowed (read-only)
   if (userId) {
     const share = await getUserShare();
     if (share) {
       logBeanAccess(beanId, userId, {
         step: "share_found",
         status: share.status,
-        unsharedAt: share.unsharedAt ?? null,
       });
       if (share.status === "owner") {
         logBeanAccess(beanId, userId, { step: "allowed_owner" });
         return { allowed: true, bean, userBean: share };
       }
-      if (
-        (share.status === "accepted" || share.status === "self") &&
-        share.unsharedAt === null
-      ) {
+      if (share.status === "accepted" || share.status === "self") {
         logBeanAccess(beanId, userId, { step: "allowed_member" });
         return { allowed: true, bean, userBean: share };
       }
@@ -96,23 +92,17 @@ export async function canAccessBean(
         logBeanAccess(beanId, userId, { step: "allowed_unfollowed" });
         return { allowed: true, bean, userBean: share };
       }
-      // Pending or unshared member: no access via share; fall through to general_access
+      // Pending: no access via share; fall through to general_access
     } else {
       logBeanAccess(beanId, userId, { step: "no_share_row" });
     }
   }
 
-  // 3. Anyone with the link (authenticated only)
-  if (bean.generalAccess === "anyone_with_link" && userId) {
+  // 3. Anyone with the link (authenticated only).
+  const linkAccess = bean.generalAccess === "anyone_with_link";
+  if (linkAccess && userId) {
     const userBean = await getUserShare();
     logBeanAccess(beanId, userId, { step: "allowed_anyone_with_link", userBean: !!userBean });
-    return { allowed: true, bean, userBean };
-  }
-
-  // 4. Public — anyone including unauthenticated
-  if (bean.generalAccess === "public") {
-    const userBean = userId ? await getUserShare() : null;
-    logBeanAccess(beanId, userId, { step: "allowed_public", userBean: !!userBean });
     return { allowed: true, bean, userBean };
   }
 
@@ -134,10 +124,10 @@ export function isBeanOwner(result: CanAccessBeanResult): boolean {
 }
 
 /**
- * Recursive unsharing: when a member is unshared, set unshared_at and reshare_allowed=false
- * on that row and on all descendants (members they invited) for the same bean.
+ * Recursive hard-delete: when the owner removes a member, delete that beans_share row
+ * and all descendants (members they invited) for the same bean.
  */
-export async function unshareMemberAndDescendants(
+export async function deleteMemberAndDescendants(
   beanId: string,
   shareId: string,
 ): Promise<void> {
@@ -149,17 +139,9 @@ export async function unshareMemberAndDescendants(
     )
     .limit(1);
 
-  if (!share || share.unsharedAt !== null) return;
+  if (!share) return;
 
-  const now = new Date();
-
-  await db
-    .update(beansShare)
-    .set({ unsharedAt: now, reshareAllowed: false, updatedAt: now })
-    .where(
-      and(eq(beansShare.id, shareId), eq(beansShare.beanId, beanId)),
-    );
-
+  // Delete descendants first (anyone this member invited)
   const descendants = await db
     .select()
     .from(beansShare)
@@ -167,29 +149,16 @@ export async function unshareMemberAndDescendants(
       and(
         eq(beansShare.beanId, beanId),
         eq(beansShare.invitedBy, share.userId),
-        isNull(beansShare.unsharedAt),
       ),
     );
 
   for (const desc of descendants) {
-    await unshareMemberAndDescendants(beanId, desc.id);
+    await deleteMemberAndDescendants(beanId, desc.id);
   }
-}
 
-/**
- * When general_access is downgraded to 'restricted', unshare all members with status 'self'
- * (they were granted access via the previous more permissive general_access).
- */
-export async function unshareSelfMembersOnRestricted(beanId: string): Promise<void> {
-  const now = new Date();
   await db
-    .update(beansShare)
-    .set({ unsharedAt: now, updatedAt: now })
+    .delete(beansShare)
     .where(
-      and(
-        eq(beansShare.beanId, beanId),
-        eq(beansShare.status, "self"),
-        isNull(beansShare.unsharedAt),
-      ),
+      and(eq(beansShare.id, shareId), eq(beansShare.beanId, beanId)),
     );
 }

@@ -3,7 +3,7 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beans, beansShare, shots } from "@/db/schema";
 import { createBeanSchema } from "@/shared/beans/schema";
-import { ilike, desc, eq, and, max, sql, inArray, count, isNull } from "drizzle-orm";
+import { ilike, desc, eq, and, max, sql, inArray, count } from "drizzle-orm";
 import { generateShortUid } from "@/lib/short-uid";
 import { createBeanId, createBeansShareId } from "@/lib/nanoid-ids";
 
@@ -26,13 +26,11 @@ export async function GET(request: NextRequest) {
   const withCounts = searchParams.get("withCounts") === "true";
   const shareShotIds = parseShareShotIds(searchParams);
 
-  // User sees beans they have a beans_share row for (owner, accepted, or self with unshared_at null)
+  // User sees all beans they have a beans_share row for (any status: owner, pending, accepted, self, unfollowed)
   const searchCondition = search ? ilike(beans.name, `%${search}%`) : undefined;
   const memberCondition = and(
     eq(beansShare.beanId, beans.id),
     eq(beansShare.userId, session.user.id),
-    isNull(beansShare.unsharedAt),
-    inArray(beansShare.status, ["owner", "accepted", "self"]),
   );
 
   function toBeanWithUserData(
@@ -46,7 +44,7 @@ export async function GET(request: NextRequest) {
       roastLevel: string;
       roastDate: Date | null;
       isRoastDateBestGuess: boolean;
-      generalAccess: "restricted" | "anyone_with_link" | "public";
+      generalAccess: "restricted" | "anyone_with_link";
       shareSlug: string | null;
       createdAt: Date;
       updatedAt: Date;
@@ -55,7 +53,7 @@ export async function GET(request: NextRequest) {
       shareCreatedAt: Date;
       beanId: string;
       userId: string;
-      shotHistoryAccess: "none" | "restricted" | "anyone_with_link" | "public";
+      shotHistoryAccess: "none" | "restricted" | "anyone_with_link";
       status: string;
       reshareAllowed: boolean;
     } & Record<string, unknown>,

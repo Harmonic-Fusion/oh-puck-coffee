@@ -124,7 +124,6 @@ function makeAccessAllowed(ownerId = ALICE_ID, asOwner = false) {
         beansOpenDate: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        unsharedAt: null,
       }
     : null;
   return {
@@ -192,7 +191,6 @@ describe("Bean sharing API", () => {
         beansOpenDate: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        unsharedAt: null,
       };
       mock.dbQueue = [
         [createdBean],  // insert(beans).returning()
@@ -399,17 +397,16 @@ describe("Bean sharing API", () => {
       });
     });
 
-    describe("re-invite after removal", () => {
-      it("owner re-inviting removed user returns 200 with status accepted when existing row has unsharedAt", async () => {
+    describe("re-invite after unfollow", () => {
+      it("owner re-inviting unfollowed user returns 200 with status accepted when existing row has status unfollowed", async () => {
         mock.session = makeSession(ALICE_ID);
         mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID, true);
-        const existingUnshared = {
+        const existingUnfollowed = {
           id: SHARE_ID,
           beanId: BEAN_ID,
           userId: BOB_ID,
           invitedBy: ALICE_ID,
-          status: "accepted" as const,
-          unsharedAt: new Date(),
+          status: "unfollowed" as const,
           shotHistoryAccess: "restricted" as const,
           reshareAllowed: false,
           beansOpenDate: null,
@@ -417,15 +414,15 @@ describe("Bean sharing API", () => {
           updatedAt: new Date(),
         };
         const updatedRow = {
-          ...existingUnshared,
-          unsharedAt: null,
+          ...existingUnfollowed,
           status: "accepted" as const,
+          invitedBy: ALICE_ID,
           updatedAt: new Date(),
         };
         mock.dbQueue = [
-          [],                 // individualShareCount
-          [existingUnshared], // existing share lookup (has unsharedAt)
-          [updatedRow],       // update.set.where.returning
+          [],                      // individualShareCount
+          [existingUnfollowed],    // existing share lookup (status unfollowed)
+          [updatedRow],            // update.set.where.returning
         ];
 
         const res = await POST(
@@ -455,7 +452,6 @@ describe("Bean sharing API", () => {
         beansOpenDate: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        unsharedAt: null,
       };
       const acceptedShare = { ...pendingShare, status: "accepted" as const, updatedAt: new Date() };
       mock.dbQueue = [[pendingShare], [acceptedShare]];
@@ -526,7 +522,6 @@ describe("Bean sharing API", () => {
             userId: BOB_ID,
             status: "accepted" as const,
             invitedBy: ALICE_ID,
-            unsharedAt: null,
           },
         };
         mock.dbQueue = [];
@@ -559,7 +554,6 @@ describe("Bean sharing API", () => {
             userId: BOB_ID,
             status: "unfollowed" as const,
             invitedBy: null,
-            unsharedAt: new Date(),
           },
         };
         mock.dbQueue = [[], []];
@@ -574,7 +568,7 @@ describe("Bean sharing API", () => {
         expect(body.message).toMatch(/already in your collection|added to your collection/i);
       });
 
-      it("removed user re-following via add-to-collection can restore access (self)", async () => {
+      it("removed user re-following via add-to-collection can restore access (self) — when status was unfollowed", async () => {
         mock.session = makeSession(BOB_ID);
         mock.canAccessBeanResult = {
           allowed: true as const,
@@ -588,9 +582,8 @@ describe("Bean sharing API", () => {
             id: SHARE_ID,
             beanId: BEAN_ID,
             userId: BOB_ID,
-            status: "accepted" as const,
+            status: "unfollowed" as const,
             invitedBy: ALICE_ID,
-            unsharedAt: new Date(),
           },
         };
         mock.dbQueue = [];
@@ -638,6 +631,23 @@ describe("Bean sharing API", () => {
 
       expect(res.status).toBe(200);
     });
+
+    it("returns 403 when non-owner tries to set reshareAllowed on their own row", async () => {
+      // Bob (member, not owner) tries to set reshareAllowed on his own share row
+      const bobShareId = "share-bob";
+      mock.session = makeSession(BOB_ID);
+      mock.canAccessBeanResult = makeAccessAllowed(); // Bob is member, not owner
+      mock.dbQueue = [[{ id: bobShareId, beanId: BEAN_ID, userId: BOB_ID, reshareAllowed: false, shotHistoryAccess: "restricted", status: "accepted" }]];
+
+      const res = await patchShare(
+        jsonReq(SHARE_URL.replace(SHARE_ID, bobShareId), "PATCH", { reshareAllowed: true }),
+        { params: Promise.resolve({ id: BEAN_ID, shareId: bobShareId }) },
+      );
+
+      expect(res.status).toBe(403);
+      const json = (await res.json()) as { error: string };
+      expect(json.error).toMatch(/owner.*reshare/i);
+    });
   });
 
   // ─── DELETE /api/beans/:id/shares/:shareId ──────────────────────────────────
@@ -651,7 +661,6 @@ describe("Bean sharing API", () => {
           userId: BOB_ID,
           status: "accepted" as const,
           invitedBy: ALICE_ID,
-          unsharedAt: null,
         };
         const ownerRow = { userId: ALICE_ID };
         mock.dbQueue = [[share], [ownerRow], [], []];
@@ -672,7 +681,6 @@ describe("Bean sharing API", () => {
           userId: BOB_ID,
           status: "self" as const,
           invitedBy: null,
-          unsharedAt: null,
         };
         const ownerRow = { userId: ALICE_ID };
         mock.dbQueue = [[share], [ownerRow], [], []];
@@ -712,7 +720,7 @@ describe("Bean sharing API", () => {
     });
 
     describe("owner removes member", () => {
-      it("returns 204 and recursively unshares member and descendants when owner deletes a share", async () => {
+      it("returns 204 and recursively deletes member and descendants when owner deletes a share", async () => {
         mock.session = makeSession(ALICE_ID);
         mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID, true);
         const bobShare = {
@@ -721,7 +729,6 @@ describe("Bean sharing API", () => {
           userId: BOB_ID,
           invitedBy: ALICE_ID,
           status: "accepted" as const,
-          unsharedAt: null,
         };
         mock.dbQueue = [[bobShare], [bobShare], [], []];
 
@@ -756,7 +763,6 @@ describe("Bean sharing API", () => {
           userId: BOB_ID,
           status: "accepted" as const,
           invitedBy: ALICE_ID,
-          unsharedAt: null,
         };
         const ownerRow = { userId: ALICE_ID };
         mock.dbQueue = [[bobShare], [ownerRow], [], []];
@@ -805,8 +811,8 @@ describe("Bean sharing API", () => {
       });
     });
 
-    describe("downgrade to restricted (unshares self members)", () => {
-      it("downgrading to restricted unshares all self-status members", async () => {
+    describe("downgrade to restricted", () => {
+      it("returns 400 CANNOT_DOWNGRADE_GENERAL_ACCESS when owner tries to downgrade from anyone_with_link to restricted", async () => {
         mock.session = makeSession(ALICE_ID);
         mock.canAccessBeanResult = {
           allowed: true as const,
@@ -818,45 +824,15 @@ describe("Bean sharing API", () => {
           } as unknown,
           userBean: makeAccessAllowed(ALICE_ID, true).userBean,
         };
-        mock.dbQueue = [
-          [],
-          [],
-          [{ id: BEAN_ID, generalAccess: "restricted", shareSlug: null }],
-        ];
 
         const res = await patchGeneralAccess(
           jsonReq(GA_URL, "PATCH", { generalAccess: "restricted" }),
           { params: Promise.resolve({ id: BEAN_ID }) },
         );
 
-        expect(res.status).toBe(200);
-        const body = (await res.json()) as { generalAccess: string };
-        expect(body.generalAccess).toBe("restricted");
-      });
-
-      it("changing from public to anyone_with_link does not unshare self members", async () => {
-        mock.session = makeSession(ALICE_ID);
-        mock.canAccessBeanResult = {
-          allowed: true as const,
-          bean: {
-            id: BEAN_ID,
-            name: "Test Bean",
-            generalAccess: "public" as const,
-            shareSlug: "slug",
-          } as unknown,
-          userBean: makeAccessAllowed(ALICE_ID, true).userBean,
-        };
-        const refetchedBean = { id: BEAN_ID, generalAccess: "anyone_with_link" as const, shareSlug: "slug" };
-        mock.dbQueue = [[], [refetchedBean]];
-
-        const res = await patchGeneralAccess(
-          jsonReq(GA_URL, "PATCH", { generalAccess: "anyone_with_link" }),
-          { params: Promise.resolve({ id: BEAN_ID }) },
-        );
-
-        expect(res.status).toBe(200);
-        const body = (await res.json()) as { generalAccess: string };
-        expect(body.generalAccess).toBe("anyone_with_link");
+        expect(res.status).toBe(400);
+        const body = (await res.json()) as { code: string };
+        expect(body.code).toBe("CANNOT_DOWNGRADE_GENERAL_ACCESS");
       });
     });
   });

@@ -3,7 +3,7 @@ import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beansShare } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { canAccessBean, isBeanOwner, unshareMemberAndDescendants } from "@/lib/beans-access";
+import { canAccessBean, isBeanOwner, deleteMemberAndDescendants } from "@/lib/beans-access";
 import { updateBeanShareSchema } from "@/shared/beans/schema";
 import { Entitlements, hasEntitlement } from "@/shared/entitlements";
 
@@ -69,8 +69,8 @@ export async function PATCH(
 
   const { shotHistoryAccess, reshareAllowed } = parsed.data;
 
-  // Members cannot change reshareAllowed — only the owner/admin can
-  if (!isCreatorOrAdmin && reshareAllowed !== undefined) {
+  // Only the bean owner can set reshareAllowed (not admins)
+  if (reshareAllowed !== undefined && !isBeanOwner(result)) {
     return NextResponse.json(
       { error: "Only the owner can change reshare permission" },
       { status: 403 },
@@ -91,7 +91,7 @@ export async function PATCH(
   }
 
   const updates: {
-    shotHistoryAccess?: "none" | "restricted" | "anyone_with_link" | "public";
+    shotHistoryAccess?: "none" | "restricted" | "anyone_with_link";
     reshareAllowed?: boolean;
     updatedAt?: Date;
   } = {};
@@ -181,13 +181,11 @@ export async function DELETE(
             ),
           );
       }
-      const now = new Date();
       await db
         .update(beansShare)
         .set({
           status: "unfollowed",
-          unsharedAt: now,
-          updatedAt: now,
+          updatedAt: new Date(),
         })
         .where(
           and(eq(beansShare.id, shareId), eq(beansShare.beanId, beanId)),
@@ -218,7 +216,7 @@ export async function DELETE(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  await unshareMemberAndDescendants(beanId, shareId);
+  await deleteMemberAndDescendants(beanId, shareId);
 
   return new NextResponse(null, { status: 204 });
 }

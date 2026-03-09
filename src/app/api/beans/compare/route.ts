@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beans, beansShare, shots, origins, roasters } from "@/db/schema";
-import { eq, and, inArray, isNull } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
         eq(beans.id, beansShare.beanId),
         eq(beansShare.userId, session.user.id),
         inArray(beansShare.status, ["owner", "accepted", "self"]),
-        isNull(beansShare.unsharedAt),
       ),
     )
     .leftJoin(origins, eq(beans.originId, origins.id))

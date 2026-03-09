@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beans, beansShare } from "@/db/schema";
-import { and, desc, eq, ilike, isNotNull, or, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, ilike, isNotNull, or, inArray } from "drizzle-orm";
 
 type BeanRow = Pick<
   typeof beans.$inferSelect,
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     : undefined;
 
   const publicConditions = [
-    eq(beans.generalAccess, "public"),
+    eq(beans.generalAccess, "anyone_with_link"),
     isNotNull(beans.shareSlug),
   ];
   if (searchCondition) publicConditions.push(searchCondition);
@@ -69,7 +69,6 @@ export async function GET(request: NextRequest) {
         and(
           eq(beansShare.userId, session.user.id),
           inArray(beansShare.status, ["accepted", "self"]),
-          isNull(beansShare.unsharedAt),
         ),
       );
 
@@ -117,7 +116,6 @@ export async function GET(request: NextRequest) {
           eq(beansShare.userId, session.user.id),
           inArray(beansShare.beanId, ids),
           inArray(beansShare.status, ["owner", "accepted", "self"]),
-          isNull(beansShare.unsharedAt),
         ),
       );
     const inCollectionSet = new Set(

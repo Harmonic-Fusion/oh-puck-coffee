@@ -97,7 +97,7 @@ describe("GET /api/shares/beans/:slug — public share page", () => {
   it("returns 200 with bean and shots when generalAccess is anyone_with_link (unauthenticated ok)", async () => {
     const bean = makeBean({ generalAccess: "anyone_with_link" });
     const ownerRow = { userId: OWNER_ID };
-    const optedInRows = [{ userId: OWNER_ID }]; // owner with shotHistoryAccess=public so shots are included
+    const optedInRows = [{ userId: OWNER_ID }]; // owner with shotHistoryAccess so shots are included
     const creatorShots = [
       {
         id: "s1",
@@ -135,24 +135,8 @@ describe("GET /api/shares/beans/:slug — public share page", () => {
     expect(body.shots).toHaveLength(1);
   });
 
-  it("returns 200 with bean and shots when generalAccess is public (unauthenticated ok)", async () => {
-    const bean = makeBean({ generalAccess: "public" });
-    const ownerRow = { userId: OWNER_ID };
-    const optedInRows: { userId: string }[] = [];
-    const creatorShots: unknown[] = [];
-    mock.dbQueue = [[bean], [ownerRow], optedInRows, creatorShots];
-
-    const res = await getBean(new NextRequest(`http://localhost/api/shares/beans/${SLUG}`), {
-      params: Promise.resolve({ slug: SLUG }),
-    });
-
-    expect(res.status).toBe(200);
-    const body = (await res.json()) as { bean: { generalAccess: string } };
-    expect(body.bean.generalAccess).toBe("public");
-  });
-
-  it("includes shots only from owner and members with shotHistoryAccess=public", async () => {
-    const bean = makeBean({ generalAccess: "public" });
+  it("includes shots only from owner and members with shotHistoryAccess that allows share page", async () => {
+    const bean = makeBean({ generalAccess: "anyone_with_link" });
     const ownerRow = { userId: OWNER_ID };
     const contributorId = "00000000-0000-4000-a000-000000000002";
     const optedInRows = [{ userId: OWNER_ID }, { userId: contributorId }];
@@ -195,8 +179,8 @@ describe("GET /api/shares/beans/:slug/stats — public stats", () => {
     expect(body.error).toBe("Access denied");
   });
 
-  it("returns 200 with shotCount, followerCount, averageRating, flavorsByAverageRating when public", async () => {
-    const bean = makeBean({ generalAccess: "public" });
+  it("returns 200 with shotCount, followerCount, averageRating, flavorsByAverageRating when anyone_with_link", async () => {
+    const bean = makeBean({ generalAccess: "anyone_with_link" });
     const ownerRow = { userId: OWNER_ID };
     const optedInRows: { userId: string }[] = [];
     const creatorShots = [{ rating: "4.0", flavors: ["chocolate"] }];

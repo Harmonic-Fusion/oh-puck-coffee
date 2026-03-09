@@ -128,7 +128,7 @@ describe("POST /api/beans/:id/duplicate", () => {
     mock.canAccessBeanResult = makeAccessAllowed(BEAN_ID, BOB_ID);
     const newBean = {
       id: NEW_BEAN_ID,
-      name: "Test Bean",
+      name: "Test Bean (copy)",
       originId: null,
       roasterId: null,
       roastLevel: "Medium",
@@ -145,7 +145,7 @@ describe("POST /api/beans/:id/duplicate", () => {
     expect(res.status).toBe(201);
     const body = (await res.json()) as { id: string; name: string };
     expect(body.id).toBe(NEW_BEAN_ID);
-    expect(body.name).toBe("Test Bean");
+    expect(body.name).toBe("Test Bean (copy)");
   });
 
   it("returns 201 when shotOption is migrate (moves user's shots to new bean)", async () => {
@@ -153,7 +153,7 @@ describe("POST /api/beans/:id/duplicate", () => {
     mock.canAccessBeanResult = makeAccessAllowed(BEAN_ID, BOB_ID);
     const newBean = {
       id: NEW_BEAN_ID,
-      name: "Test Bean",
+      name: "Test Bean (copy)",
       originId: null,
       roasterId: null,
       roastLevel: "Medium",
@@ -176,7 +176,7 @@ describe("POST /api/beans/:id/duplicate", () => {
     mock.session = makeSession(BOB_ID);
     mock.canAccessBeanResult = makeAccessAllowed(BEAN_ID, BOB_ID);
     mock.dbQueue = [
-      [{ id: NEW_BEAN_ID, name: "Test Bean", generalAccess: "restricted" }],
+      [{ id: NEW_BEAN_ID, name: "Test Bean (copy)", generalAccess: "restricted" }],
       [], // myShots select (default duplicate, no shots)
     ];
 
@@ -187,20 +187,19 @@ describe("POST /api/beans/:id/duplicate", () => {
     expect(res.status).toBe(201);
   });
 
-  it("is available to unshared member (canAccessBean allows read-only access)", async () => {
+  it("is available to unfollowed member (canAccessBean allows read-only access)", async () => {
     mock.session = makeSession(BOB_ID);
     mock.canAccessBeanResult = {
       ...makeAccessAllowed(BEAN_ID, BOB_ID),
       userBean: {
         beanId: BEAN_ID,
         userId: BOB_ID,
-        status: "accepted" as const,
+        status: "unfollowed" as const,
         beansOpenDate: null,
-        unsharedAt: new Date(),
       },
     };
     mock.dbQueue = [
-      [{ id: NEW_BEAN_ID, name: "Test Bean", generalAccess: "restricted" }],
+      [{ id: NEW_BEAN_ID, name: "Test Bean (copy)", generalAccess: "restricted" }],
       [], // myShots select
     ];
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beansShare, users } from "@/db/schema";
-import { eq, and, isNull, ne } from "drizzle-orm";
+import { eq, and, ne, inArray } from "drizzle-orm";
 import { canAccessBean, isBeanOwner } from "@/lib/beans-access";
 import { createBeansShareId } from "@/lib/nanoid-ids";
 import { createBeanShareSchema } from "@/shared/beans/schema";
@@ -72,7 +72,6 @@ export async function GET(
       beansOpenDate: beansShare.beansOpenDate,
       createdAt: beansShare.createdAt,
       updatedAt: beansShare.updatedAt,
-      unsharedAt: beansShare.unsharedAt,
       userName: users.name,
       userImage: users.image,
     })
@@ -122,24 +121,18 @@ export async function POST(
 
   let canShare = isCreator || isAdmin;
   if (!canShare) {
-    // Check if user's membership grants reshare, or bean is public (anyone can reshare public beans)
-    if (result.bean.generalAccess === "public") {
-      canShare = true;
-    } else {
-      const [myMembership] = await db
+    const [myMembership] = await db
         .select({ reshareAllowed: beansShare.reshareAllowed })
         .from(beansShare)
         .where(
           and(
             eq(beansShare.beanId, beanId),
             eq(beansShare.userId, session.user.id),
-            eq(beansShare.status, "accepted"),
-            isNull(beansShare.unsharedAt),
+            inArray(beansShare.status, ["accepted", "self"]),
           ),
         )
         .limit(1);
-      canShare = myMembership?.reshareAllowed === true;
-    }
+    canShare = myMembership?.reshareAllowed === true;
   }
 
   if (!canShare) {
@@ -215,12 +208,11 @@ export async function POST(
     .limit(1);
 
   if (existing) {
-    if (existing.unsharedAt != null) {
+    if (existing.status === "unfollowed") {
       const now = new Date();
       const [updated] = await db
         .update(beansShare)
         .set({
-          unsharedAt: null,
           status: "accepted",
           invitedBy: session.user.id,
           updatedAt: now,

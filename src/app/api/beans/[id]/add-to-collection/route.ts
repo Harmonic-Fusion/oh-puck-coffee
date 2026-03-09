@@ -42,7 +42,6 @@ export async function POST(
         .update(beansShare)
         .set({
           status: "accepted",
-          unsharedAt: null,
           updatedAt: now,
         })
         .where(
@@ -66,12 +65,11 @@ export async function POST(
         { status: 200 },
       );
     }
-    if (userBean.unsharedAt != null) {
+    if (userBean.status === "unfollowed") {
       const now = new Date();
       await db
         .update(beansShare)
         .set({
-          unsharedAt: null,
           status: "self",
           invitedBy: null,
           updatedAt: now,

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots, beans, users, beansShare } from "@/db/schema";
-import { eq, and, desc, inArray, isNull } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { canAccessBean } from "@/lib/beans-access";
 
 /**
@@ -10,11 +10,10 @@ import { canAccessBean } from "@/lib/beans-access";
  *
  * Returns all shots for this bean that the authenticated user has permission to see:
  *   - The user's own shots (always included, including hidden ones)
- *   - Shots from other members with unsharedAt IS NULL and shotHistoryAccess:
+ *   - Shots from other members with status owner/accepted/self and shotHistoryAccess:
  *     - none: never include
  *     - restricted: include (caller is a bean member, so "only other members" = include)
  *     - anyone_with_link: include (caller is authenticated)
- *     - public: include
  */
 export async function GET(
   _request: NextRequest,
@@ -87,11 +86,9 @@ export async function GET(
       and(
         eq(beansShare.beanId, beanId),
         inArray(beansShare.status, ["accepted", "owner", "self"]),
-        isNull(beansShare.unsharedAt),
         inArray(beansShare.shotHistoryAccess, [
           "restricted",
           "anyone_with_link",
-          "public",
         ]),
       ),
     );

@@ -21,9 +21,8 @@ export function ShareBeanVisitorActions({
   };
 
   const inCollection = bean?.userBean != null;
-  const shareMyShotsPublicly =
-    (bean?.userBean?.shotHistoryAccess ?? "restricted") === "anyone_with_link" ||
-    (bean?.userBean?.shotHistoryAccess ?? "restricted") === "public";
+  const shareMyShotsOnPage =
+    (bean?.userBean?.shotHistoryAccess ?? "restricted") === "anyone_with_link";
   const isPending = addToCollection.isPending && addToCollection.variables === beanId;
   const isSuccess = addToCollection.isSuccess && addToCollection.variables === beanId;
   const showViewBeans = inCollection || isSuccess;
@@ -63,10 +62,10 @@ export function ShareBeanVisitorActions({
           <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700 dark:text-stone-300">
             <input
               type="checkbox"
-              checked={shareMyShotsPublicly}
+              checked={shareMyShotsOnPage}
               onChange={(e) =>
                 updateShareMyShots.mutate(
-                  e.target.checked ? "public" : "restricted",
+                  e.target.checked ? "anyone_with_link" : "restricted",
                 )
               }
               disabled={updateShareMyShots.isPending}
@@ -75,7 +74,7 @@ export function ShareBeanVisitorActions({
             Share my shot history on this page
           </label>
           <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-            When on, your shots for this bean appear in the public shot log and stats.
+            When on, your shots for this bean appear on the share page and in stats.
           </p>
         </div>
       )}

@@ -1,11 +1,13 @@
 Bean sharing user flows and edge cases. All decisions finalized.
 
+**Simplified model: one-way sharing only.** Owner creates beans; sharing flows only from owner to others. No public beans.
+
 ---
 
 ## Roles
 
 | Status | How you get it | Can edit bean? | Can see others' shots? | Can log own shots? |
-|---|---|---|---|---|
+|--------|----------------|----------------|------------------------|--------------------|
 | **owner** | You created the bean | Yes | Yes (if they share) | Yes |
 | **accepted** | Invited + accepted | No | Yes (if they share) | Yes |
 | **self** | Added yourself via link | No | Yes (if they share) | Yes |
@@ -15,201 +17,155 @@ Bean sharing user flows and edge cases. All decisions finalized.
 
 ---
 
+## Bean general access (one-way, no downgrade)
+
+Two levels only. **Public is removed.**
+
+| Level | Who can be added | Who can add themselves? |
+|-------|------------------|--------------------------|
+| **None** (restricted) | Owner adds individuals only | No one |
+| **Anyone with link** | Owner adds individuals + anyone with the link | Yes (authenticated user with link can "Follow") |
+
+**No downgrade:** Once the owner increases access (None → Anyone with link), they **cannot** decrease it. Show a confirmation screen before increasing, explaining that new users will add their shots to this bean id and downgrading would strand those shots.
+
+- **None** → **Anyone with link**: allowed; show confirmation, then set `generalAccess = 'anyone_with_link'`, generate `shareSlug` if needed.
+- **Anyone with link** → **None**: not allowed (UI disabled, API returns 400 if attempted).
+
+---
+
 ## Flow 1: Owner creates & shares a bean
 
-1. **Create bean** -- owner gets `beans_share` row with `status = 'owner'`
-2. **Open share dialog** -- two sub-flows:
+1. **Create bean** — owner gets `beans_share` row with `status = 'owner'`. Bean starts with `generalAccess = 'none'` (restricted).
+2. **Open share dialog** — two sub-flows:
 
-### 1a. Direct invite (add person)
-- Owner searches users, selects one
-- Creates `beans_share` row: `status = 'pending'`, `invitedBy = owner`
-- Optionally sets `reshareAllowed = true` (requires `bean-share` entitlement)
-- **Edge case – invitee already has an active row**: API returns existing row, no duplicate
-- **Edge case – invitee has a row with `unsharedAt` set** (previously removed/unfollowed): clear `unsharedAt`, set `status = 'accepted'` (re-invite = immediate accept, no pending step)
+### 1a. Direct invite (add person) — always available to owner
+- Owner searches users, selects one.
+- Creates `beans_share` row: `status = 'pending'`, `invitedBy = owner`.
+- Optionally sets `reshareAllowed = true` (requires `bean-share` entitlement).
+- **Edge case – invitee already has an active row:** API returns existing row, no duplicate.
+- **Edge case – invitee has a row with `unsharedAt` set:** clear `unsharedAt`, set `status = 'accepted'` (re-invite = immediate accept).
 
 ### 1b. Set general access to "anyone with link"
-- Owner changes `beans.generalAccess` to `anyone_with_link`
-- Generates `beans.shareSlug` if not already set
-- Any authenticated user with the link can view the share page and "Follow" → `status = 'self'`
-- Does **not** count toward the max bean shares limit (limit only counts direct invites)
-
-### 1c. Set general access to "public"
-- Same as "anyone with link", but unauthenticated users can also view
-- Appears in public beans search
-- Does **not** allow adding authenticated users — just makes the page viewable without login
-
-**Max bean shares limit**: only counts direct invites (`beans_share` rows where `invitedBy` is the current user and status is not `owner`). Public/link access does not count.
+- Owner chooses to increase to "Anyone with link" (one-way; cannot later reduce).
+- **Confirmation screen:** explain that people with the link can add themselves and log shots to this bean, and that this cannot be undone.
+- On confirm: set `beans.generalAccess` to `anyone_with_link`, generate `beans.shareSlug` if not already set.
+- Any authenticated user with the link can view the share page and "Follow" → `status = 'self'`.
+- Direct-invite limit (if any) counts only direct invites; link-based joins do not count.
 
 ---
 
 ## Flow 2: Receiving an invite (direct share)
 
-1. **Invitee sees banner** (via `useShareInvites`) with bean name, who shared it
-2. **Accept** -- `status` changes from `pending` to `accepted`, bean appears in their collection
-3. **Decline** -- row is hard-deleted, no trace remains
-4. **Ignore** -- row stays `pending` indefinitely
+1. Invitee sees banner (via `useShareInvites`) with bean name, who shared it.
+2. **Accept** — `status` changes from `pending` to `accepted`; bean appears in their collection.
+3. **Decline** — row is hard-deleted.
+4. **Ignore** — row stays `pending` indefinitely.
 
 **Edge cases:**
-- Inviter gets unshared before invitee accepts -- the pending row has no `unsharedAt` yet; on accept, the inviter chain validity doesn't matter (the invitee's access is independent once accepted)
-- Bean is deleted -- cascade delete removes the share row, invite disappears
-- **Pending invite + user clicks "Follow" on share page** -- auto-accept the pending invite (clear `pending`, set `status = 'accepted'`), don't create a second row
+- Bean deleted — cascade delete removes the share row.
+- **Pending invite + user clicks "Follow" on share page** — auto-accept the pending invite (`status = 'accepted'`), don't create a second row.
 
 ---
 
-## Flow 3: Self-join via link/public page
+## Flow 3: Self-join via link
 
-1. User visits `/share/beans/:slug`
-2. Sees bean info + shot stats/shots from members who opted in: unauthenticated = `shotHistoryAccess = 'public'` only; authenticated = `'anyone_with_link'` or `'public'` (see Flow 8)
-3. Clicks **"Follow"** -- creates `beans_share` with `status = 'self'`, `invitedBy = null`
-4. Bean appears in their collection
-5. They can set **Share my shot history** in the Share dialog (No / Restricted / Anyone with the link / Public). On this page, the toggle "Share my shot history on this page" turns on public visibility (off = restricted or none).
+1. User visits share page (e.g. `/share/beans/:slug`). Only available when `generalAccess = 'anyone_with_link'`.
+2. Sees bean info + shot stats/shots from members who share (see Flow 8).
+3. Clicks **"Follow"** — creates `beans_share` with `status = 'self'`, `invitedBy = null`.
+4. Bean appears in their collection; they can set **Share my shot history** (No / Restricted / Anyone with link) in the Share dialog.
 
 **Edge cases:**
-- User already has an active row (invited/accepted) -- `add-to-collection` returns existing row, no change
-- **User was previously unshared (owner removed)** -- clear `unsharedAt`, set `status = 'self'`, user regains access. (Re-follow always allowed.)
-- **User previously unfollowed** -- clear `unsharedAt`, set `status = 'self'`, user regains access. (Re-follow always allowed.)
-- **User has a `pending` invite** -- auto-accept: set `status = 'accepted'`, return the updated row
+- User already has an active row — add-to-collection returns existing row.
+- User was previously unshared or unfollowed — clear `unsharedAt`, set `status = 'self'`; re-follow allowed.
+- User has a `pending` invite — auto-accept: set `status = 'accepted'`, return the updated row.
 
 ---
 
 ## Flow 4: Member views the bean detail page
 
-1. Bean appears in their collection (beans list)
-2. Bean detail page shows:
-   - Bean info (read-only for non-owners)
-   - **Shot history** -- their own shots + shots from other members whose `shotHistoryAccess` is not `none` (i.e. `restricted`, `anyone_with_link`, or `public`; see Flow 8)
-   - **Contributors** -- list of people who share their shots (shotHistoryAccess not `none`)
-   - Shot comparison matrix, flavor ratings
-3. Member can **log shots** against this bean (creates `shots` row with their `userId` + this `beanId`)
-4. Member can open **Share dialog** to see who else has access and set **Share my shot history** (No / Restricted / Anyone with the link / Public) (read-only view if not owner)
+1. Bean appears in their collection.
+2. Bean detail shows: bean info (read-only for non-owners), shot history (own + others who share), contributors, shot comparison, flavor ratings.
+3. Member can **log shots** against this bean.
+4. Member can open **Share dialog** to see who has access and set **Share my shot history** (No / Restricted / Anyone with link). Owner-only: change general access (only upward, with confirmation), add people, and set **Allow Reshare** per member via a toggle that saves immediately. No remove-user control in the dialog; members leave by unfollowing (Flow 6).
 
 ---
 
-## Flow 5: Owner removes a person
+## Flow 5: Owner remove (not in UI)
 
-1. Owner opens share dialog, clicks remove on a member
-2. `DELETE /api/beans/:id/shares/:shareId` triggers `unshareMemberAndDescendants`:
-   - Sets `unsharedAt` on the target's row
-   - Sets `reshareAllowed = false`
-   - Recursively does the same for anyone that person invited (`invitedBy` chain)
-3. **Removed member's experience:**
-   - Bean stays visible in their collection (they keep access)
-   - They see an "unshared" notice
-   - They can still view their own shots (read-only)
-   - They **cannot** see other members' shots anymore
-   - They **cannot** log new shots
-   - They get **Duplicate** button to copy the bean into their own ownership (with shot options — see Flow 9)
-4. **Shot data**: their existing shots remain under the original `beanId` (not deleted)
-
-**Edge cases:**
-- Owner removes person A, who invited person B -- both A and B get unshared (recursive)
-- Removed person had `shotHistoryAccess = 'public'` (or any non-none) -- their shots no longer appear in the shared view (query filters by `unsharedAt = null`)
-- **Removed person re-follows via share link** -- `unsharedAt` is cleared, `status` set to `'self'`, access restored (re-follow always allowed)
+The share dialog does not offer a way for the owner to remove members. Members leave by **unfollowing** (Flow 6). The API still supports owner/admin revocation (`DELETE /api/beans/:id/shares/:shareId`) for support or admin tooling; when used, it runs `unshareMemberAndDescendants`: sets `unsharedAt` on the target, sets `reshareAllowed = false`, and recursively does the same for anyone that person invited. **Removed member:** bean stays in collection with "unshared" notice; read-only own shots; cannot see others' shots or log new shots; can use **Duplicate** (Flow 9).
 
 ---
 
 ## Flow 6: Member unfollows (voluntary leave)
 
-1. Non-owner clicks **"Unfollow"** on bean detail page
-2. `DELETE` on their own share triggers:
-   - If `status = 'pending'` -- hard delete (decline)
-   - If `status = 'accepted'` or `'self'` -- sets `status = 'unfollowed'`, sets `unsharedAt`
-   - **Re-parents descendants**: anyone they invited gets `invitedBy` reassigned to the owner (so the recursive chain isn't broken)
-3. Same post-unfollow experience as being removed: read-only own shots, can duplicate
-
-**Edge cases:**
-- **Member who unfollowed wants to re-join** -- they visit the share link again. `add-to-collection` clears `unsharedAt`, sets `status = 'self'`. Access restored.
-- Member unfollows, then owner tries to remove them -- they're already `unfollowed` with `unsharedAt` set, no-op
+1. Non-owner clicks **"Unfollow"**.
+2. Delete own share: if `pending` → hard delete; if `accepted` or `self` → set `status = 'unfollowed'`, set `unsharedAt`; re-parent invited users to owner.
+3. Same post-unfollow experience as being removed: read-only own shots, can duplicate. Re-follow via link is allowed (clears `unsharedAt`, `status = 'self'`).
 
 ---
 
-## Flow 7: Downgrading general access
+## Flow 7: Shot history visibility (per member, change anytime)
 
-1. Owner changes `generalAccess` from `anyone_with_link` or `public` down to `restricted`
-2. `unshareSelfMembersOnRestricted` fires: all `status = 'self'` members (with `unsharedAt = null`) get `unsharedAt` set
-3. Directly invited members (`status = 'accepted'`) are unaffected
-4. `shareSlug` remains set (so the URL doesn't break, it just 403s for non-members)
-
-**Edge cases:**
-- User was `self` and had shots logged -- they lose access to shared shots but keep their own data (read-only)
-- Owner toggles back to `anyone_with_link` -- self-unshared users are NOT automatically restored; they need to re-follow (which clears `unsharedAt`)
-
----
-
-## Flow 8: Shot history visibility
-
-Each member independently controls their `shotHistoryAccess`. The UI offers four options: **No**, **Restricted**, **Anyone with the link**, **Public**.
+Each member controls their own `shotHistoryAccess`. **Three options only (no Public):** **No**, **Restricted**, **Anyone with the link**. Can change at any time.
 
 | Value (DB) | UI label | Who sees their shots |
 |------------|----------|----------------------|
-| `none` | No | No one else (only me) |
-| `restricted` | Restricted | Only other bean members (people with a `beans_share` row for this bean, `unsharedAt` IS NULL) |
-| `anyone_with_link` | Anyone with the link | Other bean members + any authenticated user who has the bean share link |
-| `public` | Public | Anyone (including unauthenticated on the public share page) |
-
-**API behavior when returning shots to another user Carol:**
-- **No** — Bob's shots are never shared; Carol never gets them.
-- **Restricted** — Carol gets Bob's shots only if Carol has a `beans_share` row for that bean with `unsharedAt` IS NULL (i.e. Carol is a member).
-- **Anyone with link** — Carol gets Bob's shots if Carol is authenticated (and has the link / is viewing the share page or bean detail).
-- **Public** — Carol always gets Bob's shots (including unauthenticated on the public share page).
+| `none` | No | No one else |
+| `restricted` | Restricted | Only other bean members (active `beans_share` for this bean) |
+| `anyone_with_link` | Anyone with the link | Other bean members + any authenticated user with the bean share link |
 
 **Where this applies:**
-- **Bean detail** (`GET /api/beans/:id/shots`): caller is always a bean member; members with `shotHistoryAccess` in `('restricted', 'anyone_with_link', 'public')` have their shots included. Only `none` is excluded.
-- **Public share page** (`GET /api/shares/beans/:slug`): unauthenticated callers see only shots from members with `public`; authenticated callers see shots from `anyone_with_link` and `public`. `none` and `restricted` are never shown on the share page.
-
-**Edge cases:**
-- Owner's `shotHistoryAccess` — owner is also a member, so they control this independently.
-- All members set `none` — on the bean detail page, each member sees only their own shots.
-- All members set `restricted` — on the bean detail page, members still see each other's shots (restricted = visible to other members only).
-- Member changes from `public` to `none` — their shots immediately disappear from other members' view and from public stats page.
+- **Bean detail** (`GET /api/beans/:id/shots`): include shots from members with `shotHistoryAccess` in `('restricted', 'anyone_with_link')`; exclude `none`.
+- **Share page** (when `generalAccess = 'anyone_with_link'`): authenticated callers see shots from members with `anyone_with_link` (and members with `restricted` if they are members). No unauthenticated public view (no Public bean/page).
 
 ---
 
-## Flow 9: Duplicate bean
+## Flow 8: Duplicate bean
 
-Available to any member (but especially useful for unshared/unfollowed users).
+Available to **any user** (including owner).
 
-**Three shot handling options** (user chooses, default = duplicate):
+**Three shot handling options** (user chooses):
 
 | Option | Behavior |
-|---|---|
-| **Duplicate shots** (default) | Copies the user's own shots to the new bean. Originals remain on the original bean unchanged. |
-| **Migrate shots** | Moves the user's own shots to the new bean (updates `beanId` on existing shot rows). Originals no longer appear under the original bean. |
-| **No shots** | Creates the bean copy with no shots. |
+|--------|----------|
+| **Migrate shots** | Move the user's own shots to the new bean (update `beanId` on existing shot rows). Originals no longer on the original bean. |
+| **Duplicate shots** | Copy the user's own shots to the new bean. Originals remain on the original bean. |
+| **No shots** | New bean with no shots. |
 
 Flow:
-1. Click **Duplicate** on bean detail page
-2. Choose shot handling option (default: duplicate)
-3. Creates a new `beans` row owned by the current user
-4. Handles shots per the selected option
-5. Redirects to the new bean detail page
+1. Click **Duplicate** on bean detail.
+2. Choose shot option (migrate / duplicate / none).
+3. Create new `beans` row owned by the current user.
+4. Apply shot option for that user's shots only.
+5. Redirect to the new bean detail.
 
-**Edge cases:**
-- Only the user's own shots are affected — never other members' shots
-- Duplicate a bean they still have active access to -- creates a fully independent copy, original access remains
-- Migrate shots from an unshared bean -- shots move to the new bean, the user's shot count on the original bean drops to zero
-- After migration, if the user edits a shot on the new bean, it doesn't affect anything on the original bean (the shot row was moved, not copied)
+**Edge cases:** Only the user's own shots are affected. Duplicating while still having access leaves the original bean and access unchanged.
 
 ---
 
-## Flow 10: Resharing (member invites another)
+## Flow 9: Who can add people (invite others)
 
-1. Member with `reshareAllowed = true` can invite others from the share dialog
-2. Creates `beans_share` row with `invitedBy = member.userId`
-3. If the member is later unshared, all their downstream invitees are recursively unshared too
+A user can add other people to the bean if **either**:
+- They have **Allow Reshare** (`reshareAllowed = true`), set by the **owner** only, or
+- The bean's **general access** is **Anyone with link** (in that case anyone with the link can "add themselves" via Follow; direct invites still require reshare or owner).
+
+So:
+- **Owner** always can add people (direct invite) and set general access.
+- **Non-owner** can create direct invites only if the owner has given them **Allow Reshare**, or if general access is Anyone with link (then they can share the link; link users add themselves).
+- Only the owner can enable/disable **Allow Reshare** per user.
 
 **Edge cases:**
-- Member's reshare permission revoked (`reshareAllowed` set to `false`) -- existing invitees stay, but member can't invite new ones
-- Resharer invites someone who was previously unshared by the owner -- the existing row has `unsharedAt` set; re-invite clears `unsharedAt` and sets `status = 'accepted'` (the new inviter takes precedence)
+- Member's reshare revoked — existing invitees stay; member can't invite new ones.
+- Resharer invites someone previously unshared — re-invite clears `unsharedAt`, sets `status = 'accepted'`.
 
 ---
 
 ## Bean editing permissions
 
-Only the owner can edit bean metadata (name, origin, roaster, roast level, etc.). Enforced in **both** the UI (edit button only shown for owner) and the **PATCH API** (returns 403 if the caller is not the owner or admin).
+Only the owner can edit bean metadata. Enforced in UI and PATCH API (403 for non-owner).
 
 ---
 
 ## User account deletion
 
-Users are **soft-deleted** (not hard-deleted). This preserves the `invitedBy` chain in `beans_share`, so recursive unsharing always works correctly. A soft-deleted user's shares remain intact but the user cannot log in or take actions.
+Users are soft-deleted. Preserves `invitedBy` chain so recursive unsharing works. Soft-deleted users' share rows remain but they cannot log in or act.

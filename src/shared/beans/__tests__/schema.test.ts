@@ -76,12 +76,11 @@ describe("updateGeneralAccessSchema", () => {
     if (result.success) expect(result.data.generalAccess).toBe("anyone_with_link");
   });
 
-  it("accepts public", () => {
+  it("rejects public (removed in one-way sharing)", () => {
     const result = updateGeneralAccessSchema.safeParse({
       generalAccess: "public",
     });
-    expect(result.success).toBe(true);
-    if (result.success) expect(result.data.generalAccess).toBe("public");
+    expect(result.success).toBe(false);
   });
 
   it("rejects invalid generalAccess value", () => {
@@ -143,6 +142,13 @@ describe("updateBeanShareSchema", () => {
   it("rejects invalid shotHistoryAccess", () => {
     const result = updateBeanShareSchema.safeParse({
       shotHistoryAccess: "open",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects public for shotHistoryAccess (removed in one-way sharing)", () => {
+    const result = updateBeanShareSchema.safeParse({
+      shotHistoryAccess: "public",
     });
     expect(result.success).toBe(false);
   });

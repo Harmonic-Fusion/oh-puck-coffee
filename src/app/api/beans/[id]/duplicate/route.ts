@@ -60,7 +60,7 @@ export async function POST(
     .insert(beans)
     .values({
       id: prefixedId("b_"),
-      name: original.name,
+      name: `${original.name} (copy)`,
       originId: original.originId ?? undefined,
       roasterId: original.roasterId ?? undefined,
       originDetails: original.originDetails,
