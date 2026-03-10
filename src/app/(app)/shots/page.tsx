@@ -51,6 +51,7 @@ import {
   PlusCircleIcon,
   ShareIcon,
   ArrowsUpDownIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import {
   BookmarkIcon as BookmarkIconSolid,
@@ -64,6 +65,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { exportToCsv, type CSVColumn } from "@/lib/export-csv";
+import { buildAiExportPrompt } from "@/lib/export-ai-prompt";
 import { useTempUnit } from "@/lib/use-temp-unit";
 import { format } from "date-fns";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
@@ -1191,6 +1193,18 @@ export default function ShotsPage() {
     exportToCsv(filename, filteredRows, columns);
   }, [table]);
 
+  // Handle "Copy for AI" – copy prompt to clipboard
+  const handleCopyForAi = useCallback(async () => {
+    const rows = table.getFilteredRowModel().rows.map((row) => row.original);
+    const content = buildAiExportPrompt(rows);
+    try {
+      await navigator.clipboard.writeText(content);
+      showToast("success", "Copied to clipboard. Paste into your AI assistant.");
+    } catch {
+      showToast("error", "Failed to copy to clipboard.");
+    }
+  }, [table, showToast]);
+
   // Extract filtered shots array for navigation
   const filteredShots = useMemo(
     () => filteredRows.map((row) => row.original),
@@ -1319,6 +1333,13 @@ export default function ShotsPage() {
                 >
                   <ArrowDownTrayIcon className="h-5 w-5" />
                   Download CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleCopyForAi}
+                  className="flex items-center gap-3 px-4 py-3 text-base"
+                >
+                  <SparklesIcon className="h-5 w-5" />
+                  Copy for AI
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
