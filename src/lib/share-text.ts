@@ -290,7 +290,7 @@ export function buildShotShareText(shot: ShotShareData, tempUnit: TempUnit = "F"
   const v = buildView(shot, tempUnit);
   return joinLines([
     "Journey before Destination!",
-    `${v.ratingLabel} ${v.ratingStars}`,
+    ...(v.ratingLabel || v.ratingStars ? [[v.ratingLabel, v.ratingStars].filter(Boolean).join(" ")] : []),
     v.notesTruncated,
     '',
     `🫘 ${v.beanName}`,

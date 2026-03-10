@@ -39,6 +39,26 @@ function DocumentTextIcon({ className }: { className?: string }) {
   );
 }
 
+function PlusCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M12 9v6m3-3H9m12 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+      />
+    </svg>
+  );
+}
+
 export interface ShotSummary extends ShotShareData {
   shotId: string;
 }
@@ -123,6 +143,16 @@ export function ShotSuccessModal({ open, onClose, summary, phrase }: ShotSuccess
       onClick: () => router.push(resolvePath(AppRoutes.shot.id, { id: summary.shotId })),
       title: "Shot Details",
       variant: "default",
+    },
+    {
+      key: "logAnother",
+      icon: PlusCircleIcon,
+      onClick: () => {
+        onClose();
+        router.push(AppRoutes.log.path);
+      },
+      title: "Log another",
+      variant: "active",
     },
     {
       key: "share",

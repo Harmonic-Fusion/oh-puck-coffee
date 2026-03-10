@@ -202,6 +202,7 @@ function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: Shot
           <Button
             type="submit"
             loading={createShot.isPending}
+            disabled={isSuccessModalOpen && !!successSummary}
             size="lg"
             className="w-full py-4 text-lg"
           >

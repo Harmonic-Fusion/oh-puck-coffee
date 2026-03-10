@@ -69,7 +69,8 @@ function resetBrewingAndTastingToDefaults(methods: UseFormReturn<CreateShot>): v
   methods.setValue("brewTimeSecs", undefined);
   methods.setValue("estimateMaxPressure", undefined);
   methods.setValue("shotQuality", undefined);
-  methods.setValue("rating", undefined);
+  // Form default is undefined; CreateShot types rating as number for submit validation
+  methods.setValue("rating", undefined as unknown as number);
   methods.setValue("bitter", undefined);
   methods.setValue("sour", undefined);
   methods.setValue("flavors", undefined);
