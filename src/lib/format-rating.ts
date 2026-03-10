@@ -19,6 +19,16 @@ export function getRatingLabel(rating: number | null | undefined): string | null
   return RATING_LABELS[rounded] ?? null;
 }
 
+
+/**
+ * Gets the stars for a numeric rating (1-5).
+ */
+export function getRatingStars(rating: number | null | undefined, star: string = "⭐"): string {
+  if (rating == null) return "";
+  const rounded = Math.round(rating);
+  return star.repeat(rounded);
+}
+
 /**
  * Formats a numeric rating (1-5) with its text label.
  */

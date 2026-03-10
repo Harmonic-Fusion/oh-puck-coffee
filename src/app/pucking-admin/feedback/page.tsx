@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { useAdminData } from "@/components/admin/hooks";
 import { FeedbackEditForm } from "@/components/admin/forms/FeedbackEditForm";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Table,
   TableHeader,
@@ -82,11 +83,15 @@ export default function AdminFeedbackPage() {
 
   const [page, setPage] = useState(0);
   const [editTarget, setEditTarget] = useState<AdminFeedback | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminFeedback | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkStatus, setBulkStatus] = useState<FeedbackStatus | "">("");
   const [bulkPriority, setBulkPriority] = useState("");
   const [bulkLoading, setBulkLoading] = useState(false);
   const [bulkError, setBulkError] = useState("");
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
 
   const typeFilter = searchParams.get("type") || "";
   const statusFilter = searchParams.get("status") || "";
@@ -172,6 +177,43 @@ export default function AdminFeedbackPage() {
       setBulkLoading(false);
     }
   }, [selectedIds, bulkStatus, bulkPriority, queryClient]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setBulkDeleteLoading(true);
+    setBulkError("");
+    try {
+      const res = await fetch(BULK_ENDPOINT, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        setBulkError(d.error || "Request failed");
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+      setSelectedIds(new Set());
+      setBulkDeleteConfirm(false);
+    } catch {
+      setBulkError("Network error");
+    } finally {
+      setBulkDeleteLoading(false);
+    }
+  }, [selectedIds, queryClient]);
+
+  const handleDelete = useCallback(async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    try {
+      await fetch(`/api/admin/feedback/${deleteTarget.id}`, { method: "DELETE" });
+      await queryClient.invalidateQueries({ queryKey: [ENDPOINT] });
+      setDeleteTarget(null);
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [deleteTarget, queryClient]);
 
   const rows = data?.data ?? [];
   const total = data?.total ?? 0;
@@ -273,6 +315,13 @@ export default function AdminFeedbackPage() {
           >
             {bulkLoading ? "Applying…" : `Apply to ${selectedIds.size}`}
           </button>
+          <button
+            onClick={() => setBulkDeleteConfirm(true)}
+            disabled={bulkLoading}
+            className="h-7 rounded border border-red-300 bg-white px-3 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50 dark:border-red-700 dark:bg-stone-900 dark:text-red-400 dark:hover:bg-red-900/20"
+          >
+            Delete {selectedIds.size}
+          </button>
           {bulkError && (
             <span className="text-xs text-red-600 dark:text-red-400">{bulkError}</span>
           )}
@@ -369,12 +418,20 @@ export default function AdminFeedbackPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <button
-                          onClick={() => setEditTarget(row)}
-                          className="rounded px-2 py-1 text-xs text-stone-500 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-                        >
-                          Edit
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => setEditTarget(row)}
+                            className="rounded px-2 py-1 text-xs text-stone-500 hover:bg-stone-100 hover:text-stone-700 dark:hover:bg-stone-800 dark:hover:text-stone-300"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(row)}
+                            className="rounded px-2 py-1 text-xs text-red-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
@@ -418,6 +475,32 @@ export default function AdminFeedbackPage() {
           feedback={editTarget}
         />
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}
+        title="Delete feedback"
+        description={
+          deleteTarget
+            ? `Delete "${deleteTarget.subject}" from ${deleteTarget.userEmail ?? "unknown"}? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={handleDelete}
+        loading={deleteLoading}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteConfirm}
+        onOpenChange={(open) => { if (!open) setBulkDeleteConfirm(false); }}
+        title={`Delete ${selectedIds.size} feedback item${selectedIds.size !== 1 ? "s" : ""}`}
+        description={`Permanently delete ${selectedIds.size} selected item${selectedIds.size !== 1 ? "s" : ""}? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        onConfirm={handleBulkDelete}
+        loading={bulkDeleteLoading}
+      />
     </>
   );
 }

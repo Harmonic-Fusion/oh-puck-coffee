@@ -50,6 +50,7 @@ import {
   EyeSlashIcon,
   PlusCircleIcon,
   ShareIcon,
+  ArrowsUpDownIcon,
 } from "@heroicons/react/24/outline";
 import {
   BookmarkIcon as BookmarkIconSolid,
@@ -64,6 +65,9 @@ import {
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { exportToCsv, type CSVColumn } from "@/lib/export-csv";
 import { useTempUnit } from "@/lib/use-temp-unit";
+import { format } from "date-fns";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import type { DateRange } from "@/components/ui/date-range-picker";
 
 // ── Filter function helpers ────────────────────────────────────────
 
@@ -507,6 +511,63 @@ function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
   );
 }
 
+// ── Mobile sort bar ────────────────────────────────────────────────
+
+const SHOTS_SORT_OPTIONS = [
+  { label: "Date", id: "date" },
+  { label: "Bean", id: "bean" },
+  { label: "Rating", id: "rating" },
+  { label: "Quality", id: "quality" },
+  { label: "Time", id: "time" },
+];
+
+function MobileSortBar({
+  sorting,
+  onSortChange,
+}: {
+  sorting: SortingState;
+  onSortChange: (s: SortingState) => void;
+}) {
+  const active = sorting[0];
+
+  function toggle(id: string) {
+    if (active?.id === id) {
+      onSortChange([{ id, desc: !active.desc }]);
+    } else {
+      onSortChange([{ id, desc: true }]);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <ArrowsUpDownIcon className="h-3.5 w-3.5 shrink-0 text-stone-400" />
+      {SHOTS_SORT_OPTIONS.map((opt) => {
+        const isActive = active?.id === opt.id;
+        return (
+          <button
+            key={opt.id}
+            type="button"
+            onClick={() => toggle(opt.id)}
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
+              isActive
+                ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
+                : "border-stone-200 text-stone-600 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800",
+            )}
+          >
+            {opt.label}
+            {isActive && (
+              active.desc
+                ? <ChevronDownIcon className="h-3 w-3" />
+                : <ChevronUpIcon className="h-3 w-3" />
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Filter popover (multi-select) ──────────────────────────────────
 
 function MultiSelectFilter({
@@ -553,11 +614,12 @@ function MultiSelectFilter({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
+        className={cn(
+          "flex h-9 items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
           count > 0
-            ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
-            : "border-stone-200 text-stone-600 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
-        }`}
+            ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
+            : "border-stone-200 bg-white text-stone-800 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800",
+        )}
       >
         {title}
         {count > 0 && (
@@ -604,90 +666,25 @@ function MultiSelectFilter({
 
 // ── Date range filter ──────────────────────────────────────────────
 
-function DateRangeFilter({
-  column,
-}: {
-  column: Column<ShotWithJoins, unknown>;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  const value = (column.getFilterValue() as [string, string] | undefined) ?? [
-    "",
-    "",
-  ];
+function DateRangeFilter({ column }: { column: Column<ShotWithJoins, unknown> }) {
+  const value = (column.getFilterValue() as [string, string] | undefined);
+  const range: DateRange | undefined = value
+    ? { from: value[0] ? new Date(value[0]) : undefined, to: value[1] ? new Date(value[1]) : undefined }
+    : undefined;
 
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+  function handleChange(r: DateRange | undefined) {
+    if (!r || (!r.from && !r.to)) {
+      column.setFilterValue(undefined);
+    } else {
+      column.setFilterValue([
+        r.from ? format(r.from, "yyyy-MM-dd") : "",
+        r.to ? format(r.to, "yyyy-MM-dd") : "",
+      ]);
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  const hasValue = value[0] || value[1];
+  }
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
-          hasValue
-            ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
-            : "border-stone-200 text-stone-600 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
-        }`}
-      >
-        Date
-        {hasValue && (
-          <span className="rounded-full bg-amber-200 px-1.5 text-[10px] font-bold text-amber-800 dark:bg-amber-800 dark:text-amber-200">
-            !
-          </span>
-        )}
-      </button>
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-lg border border-stone-200 bg-white p-3 shadow-lg dark:border-stone-700 dark:bg-stone-900">
-          <div className="space-y-2">
-            <label className="block">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
-                From
-              </span>
-              <input
-                type="date"
-                value={value[0]}
-                onChange={(e) =>
-                  column.setFilterValue([e.target.value, value[1]])
-                }
-                className="mt-0.5 block w-full rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-800 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200"
-              />
-            </label>
-            <label className="block">
-              <span className="text-[10px] font-medium uppercase tracking-wider text-stone-400 dark:text-stone-500">
-                To
-              </span>
-              <input
-                type="date"
-                value={value[1]}
-                onChange={(e) =>
-                  column.setFilterValue([value[0], e.target.value])
-                }
-                className="mt-0.5 block w-full rounded-md border border-stone-200 bg-white px-2 py-1 text-xs text-stone-800 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200"
-              />
-            </label>
-          </div>
-          {hasValue && (
-            <button
-              type="button"
-              onClick={() => column.setFilterValue(undefined)}
-              className="mt-2 w-full rounded-md px-2 py-1 text-center text-xs text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      )}
-    </div>
+    <DateRangePicker value={range} onChange={handleChange} placeholder="Date" />
   );
 }
 
@@ -804,9 +801,9 @@ function FilterBar({
             const val = f.value;
             let display: string;
             if (Array.isArray(val) && val.length === 2 && f.id === "date") {
-              const from = val[0] ? val[0] : "…";
-              const to = val[1] ? val[1] : "…";
-              display = `${from} → ${to}`;
+              const from = val[0] ? format(new Date(val[0]), "MMM d, yyyy") : "…";
+              const to = val[1] ? format(new Date(val[1]), "MMM d, yyyy") : "…";
+              display = `${from} – ${to}`;
             } else if (Array.isArray(val)) {
               display =
                 val.length <= 2 ? val.join(", ") : `${val.length} selected`;
@@ -1303,7 +1300,7 @@ export default function ShotsPage() {
           <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
             Shots
           </h1>
-          <div className="relative">
+          <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -1325,6 +1322,13 @@ export default function ShotsPage() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Link
+              href={AppRoutes.log.path}
+              className="inline-flex items-center justify-center rounded-md border border-stone-200 bg-white p-1.5 text-stone-700 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
+              title="Log a shot"
+            >
+              <PlusCircleIcon className="h-5 w-5" />
+            </Link>
           </div>
         </div>
 
@@ -1404,6 +1408,11 @@ export default function ShotsPage() {
           machineOptions={machineOptions}
           userOptions={userOptions}
         />
+
+        {/* Mobile sort bar */}
+        <div className="md:hidden">
+          <MobileSortBar sorting={sorting} onSortChange={setSorting} />
+        </div>
       </div>
 
       {/* ── Desktop table ───────────────────────────────────────────── */}

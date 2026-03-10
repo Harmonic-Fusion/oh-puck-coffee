@@ -13,7 +13,7 @@ export type EntitlementKey = (typeof Entitlements)[keyof typeof Entitlements];
 /** Entitlements granted to all users on the free tier. */
 export const FreeEntitlementDefaults: EntitlementKey[] = [
   Entitlements.NO_SHOT_VIEW_LIMIT,
-  // Entitlements.STATS_VIEW,
+  Entitlements.STATS_VIEW,
   Entitlements.BEAN_SHARE,
 ];
 

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { Button } from "@/components/common/Button";
-import { Entitlements } from "@/shared/entitlements";
+import { Entitlements, FreeEntitlementDefaults } from "@/shared/entitlements";
 
 const CATALOG_URL = "/api/admin/billing/catalog";
 const SYNC_URL = "/api/admin/billing/sync";
@@ -365,11 +365,43 @@ export default function AdminBillingPage() {
           )}
         </section>
 
-        {/* All features */}
+        {/* Local entitlements */}
+        <section>
+          <h2 className="mb-3 text-sm font-semibold text-stone-700 dark:text-stone-300">
+            Local Entitlements (shared/entitlements.ts)
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(Entitlements).map(([key, value]) => {
+              const isFree = FreeEntitlementDefaults.includes(value);
+              return (
+                <div
+                  key={key}
+                  className="rounded-md border border-stone-200 bg-white px-3 py-2 dark:border-stone-700 dark:bg-stone-800/60"
+                >
+                  <div className="flex items-center gap-2">
+                    <p className="font-mono text-xs font-medium text-stone-800 dark:text-stone-200">
+                      {value}
+                    </p>
+                    {isFree && (
+                      <span className="rounded bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                        free
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-[10px] text-stone-400 dark:text-stone-500">
+                    {key}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* All Stripe features */}
         {data && data.features.length > 0 && (
           <section>
             <h2 className="mb-3 text-sm font-semibold text-stone-700 dark:text-stone-300">
-              All Entitlement Features
+              All Stripe Entitlement Features
             </h2>
             <div className="flex flex-wrap gap-2">
               {data.features.map((f) => (

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useForm, FormProvider, type Resolver, type UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createShotSchema, type CreateShot } from "@/shared/shots/schema";
@@ -19,10 +18,9 @@ import { ShotDetail } from "@/components/shots/ShotDetail";
 import { ValidationBanner } from "@/components/common/ValidationBanner";
 import { useShotPrePopulation } from "./hooks";
 import type { ShotSummary } from "./__components__/ShotSuccessModal";
-import { AppRoutes } from "@/app/routes";
 
 // Shell: calls the incompatible react-hook-form APIs so ShotFormInner can be memoized
-export function ShotForm() {
+export function ShotForm({ phrase }: { phrase?: string }) {
   "use no memo";
 
   const methods = useForm<CreateShot>({
@@ -75,6 +73,7 @@ export function ShotForm() {
       methods={methods}
       previousShotId={previousShotId}
       hasResultsData={hasResultsData}
+      phrase={phrase}
     />
   );
 }
@@ -83,9 +82,10 @@ interface ShotFormInnerProps {
   methods: UseFormReturn<CreateShot>;
   previousShotId: string | null;
   hasResultsData: boolean;
+  phrase?: string;
 }
 
-function ShotFormInner({ methods, previousShotId, hasResultsData }: ShotFormInnerProps) {
+function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: ShotFormInnerProps) {
   const createShot = useCreateShot();
   const { data: beans } = useBeans();
   const { data: grinders } = useGrinders();
@@ -101,7 +101,6 @@ function ShotFormInner({ methods, previousShotId, hasResultsData }: ShotFormInne
   // State for success modal
   const [successSummary, setSuccessSummary] = useState<ShotSummary | null>(null);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [hasJustLogged, setHasJustLogged] = useState(false);
 
   // Warn before leaving when the user has entered results data
   useEffect(() => {
@@ -158,7 +157,6 @@ function ShotFormInner({ methods, previousShotId, hasResultsData }: ShotFormInne
       methods.reset(data);
       setSuccessSummary(summary);
       setIsSuccessModalOpen(true);
-      setHasJustLogged(true);
     } catch (error) {
       showToast("error", error instanceof Error ? error.message : "Failed to log shot");
     }
@@ -167,11 +165,6 @@ function ShotFormInner({ methods, previousShotId, hasResultsData }: ShotFormInne
   const handleSuccessModalClose = () => {
     setIsSuccessModalOpen(false);
     setSuccessSummary(null);
-    methods.reset();
-  };
-
-  const handleLogAnother = () => {
-    setHasJustLogged(false);
     methods.reset();
   };
 
@@ -206,35 +199,14 @@ function ShotFormInner({ methods, previousShotId, hasResultsData }: ShotFormInne
               {methods.formState.errors.root.message}
             </p>
           )}
-          {hasJustLogged ? (
-            <div className="flex w-full flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <Button
-                type="button"
-                variant="secondary"
-                size="lg"
-                className="w-full py-4 text-lg sm:w-auto"
-                disabled
-              >
-                Shot logged
-              </Button>
-              <Link
-                href={AppRoutes.log.path}
-                onClick={handleLogAnother}
-                className="text-lg font-medium text-amber-700 underline hover:text-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:text-amber-400 dark:hover:text-amber-300"
-              >
-                Log another
-              </Link>
-            </div>
-          ) : (
-            <Button
-              type="submit"
-              loading={createShot.isPending}
-              size="lg"
-              className="w-full py-4 text-lg"
-            >
-              Log Shot
-            </Button>
-          )}
+          <Button
+            type="submit"
+            loading={createShot.isPending}
+            size="lg"
+            className="w-full py-4 text-lg"
+          >
+            Log Shot
+          </Button>
         </div>
       </form>
 
@@ -242,6 +214,7 @@ function ShotFormInner({ methods, previousShotId, hasResultsData }: ShotFormInne
         open={isSuccessModalOpen && !!successSummary}
         onClose={handleSuccessModalClose}
         summary={successSummary}
+        phrase={phrase}
       />
 
       <ShotDetail

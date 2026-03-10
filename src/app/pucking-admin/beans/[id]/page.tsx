@@ -6,6 +6,16 @@ import Link from "next/link";
 import { AdminBreadcrumb } from "@/components/admin/AdminBreadcrumb";
 import { AppRoutes } from "@/app/routes";
 
+interface BeanShare {
+  id: string;
+  userId: string;
+  userEmail: string | null;
+  status: string;
+  shotHistoryAccess: string;
+  reshareAllowed: boolean;
+  createdAt: string;
+}
+
 interface BeanDetail {
   bean: {
     id: string;
@@ -21,6 +31,7 @@ interface BeanDetail {
   };
   shotCount: number;
   lastShot: string | null;
+  shares: BeanShare[];
 }
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -72,6 +83,7 @@ export default function AdminBeanDetailPage({
       )}
 
       {data && (
+        <>
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="rounded-lg border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700 dark:bg-stone-900">
             <h2 className="mb-4 text-lg font-bold text-stone-900 dark:text-stone-100">
@@ -125,6 +137,62 @@ export default function AdminBeanDetailPage({
             </div>
           </div>
         </div>
+
+        {/* Sharing table */}
+        <div className="mt-6 rounded-lg border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-stone-900">
+          <div className="border-b border-stone-100 px-4 py-3 dark:border-stone-800">
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400">
+              Shares ({data.shares.length})
+            </p>
+          </div>
+          {data.shares.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-stone-400">No share records</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-stone-100 text-left dark:border-stone-800">
+                    <th className="px-4 py-2 text-xs font-medium text-stone-500 dark:text-stone-400">Email</th>
+                    <th className="px-4 py-2 text-xs font-medium text-stone-500 dark:text-stone-400">Status</th>
+                    <th className="px-4 py-2 text-xs font-medium text-stone-500 dark:text-stone-400">Shot Access</th>
+                    <th className="px-4 py-2 text-xs font-medium text-stone-500 dark:text-stone-400">Reshare</th>
+                    <th className="px-4 py-2 text-xs font-medium text-stone-500 dark:text-stone-400">Added</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-50 dark:divide-stone-800">
+                  {data.shares.map((share) => (
+                    <tr key={share.id}>
+                      <td className="px-4 py-2">
+                        <Link
+                          href={`${AppRoutes.puckingAdmin.users.path}/${share.userId}`}
+                          className="font-mono text-xs text-amber-700 hover:text-amber-800 dark:text-amber-400 dark:hover:text-amber-300"
+                        >
+                          {share.userEmail ?? share.userId.slice(0, 8) + "…"}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className={`inline-flex rounded px-1.5 py-0.5 text-xs font-medium ${
+                          share.status === "owner" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                          : share.status === "accepted" ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          : share.status === "pending" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                          : "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400"
+                        }`}>
+                          {share.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-xs text-stone-600 dark:text-stone-400">{share.shotHistoryAccess}</td>
+                      <td className="px-4 py-2 text-xs text-stone-600 dark:text-stone-400">{share.reshareAllowed ? "Yes" : "No"}</td>
+                      <td className="px-4 py-2 text-xs text-stone-500 dark:text-stone-400">
+                        {new Date(share.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+        </>
       )}
     </div>
   );

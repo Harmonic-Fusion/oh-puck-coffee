@@ -48,3 +48,30 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({ updated: rows.length });
 }
+
+const bulkDeleteSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1),
+});
+
+export async function DELETE(request: NextRequest) {
+  const { error } = await requireSuperAdmin();
+  if (error) return error;
+
+  const body = await request.json();
+  const parsed = bulkDeleteSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { ids } = parsed.data;
+
+  const rows = await db
+    .delete(feedback)
+    .where(inArray(feedback.id, ids))
+    .returning({ id: feedback.id });
+
+  return NextResponse.json({ deleted: rows.length });
+}

@@ -16,6 +16,15 @@ interface AdminUser {
   subscriptionStatus: string | null;
   cancelAtPeriodEnd: boolean | null;
   entitlements: string[];
+  shotCount: number;
+  beanCount: number;
+  firstShot: string | null;
+  lastShot: string | null;
+  avgQuality: number | null;
+  avgRating: number | null;
+  avgBrewRatio: number | null;
+  mostUsedBean: string | null;
+  topFlavors: string[];
 }
 
 const ENDPOINT = ApiRoutes.admin.users.path;
@@ -88,6 +97,81 @@ export default function AdminUsersPage() {
                 className="inline-flex rounded bg-purple-100 px-1.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-400"
               >
                 {e}
+              </span>
+            ))}
+          </span>
+        );
+      },
+    },
+    {
+      key: "shotCount",
+      label: "Shots",
+      render: (v) => <span className="tabular-nums text-sm">{v as number}</span>,
+    },
+    {
+      key: "beanCount",
+      label: "Beans",
+      render: (v) => <span className="tabular-nums text-sm">{v as number}</span>,
+    },
+    {
+      key: "lastShot",
+      label: "Last Shot",
+      render: (v) =>
+        v ? (
+          <span className="text-xs text-stone-500 dark:text-stone-400">
+            {new Date(v as string).toLocaleDateString()}
+          </span>
+        ) : (
+          <span className="text-stone-300 dark:text-stone-600">—</span>
+        ),
+    },
+    {
+      key: "avgQuality",
+      label: "Avg Q",
+      render: (v) =>
+        v != null ? (
+          <span className="tabular-nums text-xs">{(v as number).toFixed(1)}</span>
+        ) : (
+          <span className="text-stone-300 dark:text-stone-600">—</span>
+        ),
+    },
+    {
+      key: "avgRating",
+      label: "Avg ★",
+      render: (v) =>
+        v != null ? (
+          <span className="tabular-nums text-xs">{(v as number).toFixed(1)}</span>
+        ) : (
+          <span className="text-stone-300 dark:text-stone-600">—</span>
+        ),
+    },
+    {
+      key: "mostUsedBean",
+      label: "Top Bean",
+      render: (v) =>
+        v ? (
+          <span className="max-w-[120px] truncate text-xs" title={v as string}>
+            {v as string}
+          </span>
+        ) : (
+          <span className="text-stone-300 dark:text-stone-600">—</span>
+        ),
+    },
+    {
+      key: "topFlavors",
+      label: "Flavors",
+      render: (v) => {
+        const flavors = v as string[];
+        if (!flavors || flavors.length === 0)
+          return <span className="text-stone-300 dark:text-stone-600">—</span>;
+        return (
+          <span className="flex flex-wrap gap-0.5">
+            {flavors.map((f) => (
+              <span
+                key={f}
+                className="rounded bg-stone-100 px-1 py-0.5 text-[10px] text-stone-600 dark:bg-stone-800 dark:text-stone-400"
+              >
+                {f}
               </span>
             ))}
           </span>

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback, type Dispatch, type SetStateAction } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect, type Dispatch, type SetStateAction } from "react";
+import { format } from "date-fns";
 import { useRouter } from "next/navigation";
 import {
   useReactTable,
@@ -28,6 +29,8 @@ import {
   ChevronDoubleRightIcon,
   MagnifyingGlassIcon,
   ArrowsUpDownIcon,
+  FunnelIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { ArrowDownTrayIcon } from "@heroicons/react/16/solid";
 import { BeanIcon } from "@/components/common/BeanIcon";
@@ -38,6 +41,8 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { exportToCsv, type CSVColumn } from "@/lib/export-csv";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import type { DateRange } from "@/components/ui/date-range-picker";
 
 // ── Filter helpers ─────────────────────────────────────────────────
 
@@ -48,6 +53,22 @@ function multiSelectFilterFn(
   if (!filterValues || filterValues.length === 0) return true;
   if (rowValue == null) return false;
   return filterValues.includes(rowValue);
+}
+
+function dateRangeFilterFn(
+  rowValue: Date | string | null | undefined,
+  filterValue: [string, string],
+): boolean {
+  if (!filterValue || (!filterValue[0] && !filterValue[1])) return true;
+  if (!rowValue) return false;
+  const d = new Date(rowValue).getTime();
+  if (filterValue[0] && d < new Date(filterValue[0]).getTime()) return false;
+  if (filterValue[1]) {
+    const toEnd = new Date(filterValue[1]);
+    toEnd.setHours(23, 59, 59, 999);
+    if (d > toEnd.getTime()) return false;
+  }
+  return true;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -154,6 +175,14 @@ const columns = [
     },
     enableColumnFilter: false,
   }),
+  columnHelper.accessor("createdAt", {
+    id: "createdAt",
+    header: "Added",
+    cell: (info) => formatDate(info.getValue()),
+    filterFn: (row, _id, value) =>
+      dateRangeFilterFn(row.original.createdAt, value as [string, string]),
+    enableSorting: false,
+  }),
 ];
 
 // ── Sort icon ──────────────────────────────────────────────────────
@@ -168,6 +197,214 @@ function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
     <ChevronUpIcon className="ml-1 inline h-3 w-3" />
   ) : (
     <ChevronDownIcon className="ml-1 inline h-3 w-3" />
+  );
+}
+
+// ── Bean filter bar ────────────────────────────────────────────────
+
+function BeanMultiSelectFilter({
+  column,
+  title,
+  options,
+}: {
+  column: ReturnType<ReturnType<typeof useBeansTable>["getColumn"]>;
+  title: string;
+  options: { label: string; value: string }[];
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const selected = useMemo(
+    () => (column?.getFilterValue() as string[] | undefined) ?? [],
+    [column],
+  );
+
+  const toggle = useCallback(
+    (value: string) => {
+      if (!column) return;
+      const next = selected.includes(value)
+        ? selected.filter((v) => v !== value)
+        : [...selected, value];
+      column.setFilterValue(next.length > 0 ? next : undefined);
+    },
+    [column, selected],
+  );
+
+  if (!column) return null;
+  const count = selected.length;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={cn(
+          "flex h-9 items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+          count > 0
+            ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
+            : "border-stone-200 bg-white text-stone-800 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800",
+        )}
+      >
+        {title}
+        {count > 0 && (
+          <span className="rounded-full bg-amber-200 px-1.5 text-[10px] font-bold text-amber-800 dark:bg-amber-800 dark:text-amber-200">
+            {count}
+          </span>
+        )}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-60 w-48 overflow-y-auto rounded-lg border border-stone-200 bg-white p-1 shadow-lg dark:border-stone-700 dark:bg-stone-900">
+          {options.length === 0 && (
+            <p className="px-2 py-3 text-center text-xs text-stone-400">No options</p>
+          )}
+          {options.map((opt) => (
+            <label
+              key={opt.value}
+              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
+            >
+              <input
+                type="checkbox"
+                checked={selected.includes(opt.value)}
+                onChange={() => toggle(opt.value)}
+                className="h-3.5 w-3.5 rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
+              />
+              <span className="truncate">{opt.label}</span>
+            </label>
+          ))}
+          {count > 0 && (
+            <button
+              type="button"
+              onClick={() => column.setFilterValue(undefined)}
+              className="mt-1 w-full rounded-md px-2 py-1 text-center text-xs text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BeanDateRangeFilter({ table }: { table: ReturnType<typeof useBeansTable> }) {
+  const col = table.getColumn("createdAt");
+  const value = col?.getFilterValue() as [string, string] | undefined;
+  const range: DateRange | undefined = value
+    ? { from: value[0] ? new Date(value[0]) : undefined, to: value[1] ? new Date(value[1]) : undefined }
+    : undefined;
+
+  function handleChange(r: DateRange | undefined) {
+    if (!r || (!r.from && !r.to)) {
+      col?.setFilterValue(undefined);
+    } else {
+      col?.setFilterValue([
+        r.from ? format(r.from, "yyyy-MM-dd") : "",
+        r.to ? format(r.to, "yyyy-MM-dd") : "",
+      ]);
+    }
+  }
+
+  return <DateRangePicker value={range} onChange={handleChange} placeholder="Added" />;
+}
+
+function BeanFilterBar({
+  table,
+  roasterOptions,
+  originOptions,
+  roastLevelOptions,
+  processingOptions,
+}: {
+  table: ReturnType<typeof useBeansTable>;
+  roasterOptions: { label: string; value: string }[];
+  originOptions: { label: string; value: string }[];
+  roastLevelOptions: { label: string; value: string }[];
+  processingOptions: { label: string; value: string }[];
+}) {
+  const activeCount = table.getState().columnFilters.length;
+
+  return (
+    <div className="relative z-10 space-y-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <FunnelIcon className="h-4 w-4 shrink-0 text-stone-400" />
+        <BeanMultiSelectFilter
+          column={table.getColumn("roaster")}
+          title="Roaster"
+          options={roasterOptions}
+        />
+        <BeanMultiSelectFilter
+          column={table.getColumn("origin")}
+          title="Origin"
+          options={originOptions}
+        />
+        <BeanMultiSelectFilter
+          column={table.getColumn("roastLevel")}
+          title="Roast"
+          options={roastLevelOptions}
+        />
+        <BeanMultiSelectFilter
+          column={table.getColumn("processingMethod")}
+          title="Process"
+          options={processingOptions}
+        />
+        <BeanDateRangeFilter table={table} />
+        {activeCount > 0 && (
+          <button
+            type="button"
+            onClick={() => table.resetColumnFilters()}
+            className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300"
+          >
+            <XMarkIcon className="h-3 w-3" />
+            Reset
+          </button>
+        )}
+      </div>
+      {activeCount > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {table.getState().columnFilters.map((f) => {
+            const col = table.getColumn(f.id);
+            const label = col
+              ? String(typeof col.columnDef.header === "string" ? col.columnDef.header : f.id)
+              : f.id;
+            const val = f.value;
+            let display: string;
+            if (Array.isArray(val) && val.length === 2 && f.id === "createdAt") {
+              const from = val[0] ? format(new Date(val[0]), "MMM d, yyyy") : "…";
+              const to = val[1] ? format(new Date(val[1]), "MMM d, yyyy") : "…";
+              display = `${from} – ${to}`;
+            } else if (Array.isArray(val)) {
+              display = val.length <= 2 ? val.join(", ") : `${val.length} selected`;
+            } else {
+              display = String(val);
+            }
+            return (
+              <span
+                key={f.id}
+                className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+              >
+                {label}: {display}
+                <button
+                  type="button"
+                  onClick={() => col?.setFilterValue(undefined)}
+                  className="ml-0.5 hover:text-amber-600"
+                >
+                  <XMarkIcon className="h-3 w-3" />
+                </button>
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -578,6 +815,30 @@ export default function BeansPage() {
 
   const filteredRows = table.getFilteredRowModel().rows;
 
+  // Derive filter options from the current beans data
+  const roasterOptions = useMemo(
+    () =>
+      Array.from(new Set((beans ?? []).map((b) => b.roaster).filter(Boolean) as string[]))
+        .sort()
+        .map((v) => ({ label: v, value: v })),
+    [beans],
+  );
+  const originOptions = useMemo(
+    () =>
+      Array.from(new Set((beans ?? []).map((b) => b.origin).filter(Boolean) as string[]))
+        .sort()
+        .map((v) => ({ label: v, value: v })),
+    [beans],
+  );
+  const roastLevelOptions = useMemo(
+    () => ROAST_LEVELS.map((v) => ({ label: v, value: v })),
+    [],
+  );
+  const processingOptions = useMemo(
+    () => PROCESSING_METHODS.map((v) => ({ label: v, value: v })),
+    [],
+  );
+
   const handleBeanClick = useCallback(
     (bean: BeanWithCounts) => {
       router.push(resolvePath(AppRoutes.beans.beanId, { id: bean.id }));
@@ -773,13 +1034,6 @@ export default function BeansPage() {
             Beans
           </h1>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2 rounded-md border border-amber-700 bg-amber-700 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-amber-800 dark:border-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700"
-            >
-              Add beans
-            </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -801,6 +1055,13 @@ export default function BeansPage() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <button
+              type="button"
+              onClick={() => setShowCreate(true)}
+              className="inline-flex items-center gap-2 rounded-md border border-amber-700 bg-amber-700 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-amber-800 dark:border-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700"
+            >
+              Add beans
+            </button>
           </div>
         </div>
 
@@ -837,7 +1098,7 @@ export default function BeansPage() {
             placeholder="Search beans, roasters, origins…"
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
-            className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder-stone-400 outline-none transition-colors focus:border-stone-400 focus:ring-1 focus:ring-stone-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:placeholder-stone-500 dark:focus:border-stone-500 dark:focus:ring-stone-500"
+            className="h-9 w-full rounded-lg border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder-stone-400 outline-none transition-colors focus:border-amber-400 focus:ring-1 focus:ring-amber-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:placeholder-stone-500 dark:focus:border-amber-500 dark:focus:ring-amber-500"
           />
           {globalFilter && (
             <button
@@ -848,6 +1109,15 @@ export default function BeansPage() {
             </button>
           )}
         </div>
+
+        {/* Filter bar */}
+        <BeanFilterBar
+          table={table}
+          roasterOptions={roasterOptions}
+          originOptions={originOptions}
+          roastLevelOptions={roastLevelOptions}
+          processingOptions={processingOptions}
+        />
 
         {/* Mobile sort bar */}
         <div className="md:hidden">

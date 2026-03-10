@@ -2,47 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { ShotForm } from "@/components/shots/form/ShotForm";
-
-const _PUN_PHRASES = [
-  "One espresso to rule them all, one to find them, one to bring them all and in the darkness bind them",
-  "The coffee gods are smiling on you today",
-  "The espresso is strong with this one",
-  "Make it so, Number One — pull that shot",
-  "Engage! Maximum extraction, warp factor 9",
-  "May the extraction be with you",
-  "Resistance is futile — this espresso will be assimilated",
-  "The answer to life, the universe, and everything? 42 grams",
-  "Winter is coming... better make it a double",
-  "I find your lack of crema disturbing",
-  "Live long and extract",
-  "These aren't the beans you're looking for... wait, yes they are",
-  "I'll be back... for another shot",
-  "This coffee is a gift from the coffee gods",
-  "Darkness comes before the dawn",
-]
-
-const _ENCOURAGING_PHRASES = [
-  "Time to dial in something delicious",
-  "Every shot is a step toward perfection",
-  "Your next great espresso starts here",
-  "Track it, tweak it, taste the difference",
-  "Let's capture some coffee magic",
-  "Good data makes great espresso",
-  "Another day, another chance to nail it",
-  "I'm so proud of you",
-  "You're doing great!",
-  "You're a coffee legend!",
-]
-
-const _KAT_PHRASES = [
-  "May this coffee bless you, especially if your name is Kat",
-  "All bow before Kat's mighty coffee skills",
-  "Tremble mortal, before Kat's wrath",
-]
-
-const ENCOURAGING_PHRASES = [..._ENCOURAGING_PHRASES, ..._KAT_PHRASES, ..._PUN_PHRASES];
-
-const INITIAL_PHRASE = ENCOURAGING_PHRASES[Math.floor(Math.random() * ENCOURAGING_PHRASES.length)];
+import { getRandomLogPhrase } from "@/lib/log-phrases";
 
 function TypewriterText({ text }: { text: string }) {
   const [displayed, setDisplayed] = useState("");
@@ -66,7 +26,7 @@ function TypewriterText({ text }: { text: string }) {
 }
 
 export default function LogPage() {
-  const [phrase] = useState(INITIAL_PHRASE);
+  const [phrase] = useState(getRandomLogPhrase);
 
   return (
     <div className="mx-auto w-full max-w-2xl">
@@ -78,7 +38,7 @@ export default function LogPage() {
           <TypewriterText text={phrase} />
         </p>
       </div>
-      <ShotForm />
+      <ShotForm phrase={phrase} />
     </div>
   );
 }

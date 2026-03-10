@@ -1,37 +1,22 @@
 "use client";
 
 import type { ErrorInfo } from "react";
-import { useEffect, useRef, useCallback, ReactNode } from "react";
+import { useEffect, useRef, ReactNode } from "react";
 import { ApiRoutes } from "@/app/routes";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { useToast } from "@/components/common/Toast";
 
-const RETRY_COUNT = 3;
-const RETRY_INTERVAL_MS = 1000;
+const POLL_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 async function checkHealth(): Promise<boolean> {
-  const res = await fetch(ApiRoutes.health.path);
-  if (!res.ok) return false;
-  const data = (await res.json()) as { status?: string };
-  return data.status === "ok";
-}
-
-async function checkHealthWithRetries(
-  retries: number,
-  intervalMs: number
-): Promise<boolean> {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      const ok = await checkHealth();
-      if (ok) return true;
-    } catch {
-      // ignore and retry
-    }
-    if (attempt < retries - 1) {
-      await new Promise((r) => setTimeout(r, intervalMs));
-    }
+  try {
+    const res = await fetch(ApiRoutes.health.path);
+    if (!res.ok) return false;
+    const data = (await res.json()) as { status?: string };
+    return data.status === "ok";
+  } catch {
+    return false;
   }
-  return false;
 }
 
 interface ApiHealthErrorBoundaryProps {
@@ -42,9 +27,9 @@ export function ApiHealthErrorBoundary({ children }: ApiHealthErrorBoundaryProps
   const { showToast } = useToast();
   const hasNotifiedRef = useRef(false);
 
-  const runHealthCheck = useCallback(() => {
-    if (hasNotifiedRef.current) return;
-    checkHealthWithRetries(RETRY_COUNT, RETRY_INTERVAL_MS).then((healthy) => {
+  useEffect(() => {
+    const poll = async () => {
+      const healthy = await checkHealth();
       if (!healthy && !hasNotifiedRef.current) {
         hasNotifiedRef.current = true;
         showToast(
@@ -52,18 +37,18 @@ export function ApiHealthErrorBoundary({ children }: ApiHealthErrorBoundaryProps
           "API is unavailable. Please check your connection and try again.",
           0
         );
+      } else if (healthy) {
+        hasNotifiedRef.current = false;
       }
-    });
-  }, [showToast]);
+    };
 
-  useEffect(() => {
-    runHealthCheck();
-  }, [runHealthCheck]);
+    const id = setInterval(poll, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [showToast]);
 
   function handleError(error: Error, errorInfo: ErrorInfo) {
     void error;
     void errorInfo;
-    runHealthCheck();
   }
 
   return (

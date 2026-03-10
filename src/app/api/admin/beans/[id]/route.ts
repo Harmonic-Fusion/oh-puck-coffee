@@ -71,17 +71,30 @@ export async function GET(
     });
   }
 
-  const [shotStats] = await db
-    .select({ total: count() })
-    .from(shots)
-    .where(eq(shots.beanId, id));
-
-  const [lastShot] = await db
-    .select({ createdAt: shots.createdAt })
-    .from(shots)
-    .where(eq(shots.beanId, id))
-    .orderBy(desc(shots.createdAt))
-    .limit(1);
+  const [shotStats, lastShotRow, shares] = await Promise.all([
+    db.select({ total: count() }).from(shots).where(eq(shots.beanId, id)).then((r) => r[0]),
+    db
+      .select({ createdAt: shots.createdAt })
+      .from(shots)
+      .where(eq(shots.beanId, id))
+      .orderBy(desc(shots.createdAt))
+      .limit(1)
+      .then((r) => r[0] ?? null),
+    db
+      .select({
+        id: beansShare.id,
+        userId: beansShare.userId,
+        userEmail: users.email,
+        status: beansShare.status,
+        shotHistoryAccess: beansShare.shotHistoryAccess,
+        reshareAllowed: beansShare.reshareAllowed,
+        createdAt: beansShare.createdAt,
+      })
+      .from(beansShare)
+      .leftJoin(users, eq(beansShare.userId, users.id))
+      .where(eq(beansShare.beanId, id))
+      .orderBy(beansShare.createdAt),
+  ]);
 
   return NextResponse.json({
     bean: {
@@ -97,6 +110,7 @@ export async function GET(
       createdAt: row.createdAt,
     },
     shotCount: shotStats?.total ?? 0,
-    lastShot: lastShot?.createdAt ?? null,
+    lastShot: lastShotRow?.createdAt ?? null,
+    shares,
   });
 }

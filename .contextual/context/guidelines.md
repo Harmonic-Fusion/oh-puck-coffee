@@ -259,6 +259,24 @@ function Parent() {
 }
 ```
 
+## Icons
+
+**When passing icon components across modules** (e.g. `icon: DocumentTextIcon` in a config consumed by `ActionButtonBar`), do not import from `@heroicons/react` and pass the reference. Turbopack can instantiate the Heroicons ESM module before its export is ready, causing "module factory not available" on first load.
+
+**Use inline SVG**: In the same file that builds the config, define a small function or component that returns the SVG (same `viewBox`, `path`, `stroke="currentColor"`, and a `className` prop). Pass that local component in the config. No extra dependencies; the icon lives in one module so no cross-module ref.
+
+```tsx
+// ✅ Inline icon in same file that passes it
+function DocumentTextIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className={className} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625..." />
+    </svg>
+  );
+}
+const actionConfigs = [{ icon: DocumentTextIcon, ... }];
+```
+
 ## Helper Functions
 
 Keep helper functions private to their component module unless they're used by another module.

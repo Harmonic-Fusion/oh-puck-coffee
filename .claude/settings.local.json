@@ -36,7 +36,10 @@
       "Bash(pnpm db:generate)",
       "Bash(printf 'y\\\\n')",
       "Bash(pnpm db:push)",
-      "Bash(pnpm test)"
+      "Bash(pnpm test)",
+      "Bash(wc:*)",
+      "Bash(/dev/null:*)",
+      "Bash(node:*)"
     ],
     "deny": [
       "Read(./.env)"

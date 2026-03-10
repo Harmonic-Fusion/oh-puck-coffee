@@ -17,7 +17,27 @@ import type { FlavorNode } from "@/shared/flavor-wheel/types";
 import { formatRating } from "@/lib/format-rating";
 import { formatTemp, roundToOneDecimal } from "@/lib/format-numbers";
 import { useTempUnit } from "@/lib/use-temp-unit";
-import { DocumentTextIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
+
+/** Inline document-text icon to avoid Turbopack ESM "module factory not available" when passing icon ref to ActionButtonBar. */
+function DocumentTextIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+      />
+    </svg>
+  );
+}
 
 export interface ShotSummary extends ShotShareData {
   shotId: string;
@@ -27,9 +47,10 @@ interface ShotSuccessModalProps {
   open: boolean;
   onClose: () => void;
   summary: ShotSummary | null;
+  phrase?: string;
 }
 
-export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalProps) {
+export function ShotSuccessModal({ open, onClose, summary, phrase }: ShotSuccessModalProps) {
   const router = useRouter();
   const [tempUnit] = useTempUnit();
   const createShareLink = useCreateShareLink();
@@ -104,17 +125,6 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
       variant: "default",
     },
     {
-      key: "logAnother",
-      icon: PlusCircleIcon,
-      onClick: () => {
-        onClose();
-        const logUrl = resolvePath(AppRoutes.log, {}, { previousShotId: summary.shotId });
-        router.push(`${logUrl}#recipe`);
-      },
-      title: "Log Another",
-      variant: "default",
-    },
-    {
       key: "share",
       shotData: summary,
       tempUnit,
@@ -126,18 +136,14 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="relative z-10 w-full max-w-md overflow-y-auto max-h-[90vh] rounded-2xl border border-stone-200 bg-white p-6 shadow-xl dark:border-stone-700 dark:bg-stone-900">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-lg p-2 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
-        >
-          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="relative z-10 w-full max-w-md overflow-y-auto max-h-[90vh] rounded-2xl border border-stone-200 bg-white p-6 shadow-xl dark:border-stone-700 dark:bg-stone-900"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header: Coffee Logo + Title */}
         <div className="mb-5 text-center">
           <Image
@@ -150,6 +156,11 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
           <h2 className="text-xl font-bold text-stone-800 dark:text-stone-200">
             Journey before Destination!
           </h2>
+          {phrase && (
+            <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+              {phrase}
+            </p>
+          )}
         </div>
 
         {/* Share Preview Card */}
@@ -279,7 +290,7 @@ export function ShotSuccessModal({ open, onClose, summary }: ShotSuccessModalPro
         </div>
 
         {/* Action buttons */}
-        <ActionButtonBar actions={actionConfigs} className="gap-3" showLabels />
+        <ActionButtonBar actions={actionConfigs} className="gap-3" showLabels stackLabels />
       </div>
     </div>
   );

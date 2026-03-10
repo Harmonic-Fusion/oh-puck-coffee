@@ -31,6 +31,7 @@ export interface ActionButtonBarProps {
   actions: ActionConfig[];
   className?: string;
   showLabels?: boolean;
+  stackLabels?: boolean;
 }
 
 function isShareConfig(config: ActionConfig): config is ShareButtonConfig {
@@ -51,23 +52,23 @@ function getVariantClasses(variant?: "default" | "active" | "danger" | "success"
   }
 }
 
-export function ActionButtonBar({ actions, className, showLabels = false }: ActionButtonBarProps) {
+export function ActionButtonBar({ actions, className, showLabels = false, stackLabels = false }: ActionButtonBarProps) {
   return (
     <div className={cn("flex items-center gap-2", className)}>
       {actions.map((action) => {
         if (isShareConfig(action)) {
           return (
-            <div key={action.key} className="flex h-10 flex-1">
+            <div key={action.key} className={cn("flex flex-1", stackLabels ? "h-auto" : "h-10")}>
               <LongPressShareButton
                 shotData={action.shotData}
                 tempUnit={action.tempUnit}
                 getShareUrl={action.getShareUrl}
                 onShare={action.onShare}
-                className="h-10 w-full"
+                className={cn("w-full", stackLabels ? "h-auto py-2" : "h-10")}
                 variant={action.buttonVariant ?? "ghost"}
                 size="sm"
               >
-                <div className="flex items-center gap-2">
+                <div className={cn("flex items-center", stackLabels ? "flex-col gap-1" : "gap-2")}>
                   <ShareIcon
                     className={cn(
                       "h-5 w-5",
@@ -79,7 +80,8 @@ export function ActionButtonBar({ actions, className, showLabels = false }: Acti
                   {showLabels && (
                     <span
                       className={cn(
-                        "text-sm font-medium",
+                        "font-medium",
+                        stackLabels ? "text-xs" : "text-sm",
                         action.buttonVariant === "primary"
                           ? "text-white"
                           : "text-stone-500 dark:text-stone-400",
@@ -101,15 +103,20 @@ export function ActionButtonBar({ actions, className, showLabels = false }: Acti
             type="button"
             onClick={action.onClick}
             className={cn(
-              "flex h-10 flex-1 items-center justify-center rounded-lg transition-colors",
+              "flex flex-1 items-center justify-center rounded-lg transition-colors",
+              stackLabels ? "h-auto py-2" : "h-10",
               getVariantClasses(action.variant),
               action.className,
             )}
             title={action.title}
           >
-            <div className="flex items-center gap-2">
+            <div className={cn("flex items-center", stackLabels ? "flex-col gap-1" : "gap-2")}>
               <Icon className="h-5 w-5" />
-              {showLabels && <span className="text-sm font-medium">{action.title}</span>}
+              {showLabels && (
+                <span className={cn("font-medium", stackLabels ? "text-xs" : "text-sm")}>
+                  {action.title}
+                </span>
+              )}
             </div>
           </button>
         );

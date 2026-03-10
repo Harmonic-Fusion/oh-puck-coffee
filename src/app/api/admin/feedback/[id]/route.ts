@@ -49,3 +49,23 @@ export async function PATCH(
   }
   return NextResponse.json(row);
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { error } = await requireSuperAdmin();
+  if (error) return error;
+
+  const { id } = await params;
+
+  const [row] = await db
+    .delete(feedback)
+    .where(eq(feedback.id, id))
+    .returning({ id: feedback.id });
+
+  if (!row) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  return NextResponse.json({ ok: true });
+}

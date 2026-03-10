@@ -25,6 +25,7 @@ import {
   PencilSquareIcon,
   ShareIcon,
   DocumentDuplicateIcon,
+  PlusCircleIcon,
 } from "@heroicons/react/24/outline";
 
 // ── Sub-components ────────────────────────────────────────────────────
@@ -71,7 +72,7 @@ export default function BeanDetailPage() {
   const [editIsRoastDateBestGuess, setEditIsRoastDateBestGuess] =
     useState(false);
 
-  const handleEditOpen = useCallback(() => {
+  const handleEditOpen = () => {
     if (!bean) return;
     setEditName(bean.name);
     setEditOrigin(bean.origin ?? "");
@@ -91,9 +92,9 @@ export default function BeanDetailPage() {
     );
     setEditIsRoastDateBestGuess(bean.isRoastDateBestGuess ?? false);
     setShowEdit(true);
-  }, [bean]);
+  };
 
-  const handleEditSave = useCallback(async () => {
+  const handleEditSave = async () => {
     if (!editName.trim()) return;
     await updateBean.mutateAsync({
       id,
@@ -111,20 +112,7 @@ export default function BeanDetailPage() {
     });
     setShowEdit(false);
     refetch();
-  }, [
-    id,
-    editName,
-    editOrigin,
-    editRoaster,
-    editOriginDetails,
-    editProcessing,
-    editRoast,
-    editRoastDate,
-    editOpenBagDate,
-    editIsRoastDateBestGuess,
-    updateBean,
-    refetch,
-  ]);
+  };
 
   // ── Unshared / duplicate state ─────────────────────────────────────
   const isOwner = bean?.userBean?.status === "owner";
@@ -145,9 +133,9 @@ export default function BeanDetailPage() {
 
   // ── Share ──────────────────────────────────────────────────────────
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const handleShare = useCallback(() => {
+  const handleShare = () => {
     setShareDialogOpen(true);
-  }, []);
+  };
 
   // Open share dialog when ?sharing=true is in the URL
   useEffect(() => {
@@ -196,6 +184,16 @@ export default function BeanDetailPage() {
     (s) => !s.isHidden && s.userId === currentUserId,
   );
 
+  const mostRecentShot = nonHiddenShots.reduce<typeof nonHiddenShots[0] | null>(
+    (latest, shot) =>
+      !latest || new Date(shot.createdAt) > new Date(latest.createdAt) ? shot : latest,
+    null,
+  );
+
+  const logShotUrl = mostRecentShot
+    ? `${AppRoutes.log.path}?previousShotId=${mostRecentShot.id}`
+    : `${AppRoutes.log.path}?beanId=${id}`;
+
   // ── Loading ───────────────────────────────────────────────────────
   if (isLoading) {
     return (
@@ -229,7 +227,7 @@ export default function BeanDetailPage() {
         </span>
       </nav>
 
-      {/* Header */}
+      {/* Header — row 1: title + sharing */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-bold text-stone-800 dark:text-stone-200">
@@ -241,64 +239,77 @@ export default function BeanDetailPage() {
             </p>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {isUnshared ? (
-            <div className="flex items-center gap-2">
-              <select
-                value={duplicateShotOption}
-                onChange={(e) =>
-                  setDuplicateShotOption(
-                    e.target.value as "duplicate" | "migrate" | "none",
-                  )
-                }
-                className="rounded border border-stone-300 bg-white px-2 py-1.5 text-sm text-stone-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300"
-              >
-                <option value="duplicate">Copy my shots</option>
-                <option value="migrate">Move my shots</option>
-                <option value="none">No shots</option>
-              </select>
+        {!isUnshared && (
+          <div className="flex shrink-0 items-center gap-2">
+            <SharedWith beanId={id} />
+            <button
+              type="button"
+              onClick={handleShare}
+              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
+            >
+              <ShareIcon className="h-4 w-4" />
+              Share
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Header — row 2: actions */}
+      <div className="flex items-center gap-2">
+        {isUnshared ? (
+          <>
+            <select
+              value={duplicateShotOption}
+              onChange={(e) =>
+                setDuplicateShotOption(
+                  e.target.value as "duplicate" | "migrate" | "none",
+                )
+              }
+              className="rounded border border-stone-300 bg-white px-2 py-1.5 text-sm text-stone-700 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300"
+            >
+              <option value="duplicate">Copy my shots</option>
+              <option value="migrate">Move my shots</option>
+              <option value="none">No shots</option>
+            </select>
+            <button
+              type="button"
+              onClick={handleDuplicate}
+              disabled={duplicateBean.isPending}
+              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 disabled:opacity-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
+            >
+              <DocumentDuplicateIcon className="h-4 w-4" />
+              {duplicateBean.isPending ? "Duplicating…" : "Duplicate"}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => setDuplicateModalOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
+            >
+              <DocumentDuplicateIcon className="h-4 w-4" />
+              Duplicate
+            </button>
+            {isOwner && (
               <button
                 type="button"
-                onClick={handleDuplicate}
-                disabled={duplicateBean.isPending}
-                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 disabled:opacity-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
-              >
-                <DocumentDuplicateIcon className="h-4 w-4" />
-                {duplicateBean.isPending ? "Duplicating…" : "Duplicate"}
-              </button>
-            </div>
-          ) : (
-            <>
-              <SharedWith beanId={id} />
-              <button
-                type="button"
-                onClick={handleShare}
+                onClick={handleEditOpen}
                 className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
               >
-                <ShareIcon className="h-4 w-4" />
-                Share
+                <PencilSquareIcon className="h-4 w-4" />
+                Edit
               </button>
-              <button
-                type="button"
-                onClick={() => setDuplicateModalOpen(true)}
-                className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
-              >
-                <DocumentDuplicateIcon className="h-4 w-4" />
-                Duplicate
-              </button>
-              {isOwner && (
-                <button
-                  type="button"
-                  onClick={handleEditOpen}
-                  className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
-                >
-                  <PencilSquareIcon className="h-4 w-4" />
-                  Edit
-                </button>
-              )}
-            </>
-          )}
-        </div>
+            )}
+            <Link
+              href={logShotUrl}
+              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
+            >
+              <PlusCircleIcon className="h-4 w-4" />
+              Brew Shot
+            </Link>
+          </>
+        )}
       </div>
 
       {/* Unshared notice */}
