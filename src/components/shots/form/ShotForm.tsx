@@ -98,13 +98,16 @@ function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: Shot
   // State for shot detail modal
   const [selectedShot, setSelectedShot] = useState<ShotWithJoins | null>(null);
 
+  // Form mode: "inProgress" = editing, "logged" = shot just saved (no unsaved warning, no submit)
+  const [formMode, setFormMode] = useState<"inProgress" | "logged">("inProgress");
+
   // State for success modal
   const [successSummary, setSuccessSummary] = useState<ShotSummary | null>(null);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
-  // Warn before leaving when the user has entered results data
+  // Warn before leaving only when in progress and user has entered results data
   useEffect(() => {
-    if (!hasResultsData) return;
+    if (formMode !== "inProgress" || !hasResultsData) return;
 
     function handleBeforeUnload(e: BeforeUnloadEvent) {
       e.preventDefault();
@@ -112,7 +115,7 @@ function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: Shot
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [hasResultsData]);
+  }, [formMode, hasResultsData]);
 
   const onSubmit = async (data: CreateShot) => {
     try {
@@ -155,6 +158,7 @@ function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: Shot
 
       // Keep the same shot values in the form and mark it clean after successful log.
       methods.reset(data);
+      setFormMode("logged");
       setSuccessSummary(summary);
       setIsSuccessModalOpen(true);
     } catch (error) {
@@ -163,6 +167,7 @@ function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: Shot
   };
 
   const handleSuccessModalClose = () => {
+    setFormMode("inProgress");
     setIsSuccessModalOpen(false);
     setSuccessSummary(null);
     methods.reset();
@@ -202,7 +207,7 @@ function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: Shot
           <Button
             type="submit"
             loading={createShot.isPending}
-            disabled={isSuccessModalOpen && !!successSummary}
+            disabled={createShot.isPending || formMode === "logged"}
             size="lg"
             className="w-full py-4 text-lg"
           >
