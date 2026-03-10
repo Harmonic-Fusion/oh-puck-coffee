@@ -100,12 +100,6 @@ export default function StatsPage() {
             Your espresso analytics at a glance
           </p>
         </div>
-        <button
-          onClick={() => setIsFeedbackModalOpen(true)}
-          className="rounded-lg border-2 border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 dark:border-stone-600 dark:bg-stone-900 dark:text-stone-300 dark:hover:bg-stone-800"
-        >
-          Send Feedback
-        </button>
       </div>
 
       {/* Filters */}
