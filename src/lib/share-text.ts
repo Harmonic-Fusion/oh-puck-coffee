@@ -92,6 +92,11 @@ function sectionLines(conditional: unknown, lines: (string | null | undefined)[]
   return [...filterLines(lines), ""];
 }
 
+function conditionalLines(conditional: unknown, lines: (string | null | undefined)[]): string[] {
+  if (!conditional) return [];
+  return filterLines(lines);
+}
+
 // ---------------------------------------------------------------------------
 // View (shared base; ridiculous adds extra fields)
 // ---------------------------------------------------------------------------
@@ -276,7 +281,6 @@ export function buildShortShareText(shot: ShotShareData): string {
     joinParts([v.ratingLabel, v.ratingStars, v.flavors], ' '),
     `🫘 ${v.beanName}`,
     v.notesTruncated,
-    shot.url,
   ]);
   return shortText;
 }
@@ -316,9 +320,8 @@ export function buildShotShareText(shot: ShotShareData, tempUnit: TempUnit = "F"
         v.body,
         v.flavors,
         v.adjectives,
-      ]
+      ],
     ),
-    shot.url,
   ]);
 }
 
@@ -333,8 +336,14 @@ export function buildRidiculousShareText(shot: ShotShareData, tempUnit: TempUnit
     "This journey begins with the beans...",
     "🫘 THE BEANS",
     `✨ ${v.beanName} ✨`,
-    ...(v.beanOrigin ? [`Hailing from ${joinParts([v.beanOrigin, v.beanRoaster])}`] : []),
-    ...(v.roastLevel ? [`These beans are ${joinParts([v.roastLevel, v.processingMethod, v.roastDate])}`] : []),
+    ...conditionalLines(
+      v.beanOrigin,
+      [`Hailing from ${joinParts([v.beanOrigin, v.beanRoaster])}`]
+    ),
+    ...conditionalLines(
+      v.roastLevel,
+      [`These beans are ${joinParts([v.roastLevel, v.processingMethod, v.roastDate])}`]
+    ),
     "",
     "Our hero plans their journey...",
     "📋 THE RECIPE",
@@ -360,11 +369,11 @@ export function buildRidiculousShareText(shot: ShotShareData, tempUnit: TempUnit
         "🍵 HERO'S TASTING",
         v.rating,
         v.ratingDescription,
-        ...(v.bitter ? [`The hero's tasted a ${v.bitter}`, v.bitterDescription] : []),
-        ...(v.sour ? [`The hero's tasted a ${v.sour}`, v.sourDescription] : []),
-        ...(v.body ? [`The body of the shot was ${v.body}`, v.bodyDescription] : []),
-        ...(v.flavors ? [`The hero tasted ${v.flavors}`, v.flavorsDescription] : []),
-        ...(v.adjectives ? [`The shot was described as ${v.adjectives}`, v.adjectivesDescription] : []),
+        ...conditionalLines(v.bitter, [`The hero's tasted a ${v.bitter}`, v.bitterDescription]),
+        ...conditionalLines(v.sour, [`The hero's tasted a ${v.sour}`, v.sourDescription]),
+        ...conditionalLines(v.body, [`The body of the shot was ${v.body}`, v.bodyDescription]),
+        ...conditionalLines(v.flavors, [`The hero tasted ${v.flavors}`, v.flavorsDescription]),
+        ...conditionalLines(v.adjectives, [`The shot was described as ${v.adjectives}`, v.adjectivesDescription]),
       ]
     ),
     ...sectionLines(
@@ -379,8 +388,7 @@ export function buildRidiculousShareText(shot: ShotShareData, tempUnit: TempUnit
     pick(HAIKUS),
     "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
     "",
-    "🔗 details: {{{url}}}",
-    "May your next shot be even more extraordinary!",
+    "Until next time...",
     pick(SIGN_OFFS),
   ]);
 }
