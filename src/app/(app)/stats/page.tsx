@@ -1,25 +1,55 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { AppRoutes } from "@/app/routes";
 import { Entitlements, hasEntitlement } from "@/shared/entitlements";
-import { StatCard } from "@/components/stats/StatCard";
-import { FlavorProfileChart } from "@/components/stats/FlavorProfileChart";
-import { BeanComparisonTable } from "@/components/stats/BeanComparisonTable";
-import { ShotQualityChart } from "@/components/stats/ShotQualityChart";
-import { TopFlavorsChart } from "@/components/stats/TopFlavorsChart";
-import { ShotHeatmap } from "@/components/stats/ShotHeatmap";
-import { DialInChart } from "@/components/stats/DialInChart";
-import { BeanAgeChart } from "@/components/stats/BeanAgeChart";
 import { useOverviewStats } from "@/components/stats/hooks";
 import { useShots } from "@/components/shots/hooks";
 import { useBeans } from "@/components/beans/hooks";
 import { FeedbackModal } from "@/components/common/FeedbackModal";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
 import type { DateRange } from "@/components/ui/date-range-picker";
+
+// Dynamic imports to avoid "module factory is not available" (chunk/barrel/circular deps)
+const StatCard = dynamic(
+  () => import("@/components/stats/StatCard").then((m) => m.StatCard),
+  { ssr: false },
+);
+const FlavorProfileChart = dynamic(
+  () => import("@/components/stats/FlavorProfileChart").then((m) => m.FlavorProfileChart),
+  { ssr: false },
+);
+const BeanComparisonTable = dynamic(
+  () => import("@/components/stats/BeanComparisonTable").then((m) => m.BeanComparisonTable),
+  { ssr: false },
+);
+const ShotQualityChart = dynamic(
+  () => import("@/components/stats/ShotQualityChart").then((m) => m.ShotQualityChart),
+  { ssr: false },
+);
+const TopFlavorsChart = dynamic(
+  () => import("@/components/stats/TopFlavorsChart").then((m) => m.TopFlavorsChart),
+  { ssr: false },
+);
+const ShotHeatmap = dynamic(
+  () => import("@/components/stats/ShotHeatmap").then((m) => m.ShotHeatmap),
+  { ssr: false },
+);
+const DialInChart = dynamic(
+  () => import("@/components/stats/DialInChart").then((m) => m.DialInChart),
+  { ssr: false },
+);
+const BeanAgeChart = dynamic(
+  () => import("@/components/stats/BeanAgeChart").then((m) => m.BeanAgeChart),
+  { ssr: false },
+);
+const DateRangePicker = dynamic(
+  () => import("@/components/ui/date-range-picker").then((m) => ({ default: m.DateRangePicker })),
+  { ssr: false },
+);
 
 function StatsUpgradeSplash() {
   return (

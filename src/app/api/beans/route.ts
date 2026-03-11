@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, beansShare, shots } from "@/db/schema";
+import { beans, beansShare, shots, origins, roasters } from "@/db/schema";
 import { createBeanSchema } from "@/shared/beans/schema";
 import { ilike, desc, eq, and, max, sql, inArray, count } from "drizzle-orm";
 import { generateShortUid } from "@/lib/short-uid";
 import { createBeanId, createBeansShareId } from "@/lib/nanoid-ids";
+import { resolveOriginId, resolveRoasterId } from "@/lib/beans-resolve-origin-roaster";
 
 interface ShareSideLoadItem {
   id: string;
@@ -396,7 +397,22 @@ export async function GET(request: NextRequest) {
       commonFlavors: commonFlavorsMap.get(r.id) ?? [],
     }));
 
-    return NextResponse.json(withHiddenFlag);
+    const originIds = [...new Set(results.map((r) => r.originId).filter(Boolean))] as string[];
+    const roasterIds = [...new Set(results.map((r) => r.roasterId).filter(Boolean))] as string[];
+    const [originRows, roasterRows] = await Promise.all([
+      originIds.length > 0 ? db.select({ id: origins.id, name: origins.name }).from(origins).where(inArray(origins.id, originIds)) : Promise.resolve([]),
+      roasterIds.length > 0 ? db.select({ id: roasters.id, name: roasters.name }).from(roasters).where(inArray(roasters.id, roasterIds)) : Promise.resolve([]),
+    ]);
+    const originMap = new Map(originRows.map((o) => [o.id, o.name]));
+    const roasterMap = new Map(roasterRows.map((r) => [r.id, r.name]));
+
+    const enriched = withHiddenFlag.map((row) => ({
+      ...row,
+      origin: row.originId ? originMap.get(row.originId) ?? null : null,
+      roaster: row.roasterId ? roasterMap.get(row.roasterId) ?? null : null,
+    }));
+
+    return NextResponse.json(enriched);
   }
 
   // Default: order by createdAt desc
@@ -423,9 +439,13 @@ export async function GET(request: NextRequest) {
       shotHistoryAccess: beansShare.shotHistoryAccess,
       status: beansShare.status,
       reshareAllowed: beansShare.reshareAllowed,
+      origin: origins.name,
+      roaster: roasters.name,
     })
     .from(beans)
     .innerJoin(beansShare, memberCondition)
+    .leftJoin(origins, eq(beans.originId, origins.id))
+    .leftJoin(roasters, eq(beans.roasterId, roasters.id))
     .where(searchCondition)
     .orderBy(desc(beans.createdAt));
 
@@ -452,12 +472,30 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit origin, roaster from beanData
-  const { openBagDate, origin, roaster, ...beanData } = parsed.data;
+  const {
+    openBagDate,
+    origin: originName,
+    roaster: roasterName,
+    originId: _oId,
+    roasterId: _rId,
+    ...beanData
+  } = parsed.data;
+  void _oId;
+  void _rId;
+
+  const [originId, roasterId] = await Promise.all([
+    resolveOriginId(originName),
+    resolveRoasterId(roasterName),
+  ]);
 
   const [bean] = await db
     .insert(beans)
-    .values({ ...beanData, id: createBeanId() })
+    .values({
+      ...beanData,
+      id: createBeanId(),
+      originId: originId ?? null,
+      roasterId: roasterId ?? null,
+    })
     .returning();
 
   if (!bean) {

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, beansShare } from "@/db/schema";
+import { beans, beansShare, origins, roasters } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { canAccessBean, isBeanOwner } from "@/lib/beans-access";
+import { resolveOriginId, resolveRoasterId } from "@/lib/beans-resolve-origin-roaster";
 import { createBeanSchema } from "@/shared/beans/schema";
 
 export async function GET(
@@ -40,10 +41,29 @@ export async function GET(
       }
     : null;
 
-  return NextResponse.json({
+  // Expose origin/roaster names for UI (beans table has only originId/roasterId)
+  let originName: string | null = null;
+  let roasterName: string | null = null;
+  if (result.bean.originId || result.bean.roasterId) {
+    const [originRow, roasterRow] = await Promise.all([
+      result.bean.originId
+        ? db.select({ name: origins.name }).from(origins).where(eq(origins.id, result.bean.originId!)).limit(1)
+        : Promise.resolve([]),
+      result.bean.roasterId
+        ? db.select({ name: roasters.name }).from(roasters).where(eq(roasters.id, result.bean.roasterId!)).limit(1)
+        : Promise.resolve([]),
+    ]);
+    originName = originRow[0]?.name ?? null;
+    roasterName = roasterRow[0]?.name ?? null;
+  }
+
+  const body = {
     ...result.bean,
+    origin: originName,
+    roaster: roasterName,
     userBean,
-  });
+  };
+  return NextResponse.json(body);
 }
 
 export async function PATCH(
@@ -77,7 +97,29 @@ export async function PATCH(
     );
   }
 
-  const { openBagDate, ...canonicalFields } = parsed.data;
+  const {
+    openBagDate,
+    origin: originName,
+    roaster: roasterName,
+    originId: _originId,
+    roasterId: _roasterId,
+    ...canonicalFields
+  } = parsed.data;
+  void _originId;
+  void _roasterId;
+
+  // Resolve origin/roaster names to IDs (find or create)
+  const [resolvedOriginId, resolvedRoasterId] = await Promise.all([
+    originName !== undefined ? resolveOriginId(originName) : Promise.resolve(undefined),
+    roasterName !== undefined ? resolveRoasterId(roasterName) : Promise.resolve(undefined),
+  ]);
+
+  const updatePayload: Record<string, unknown> = { ...canonicalFields };
+  if (originName !== undefined) updatePayload.originId = resolvedOriginId ?? null;
+  if (roasterName !== undefined) updatePayload.roasterId = resolvedRoasterId ?? null;
+  // Remove any keys that are not columns on beans (e.g. origin, roaster)
+  delete (updatePayload as Record<string, unknown>).origin;
+  delete (updatePayload as Record<string, unknown>).roaster;
 
   const isCreatorOrAdmin =
     isBeanOwner(result) ||
@@ -85,16 +127,16 @@ export async function PATCH(
     session.user.role === "super-admin";
 
   if (
-    Object.keys(canonicalFields).length > 0 &&
+    Object.keys(updatePayload).length > 0 &&
     !isCreatorOrAdmin
   ) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (Object.keys(canonicalFields).length > 0) {
+  if (Object.keys(updatePayload).length > 0) {
     await db
       .update(beans)
-      .set(canonicalFields)
+      .set(updatePayload as Partial<typeof beans.$inferInsert>)
       .where(eq(beans.id, id));
   }
 
@@ -148,8 +190,26 @@ export async function PATCH(
       }
     : null;
 
+  // Expose origin/roaster names for UI
+  let originNameRes: string | null = null;
+  let roasterNameRes: string | null = null;
+  if (updatedBean.originId || updatedBean.roasterId) {
+    const [originRow, roasterRow] = await Promise.all([
+      updatedBean.originId
+        ? db.select({ name: origins.name }).from(origins).where(eq(origins.id, updatedBean.originId)).limit(1)
+        : Promise.resolve([]),
+      updatedBean.roasterId
+        ? db.select({ name: roasters.name }).from(roasters).where(eq(roasters.id, updatedBean.roasterId)).limit(1)
+        : Promise.resolve([]),
+    ]);
+    originNameRes = originRow[0]?.name ?? null;
+    roasterNameRes = roasterRow[0]?.name ?? null;
+  }
+
   return NextResponse.json({
     ...updatedBean,
+    origin: originNameRes,
+    roaster: roasterNameRes,
     userBean,
   });
 }

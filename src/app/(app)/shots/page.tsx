@@ -541,7 +541,7 @@ function MobileSortBar({
   }
 
   return (
-    <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
       <ArrowsUpDownIcon className="h-3.5 w-3.5 shrink-0 text-stone-400" />
       {SHOTS_SORT_OPTIONS.map((opt) => {
         const isActive = active?.id === opt.id;
@@ -594,10 +594,16 @@ function MultiSelectFilter({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const selected = useMemo(
-    () => (column.getFilterValue() as string[] | undefined) ?? [],
-    [column]
-  );
+  // Derive selected from current filter value; memoize so hook deps stay stable
+  const filterValue = column.getFilterValue();
+  const selected = useMemo(() => {
+    const raw = filterValue;
+    return Array.isArray(raw)
+      ? (raw as string[])
+      : raw != null && raw !== undefined
+        ? [String(raw)]
+        : [];
+  }, [filterValue]);
 
   const toggle = useCallback(
     (value: string) => {
@@ -610,6 +616,19 @@ function MultiSelectFilter({
   );
 
   const count = selected.length;
+  const selectedLabels = useMemo(
+    () =>
+      selected
+        .map((v) => options.find((o) => o.value === v)?.label ?? v)
+        .filter(Boolean),
+    [selected, options],
+  );
+  const buttonLabel =
+    count === 0
+      ? title
+      : count <= 2
+        ? `${title}: ${selectedLabels.slice(0, 2).join(", ")}`
+        : `${title}: ${selectedLabels[0]} +${count - 1}`;
 
   return (
     <div ref={ref} className="relative">
@@ -617,15 +636,16 @@ function MultiSelectFilter({
         type="button"
         onClick={() => setOpen((o) => !o)}
         className={cn(
-          "flex h-9 items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+          "flex h-9 min-w-0 max-w-[12rem] items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors sm:max-w-none",
           count > 0
             ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
             : "border-stone-200 bg-white text-stone-800 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800",
         )}
+        title={count > 0 ? selectedLabels.join(", ") : undefined}
       >
-        {title}
+        <span className="truncate">{buttonLabel}</span>
         {count > 0 && (
-          <span className="rounded-full bg-amber-200 px-1.5 text-[10px] font-bold text-amber-800 dark:bg-amber-800 dark:text-amber-200">
+          <span className="shrink-0 rounded-full bg-amber-200 px-1.5 text-[10px] font-bold text-amber-800 dark:bg-amber-800 dark:text-amber-200">
             {count}
           </span>
         )}
@@ -637,20 +657,28 @@ function MultiSelectFilter({
               No options
             </p>
           )}
-          {options.map((opt) => (
-            <label
-              key={opt.value}
-              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
-            >
-              <input
-                type="checkbox"
-                checked={selected.includes(opt.value)}
-                onChange={() => toggle(opt.value)}
-                className="h-3.5 w-3.5 rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
-              />
-              <span className="truncate">{opt.label}</span>
-            </label>
-          ))}
+          {options.map((opt) => {
+            const isChecked = selected.includes(opt.value);
+            return (
+              <label
+                key={opt.value}
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-stone-50 dark:hover:bg-stone-800",
+                  isChecked
+                    ? "bg-amber-50 font-medium text-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
+                    : "text-stone-700 dark:text-stone-300",
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggle(opt.value)}
+                  className="h-3.5 w-3.5 rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
+                />
+                <span className="truncate">{opt.label}</span>
+              </label>
+            );
+          })}
           {count > 0 && (
             <button
               type="button"
@@ -719,7 +747,6 @@ function FilterBar({
 
   return (
     <div className="relative z-10 space-y-2">
-      {/* Filter chips */}
       <div className="flex flex-wrap items-center gap-2">
         <FunnelIcon className="h-4 w-4 shrink-0 text-stone-400" />
 
