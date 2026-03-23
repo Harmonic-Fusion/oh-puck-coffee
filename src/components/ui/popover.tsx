@@ -154,7 +154,8 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
 
     if (!open || !pos) return null;
 
-    const { position: _ignorePos, ...restStyle } = style ?? {};
+    const restStyle: React.CSSProperties = { ...style };
+    delete restStyle.position;
 
     return createPortal(
       <div
