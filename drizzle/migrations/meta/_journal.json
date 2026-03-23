@@ -20,6 +20,7 @@
     { "idx": 15, "version": "7", "when": 1741219600000, "tag": "0017_restore_share_my_shots_publicly", "breakpoints": true },
     { "idx": 16, "version": "7", "when": 1741219700000, "tag": "0018_beans_id_text", "breakpoints": true },
     { "idx": 17, "version": "7", "when": 1741219800000, "tag": "0019_all_text_ids", "breakpoints": true },
-    { "idx": 18, "version": "7", "when": 1741219900000, "tag": "0020_shot_history_none", "breakpoints": true }
+    { "idx": 18, "version": "7", "when": 1741219900000, "tag": "0020_shot_history_none", "breakpoints": true },
+    { "idx": 19, "version": "7", "when": 1742900000000, "tag": "0025_origins_roasters_text_ids", "breakpoints": true }
   ]
 }

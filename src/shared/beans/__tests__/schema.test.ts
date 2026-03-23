@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  createBeanSchema,
   createBeanShareSchema,
   updateGeneralAccessSchema,
   updateBeanShareSchema,
@@ -160,3 +161,31 @@ describe("updateBeanShareSchema", () => {
     expect(result.success).toBe(false);
   });
 });
+
+// ── createBeanSchema (dates) ────────────────────────────────────────────────
+
+describe("createBeanSchema", () => {
+  it("omits invalid roast date strings instead of producing Invalid Date", () => {
+    const result = createBeanSchema.safeParse({
+      name: "Test",
+      roastLevel: "Medium",
+      roastDate: "not-a-date",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.roastDate).toBeUndefined();
+  });
+
+  it("accepts valid ISO roast date", () => {
+    const result = createBeanSchema.safeParse({
+      name: "Test",
+      roastLevel: "Medium",
+      roastDate: "2024-06-15",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.roastDate).toBeInstanceOf(Date);
+      expect(result.data.roastDate?.getUTCFullYear()).toBe(2024);
+    }
+  });
+});
+

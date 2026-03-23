@@ -186,10 +186,24 @@ interface ResolvedColumn {
   isEmpty?: boolean;
 }
 
-function resolveSlot(slot: SlotConfig, shots: ShotRow[]): ResolvedColumn {
-  // Filter to the selected user's shots (or all if no userId set)
-  const userShots = slot.userId
-    ? shots.filter((s) => s.userId === slot.userId)
+/**
+ * Picker shows `slot.userId ?? currentUserId`, but `userId` can stay undefined in state
+ * until the user touches the dropdown — treat undefined as the current user so we never
+ * use "all contributors' shots" when comparing per-user columns (fixes duplicate Best Rating).
+ */
+function effectiveSlotUserId(slot: SlotConfig, currentUserId: string): string {
+  if (slot.userId && slot.userId.length > 0) return slot.userId;
+  return currentUserId;
+}
+
+function resolveSlot(
+  slot: SlotConfig,
+  shots: ShotRow[],
+  currentUserId: string,
+): ResolvedColumn {
+  const uid = effectiveSlotUserId(slot, currentUserId);
+  const userShots = uid
+    ? shots.filter((s) => s.userId === uid)
     : shots;
 
   const nonHidden = [...userShots]
@@ -428,13 +442,9 @@ export function ComparisonMatrix({
   contributors: BeanShotContributor[];
   currentUserId: string;
 }) {
-  const nonHiddenCount = shots
-    .filter((s) => !s.isHidden && (!slots[0]?.userId || s.userId === slots[0]?.userId))
-    .length;
-
   const columns = useMemo(
-    () => slots.map((slot) => resolveSlot(slot, shots)),
-    [slots, shots],
+    () => slots.map((slot) => resolveSlot(slot, shots, currentUserId)),
+    [slots, shots, currentUserId],
   );
 
   const addSlot = () => {
@@ -501,7 +511,11 @@ export function ComparisonMatrix({
               onSlotsChange(next);
             }}
             onRemove={() => onSlotsChange(slots.filter((_, idx) => idx !== i))}
-            totalNonHidden={nonHiddenCount}
+            totalNonHidden={shots.filter((s) => {
+              if (s.isHidden) return false;
+              const u = effectiveSlotUserId(slot, currentUserId);
+              return u ? s.userId === u : true;
+            }).length}
             contributors={contributors}
             currentUserId={currentUserId}
           />

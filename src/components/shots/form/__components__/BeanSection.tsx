@@ -33,6 +33,14 @@ import type { CreateShot } from "@/shared/shots/schema";
 import { Modal } from "@/components/common/Modal";
 import { ActionButtonBar } from "@/components/shots/ActionButtonBar";
 import { BeanFormModal } from "@/components/beans/BeanSelector";
+import { useToast } from "@/components/common/Toast";
+
+function parseOptionalIsoDate(value: string): Date | undefined {
+  const t = value.trim();
+  if (!t) return undefined;
+  const d = new Date(t);
+  return Number.isNaN(d.getTime()) ? undefined : d;
+}
 
 interface BeanSectionProps {
   error?: string;
@@ -63,6 +71,7 @@ export function BeanSection({ error }: BeanSectionProps) {
   const { data: beans, isLoading } = useBeans();
   const createBean = useCreateBean();
   const updateBean = useUpdateBean();
+  const { showToast } = useToast();
 
   // Derive unique suggestions from existing beans
   const originSuggestions = Array.from(
@@ -128,7 +137,20 @@ export function BeanSection({ error }: BeanSectionProps) {
   }, []);
 
   const handleCreate = async () => {
-    if (!newName.trim()) return;
+    if (!newName.trim()) {
+      showToast("error", "Bean name is required");
+      return;
+    }
+    const roastDate = parseOptionalIsoDate(newRoastDate);
+    const openBagDate = parseOptionalIsoDate(newOpenBagDate);
+    if (newRoastDate.trim() && roastDate === undefined) {
+      showToast("error", "Roast date is not a valid date");
+      return;
+    }
+    if (newOpenBagDate.trim() && openBagDate === undefined) {
+      showToast("error", "Open bag date is not a valid date");
+      return;
+    }
     try {
       const bean = await createBean.mutateAsync({
         name: newName.trim(),
@@ -139,15 +161,18 @@ export function BeanSection({ error }: BeanSectionProps) {
           ? (newProcessing as (typeof PROCESSING_METHODS)[number])
           : undefined,
         roastLevel: newRoast as (typeof ROAST_LEVELS)[number],
-        roastDate: newRoastDate ? new Date(newRoastDate) : undefined,
-        openBagDate: newOpenBagDate ? new Date(newOpenBagDate) : undefined,
+        roastDate,
+        openBagDate,
         isRoastDateBestGuess: newIsRoastDateBestGuess,
       });
       setValue("beanId", bean.id, { shouldValidate: true });
       setShowCreate(false);
       resetFormFields();
-    } catch {
-      // Error handled by mutation
+    } catch (error) {
+      showToast(
+        "error",
+        error instanceof Error ? error.message : "Could not create bean",
+      );
     }
   };
 
@@ -179,7 +204,20 @@ export function BeanSection({ error }: BeanSectionProps) {
   };
 
   const handleUpdate = async () => {
-    if (!beanId || !newName.trim()) return;
+    if (!beanId || !newName.trim()) {
+      showToast("error", "Bean name is required");
+      return;
+    }
+    const roastDate = parseOptionalIsoDate(newRoastDate);
+    const openBagDate = parseOptionalIsoDate(newOpenBagDate);
+    if (newRoastDate.trim() && roastDate === undefined) {
+      showToast("error", "Roast date is not a valid date");
+      return;
+    }
+    if (newOpenBagDate.trim() && openBagDate === undefined) {
+      showToast("error", "Open bag date is not a valid date");
+      return;
+    }
     try {
       await updateBean.mutateAsync({
         id: beanId,
@@ -192,15 +230,18 @@ export function BeanSection({ error }: BeanSectionProps) {
             ? (newProcessing as (typeof PROCESSING_METHODS)[number])
             : undefined,
           roastLevel: newRoast as (typeof ROAST_LEVELS)[number],
-          roastDate: newRoastDate ? new Date(newRoastDate) : undefined,
-          openBagDate: newOpenBagDate ? new Date(newOpenBagDate) : undefined,
+          roastDate,
+          openBagDate,
           isRoastDateBestGuess: newIsRoastDateBestGuess,
         },
       });
       setShowEdit(false);
       resetFormFields();
-    } catch {
-      // Error handled by mutation
+    } catch (error) {
+      showToast(
+        "error",
+        error instanceof Error ? error.message : "Could not update bean",
+      );
     }
   };
 

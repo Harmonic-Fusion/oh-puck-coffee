@@ -239,7 +239,11 @@ export default function BeanDetailPage() {
             </p>
           )}
         </div>
-        {!isUnshared && (
+      </div>
+
+      {/* Header — row 3: actions */}
+      <div className="flex items-center gap-2">
+      {!isUnshared && (
           <div className="flex shrink-0 items-center gap-2">
             <SharedWith beanId={id} />
             <button
@@ -248,14 +252,10 @@ export default function BeanDetailPage() {
               className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
             >
               <ShareIcon className="h-4 w-4" />
-              Share
             </button>
           </div>
         )}
-      </div>
 
-      {/* Header — row 2: actions */}
-      <div className="flex items-center gap-2">
         {isUnshared ? (
           <>
             <select
@@ -289,7 +289,6 @@ export default function BeanDetailPage() {
               className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
             >
               <DocumentDuplicateIcon className="h-4 w-4" />
-              Duplicate
             </button>
             {isOwner && (
               <button
@@ -298,15 +297,14 @@ export default function BeanDetailPage() {
                 className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
               >
                 <PencilSquareIcon className="h-4 w-4" />
-                Edit
               </button>
             )}
             <Link
               href={logShotUrl}
-              className="flex items-center gap-1.5 rounded-lg border border-stone-200 px-3 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-amber-700 bg-amber-700 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-amber-800 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 dark:border-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700 dark:focus:ring-offset-stone-900"
             >
               <PlusCircleIcon className="h-4 w-4" />
-              Brew Shot
+              Brew
             </Link>
           </>
         )}
@@ -328,23 +326,10 @@ export default function BeanDetailPage() {
         nonHiddenShotsLength={nonHiddenShots.length}
       />
 
-      {/* Shot History */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold text-stone-800 dark:text-stone-200">
-          Shot History
-        </h2>
-        <ShotHistory
-          shots={shots}
-          contributors={contributors}
-          currentUserId={currentUserId}
-          isLoading={shotsLoading}
-        />
-      </div>
-
       {/* Flavor ratings chart */}
       <div>
         <h2 className="mb-3 text-lg font-semibold text-stone-800 dark:text-stone-200">
-          Flavor Ratings
+          Tasting Notes
         </h2>
         <FlavorRatingsChart beanId={id} />
       </div>
@@ -365,6 +350,19 @@ export default function BeanDetailPage() {
             currentUserId={currentUserId}
           />
         )}
+      </div>
+
+      {/* Shot History */}
+      <div>
+        <h2 className="mb-3 text-lg font-semibold text-stone-800 dark:text-stone-200">
+          Shot History
+        </h2>
+        <ShotHistory
+          shots={shots}
+          contributors={contributors}
+          currentUserId={currentUserId}
+          isLoading={shotsLoading}
+        />
       </div>
 
       {/* Share dialog */}

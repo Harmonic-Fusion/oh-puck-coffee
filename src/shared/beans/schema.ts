@@ -1,6 +1,15 @@
 import * as z from "zod";
 import { ROAST_LEVELS, PROCESSING_METHODS } from "./constants";
 
+/** Dropping invalid date strings avoids persisting Invalid Date and 400s from JSON date coercion. */
+function optionalDateField() {
+  return z.preprocess((val: unknown) => {
+    if (val === "" || val === null || val === undefined) return undefined;
+    const d = val instanceof Date ? val : new Date(String(val));
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }, z.date().optional());
+}
+
 export const createBeanSchema = z.object({
   name: z.string().min(1, "Bean name is required"),
   origin: z.string().optional(),
@@ -10,8 +19,8 @@ export const createBeanSchema = z.object({
   originDetails: z.string().optional(),
   processingMethod: z.enum(PROCESSING_METHODS).optional(),
   roastLevel: z.enum(ROAST_LEVELS),
-  roastDate: z.coerce.date().optional(),
-  openBagDate: z.coerce.date().optional(),
+  roastDate: optionalDateField(),
+  openBagDate: optionalDateField(),
   isRoastDateBestGuess: z.boolean().optional(),
 });
 

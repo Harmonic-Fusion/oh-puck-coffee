@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { beans, beansShare, shots, origins, roasters } from "@/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, or } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -61,41 +61,89 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ beans: [] });
   }
 
-  const shotConditions = [
-    inArray(shots.beanId, beanIds),
-    eq(shots.isHidden, false),
-  ];
-  if (session.user.role !== "admin" && session.user.role !== "super-admin") {
-    shotConditions.push(eq(shots.userId, session.user.id));
-  }
+  const shotSelect = {
+    id: shots.id,
+    beanId: shots.beanId,
+    doseGrams: shots.doseGrams,
+    yieldGrams: shots.yieldGrams,
+    grindLevel: shots.grindLevel,
+    brewTimeSecs: shots.brewTimeSecs,
+    brewTempC: shots.brewTempC,
+    preInfusionDuration: shots.preInfusionDuration,
+    brewPressure: shots.brewPressure,
+    flowRate: shots.flowRate,
+    shotQuality: shots.shotQuality,
+    rating: shots.rating,
+    bitter: shots.bitter,
+    sour: shots.sour,
+    notes: shots.notes,
+    flavors: shots.flavors,
+    bodyTexture: shots.bodyTexture,
+    adjectives: shots.adjectives,
+    isReferenceShot: shots.isReferenceShot,
+    isHidden: shots.isHidden,
+    createdAt: shots.createdAt,
+  } as const;
 
-  const shotRows = await db
-    .select({
-      id: shots.id,
-      beanId: shots.beanId,
-      doseGrams: shots.doseGrams,
-      yieldGrams: shots.yieldGrams,
-      grindLevel: shots.grindLevel,
-      brewTimeSecs: shots.brewTimeSecs,
-      brewTempC: shots.brewTempC,
-      preInfusionDuration: shots.preInfusionDuration,
-      brewPressure: shots.brewPressure,
-      flowRate: shots.flowRate,
-      shotQuality: shots.shotQuality,
-      rating: shots.rating,
-      bitter: shots.bitter,
-      sour: shots.sour,
-      notes: shots.notes,
-      flavors: shots.flavors,
-      bodyTexture: shots.bodyTexture,
-      adjectives: shots.adjectives,
-      isReferenceShot: shots.isReferenceShot,
-      isHidden: shots.isHidden,
-      createdAt: shots.createdAt,
-    })
-    .from(shots)
-    .where(and(...shotConditions))
-    .orderBy(shots.createdAt);
+  const isAdmin =
+    session.user.role === "admin" || session.user.role === "super-admin";
+
+  const shotRows = isAdmin
+    ? await db
+        .select(shotSelect)
+        .from(shots)
+        .where(
+          and(inArray(shots.beanId, beanIds), eq(shots.isHidden, false)),
+        )
+        .orderBy(shots.createdAt)
+    : await (async () => {
+        const myShots = await db
+          .select(shotSelect)
+          .from(shots)
+          .where(
+            and(
+              inArray(shots.beanId, beanIds),
+              eq(shots.userId, session.user.id),
+            ),
+          );
+
+        const sharingMembers = await db
+          .select({
+            userId: beansShare.userId,
+            beanId: beansShare.beanId,
+          })
+          .from(beansShare)
+          .where(
+            and(
+              inArray(beansShare.beanId, beanIds),
+              inArray(beansShare.status, ["accepted", "owner", "self"]),
+              inArray(beansShare.shotHistoryAccess, [
+                "restricted",
+                "anyone_with_link",
+              ]),
+            ),
+          );
+
+        const pairConditions = sharingMembers
+          .filter((m) => m.userId !== session.user.id)
+          .map((m) =>
+            and(eq(shots.beanId, m.beanId), eq(shots.userId, m.userId)),
+          );
+
+        const sharedShots =
+          pairConditions.length > 0
+            ? await db
+                .select(shotSelect)
+                .from(shots)
+                .where(and(eq(shots.isHidden, false), or(...pairConditions)))
+            : [];
+
+        return [...myShots, ...sharedShots].sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() -
+            new Date(b.createdAt).getTime(),
+        );
+      })();
 
   // Group shots by bean and compute comparisons
   const shotsByBean = new Map<string, typeof shotRows>();

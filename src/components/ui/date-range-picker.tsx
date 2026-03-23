@@ -53,10 +53,7 @@ export function DateRangePicker({
           <CalendarIcon className="h-4 w-4 shrink-0" />
           <span className="whitespace-nowrap">{label ?? placeholder}</span>
         </PopoverTrigger>
-        <PopoverContent
-          className="w-auto p-0 mt-1"
-          style={{ position: "absolute", zIndex: 50 }}
-        >
+        <PopoverContent className="w-auto p-0">
           <Calendar
             mode="range"
             selected={value}

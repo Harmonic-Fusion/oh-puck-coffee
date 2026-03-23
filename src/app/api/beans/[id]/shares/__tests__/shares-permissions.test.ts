@@ -453,7 +453,11 @@ describe("Bean sharing API", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      const acceptedShare = { ...pendingShare, status: "accepted" as const, updatedAt: new Date() };
+      const acceptedShare = {
+        ...pendingShare,
+        status: "accepted" as const,
+        updatedAt: new Date(),
+      };
       mock.dbQueue = [[pendingShare], [acceptedShare]];
 
       const res = await acceptShare(

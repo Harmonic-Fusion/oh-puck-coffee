@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 interface PopoverContextValue {
   open: boolean;
   setOpen: (open: boolean) => void;
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
 }
 
 const PopoverContext = React.createContext<PopoverContextValue | undefined>(
@@ -20,6 +22,7 @@ export interface PopoverProps {
 
 function Popover({ children, open: controlledOpen, onOpenChange }: PopoverProps) {
   const [internalOpen, setInternalOpen] = React.useState(false);
+  const triggerRef = React.useRef<HTMLButtonElement | null>(null);
   const open = controlledOpen ?? internalOpen;
   const setOpen = React.useCallback(
     (newOpen: boolean) => {
@@ -32,7 +35,7 @@ function Popover({ children, open: controlledOpen, onOpenChange }: PopoverProps)
   );
 
   return (
-    <PopoverContext.Provider value={{ open, setOpen }}>
+    <PopoverContext.Provider value={{ open, setOpen, triggerRef }}>
       {children}
     </PopoverContext.Provider>
   );
@@ -50,11 +53,20 @@ export type PopoverTriggerProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 
 const PopoverTrigger = React.forwardRef<HTMLButtonElement, PopoverTriggerProps>(
   ({ className, children, ...props }, ref) => {
-    const { setOpen, open } = usePopoverContext();
+    const { setOpen, open, triggerRef } = usePopoverContext();
+
+    const mergedRef = React.useCallback(
+      (node: HTMLButtonElement | null) => {
+        triggerRef.current = node;
+        if (typeof ref === "function") ref(node);
+        else if (ref) ref.current = node;
+      },
+      [ref, triggerRef]
+    );
 
     return (
       <button
-        ref={ref}
+        ref={mergedRef}
         type="button"
         onClick={() => setOpen(!open)}
         className={className}
@@ -78,23 +90,48 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
   (
     {
       className,
+      align = "start",
+      sideOffset = 4,
+      children,
+      style,
       ...props
     },
     ref
   ) => {
-    const { open, setOpen } = usePopoverContext();
-    const contentRef = React.useRef<HTMLDivElement>(null);
-    const triggerRef = React.useRef<HTMLElement | null>(null);
+    const { open, setOpen, triggerRef } = usePopoverContext();
+    const contentRef = React.useRef<HTMLDivElement | null>(null);
+    const [pos, setPos] = React.useState<{ top: number; left: number } | null>(null);
+
+    React.useEffect(() => {
+      if (!open || !triggerRef.current) return;
+
+      function update() {
+        const rect = triggerRef.current!.getBoundingClientRect();
+        let left = rect.left;
+        if (align === "end") left = rect.right;
+        else if (align === "center") left = rect.left + rect.width / 2;
+        setPos({ top: rect.bottom + sideOffset, left });
+      }
+
+      update();
+      window.addEventListener("scroll", update, true);
+      window.addEventListener("resize", update);
+      return () => {
+        window.removeEventListener("scroll", update, true);
+        window.removeEventListener("resize", update);
+      };
+    }, [open, align, sideOffset, triggerRef]);
 
     React.useEffect(() => {
       if (!open) return;
 
       function handleClickOutside(event: MouseEvent) {
+        const target = event.target as Node;
         if (
           contentRef.current &&
-          !contentRef.current.contains(event.target as Node) &&
+          !contentRef.current.contains(target) &&
           triggerRef.current &&
-          !triggerRef.current.contains(event.target as Node)
+          !triggerRef.current.contains(target)
         ) {
           setOpen(false);
         }
@@ -102,25 +139,34 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
 
       document.addEventListener("mousedown", handleClickOutside);
       return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [open, setOpen]);
+    }, [open, setOpen, triggerRef]);
 
-    if (!open) return null;
+    if (!open || !pos) return null;
 
-    return (
+    const { position: _ignorePos, ...restStyle } = style ?? {};
+
+    return createPortal(
       <div
-        ref={ref}
+        ref={(node) => {
+          contentRef.current = node;
+          if (typeof ref === "function") ref(node);
+          else if (ref) ref.current = node;
+        }}
         className={cn(
           "z-50 min-w-[8rem] overflow-hidden rounded-md border border-stone-200 bg-white p-1 text-stone-950 shadow-md dark:border-stone-800 dark:bg-stone-950 dark:text-stone-50",
           className
         )}
         style={{
-          position: "absolute",
-          ...props.style,
+          position: "fixed",
+          top: pos.top,
+          left: pos.left,
+          ...restStyle,
         }}
         {...props}
       >
-        <div ref={contentRef}>{props.children}</div>
-      </div>
+        {children}
+      </div>,
+      document.body
     );
   }
 );

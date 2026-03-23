@@ -3,6 +3,21 @@
 import { useRef, useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 
+const HOLD_DELAY_MS = 100;
+const DRAG_THRESHOLD_PX = 10;
+
+function clearSelectionAndBlurFormFields() {
+  window.getSelection()?.removeAllRanges();
+  const active = document.activeElement;
+  if (
+    active instanceof HTMLInputElement ||
+    active instanceof HTMLTextAreaElement ||
+    active instanceof HTMLSelectElement
+  ) {
+    active.blur();
+  }
+}
+
 interface SliderProps {
   value?: number;
   onChange: (value: number) => void;
@@ -63,11 +78,77 @@ export function Slider({
   );
 
   const handlePointerDown = useCallback(
-    (e: React.PointerEvent) => {
+    (e: React.PointerEvent<HTMLDivElement>) => {
       if (disabled) return;
       e.preventDefault();
-      setHasInteracted(true);
-      snapToStep(e.clientX);
+      clearSelectionAndBlurFormFields();
+
+      const pointerId = e.pointerId;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      let armed = false;
+
+      function arm(clientX: number) {
+        if (armed) return;
+        armed = true;
+        setHasInteracted(true);
+        snapToStep(clientX);
+        try {
+          e.currentTarget.setPointerCapture(pointerId);
+        } catch {
+          // setPointerCapture can throw if element disconnected
+        }
+      }
+
+      let holdTimer: ReturnType<typeof setTimeout> | undefined;
+
+      function cleanup() {
+        if (holdTimer !== undefined) {
+          clearTimeout(holdTimer);
+          holdTimer = undefined;
+        }
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        window.removeEventListener("pointercancel", onUp);
+        try {
+          if (e.currentTarget.hasPointerCapture(pointerId)) {
+            e.currentTarget.releasePointerCapture(pointerId);
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      function onMove(ev: PointerEvent) {
+        if (ev.pointerId !== pointerId) return;
+        const dx = Math.abs(ev.clientX - startX);
+        const dy = Math.abs(ev.clientY - startY);
+        if (!armed && (dx > DRAG_THRESHOLD_PX || dy > DRAG_THRESHOLD_PX)) {
+          if (holdTimer !== undefined) {
+            clearTimeout(holdTimer);
+            holdTimer = undefined;
+          }
+          arm(ev.clientX);
+        } else if (armed) {
+          snapToStep(ev.clientX);
+        }
+      }
+
+      function onUp(ev: PointerEvent) {
+        if (ev.pointerId !== pointerId) return;
+        cleanup();
+      }
+
+      holdTimer = setTimeout(() => {
+        holdTimer = undefined;
+        if (!armed) {
+          arm(startX);
+        }
+      }, HOLD_DELAY_MS);
+
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+      window.addEventListener("pointercancel", onUp);
     },
     [disabled, snapToStep]
   );
@@ -176,6 +257,7 @@ export function Slider({
               tabIndex={-1}
               onClick={() => {
                 if (disabled) return;
+                clearSelectionAndBlurFormFields();
                 setHasInteracted(true);
                 onChange(stepValue);
               }}

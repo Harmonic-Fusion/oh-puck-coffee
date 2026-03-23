@@ -16,7 +16,6 @@ import {
   createColumnHelper,
   type SortingState,
   type ColumnFiltersState,
-  type Column,
 } from "@tanstack/react-table";
 import {
   useShots,
@@ -37,20 +36,15 @@ import { AppRoutes, ApiRoutes, resolvePath } from "@/app/routes";
 import { buildShareText, type ShotShareData } from "@/lib/share-text";
 import { cn } from "@/lib/utils";
 import {
-  ChevronUpIcon,
-  ChevronDownIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
-  XMarkIcon,
   EyeIcon,
   EyeSlashIcon,
   PlusCircleIcon,
   ShareIcon,
-  ArrowsUpDownIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
 import {
@@ -67,9 +61,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { exportToCsv, type CSVColumn } from "@/lib/export-csv";
 import { buildAiExportPrompt } from "@/lib/export-ai-prompt";
 import { useTempUnit } from "@/lib/use-temp-unit";
-import { format } from "date-fns";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import type { DateRange } from "@/components/ui/date-range-picker";
+import { FilterBar, SortIcon, type FilterDescriptor } from "@/components/ui/filter-bar";
 
 // ── Filter function helpers ────────────────────────────────────────
 
@@ -498,369 +490,6 @@ function ShotCard({
   );
 }
 
-// ── Sort icon ──────────────────────────────────────────────────────
-
-function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
-  if (!isSorted) {
-    return (
-      <ChevronUpIcon className="ml-1 inline h-3 w-3 text-stone-300 dark:text-stone-600" />
-    );
-  }
-  return isSorted === "asc" ? (
-    <ChevronUpIcon className="ml-1 inline h-3 w-3" />
-  ) : (
-    <ChevronDownIcon className="ml-1 inline h-3 w-3" />
-  );
-}
-
-// ── Mobile sort bar ────────────────────────────────────────────────
-
-const SHOTS_SORT_OPTIONS = [
-  { label: "Date", id: "date" },
-  { label: "Bean", id: "bean" },
-  { label: "Rating", id: "rating" },
-  { label: "Quality", id: "quality" },
-  { label: "Time", id: "time" },
-];
-
-function MobileSortBar({
-  sorting,
-  onSortChange,
-}: {
-  sorting: SortingState;
-  onSortChange: (s: SortingState) => void;
-}) {
-  const active = sorting[0];
-
-  function toggle(id: string) {
-    if (active?.id === id) {
-      onSortChange([{ id, desc: !active.desc }]);
-    } else {
-      onSortChange([{ id, desc: true }]);
-    }
-  }
-
-  return (
-    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-      <ArrowsUpDownIcon className="h-3.5 w-3.5 shrink-0 text-stone-400" />
-      {SHOTS_SORT_OPTIONS.map((opt) => {
-        const isActive = active?.id === opt.id;
-        return (
-          <button
-            key={opt.id}
-            type="button"
-            onClick={() => toggle(opt.id)}
-            className={cn(
-              "inline-flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
-              isActive
-                ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-400"
-                : "border-stone-200 text-stone-600 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:bg-stone-800",
-            )}
-          >
-            {opt.label}
-            {isActive && (
-              active.desc
-                ? <ChevronDownIcon className="h-3 w-3" />
-                : <ChevronUpIcon className="h-3 w-3" />
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Filter popover (multi-select) ──────────────────────────────────
-
-function MultiSelectFilter({
-  column,
-  title,
-  options,
-}: {
-  column: Column<ShotWithJoins, unknown>;
-  title: string;
-  options: { label: string; value: string }[];
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  // Derive selected from current filter value; memoize so hook deps stay stable
-  const filterValue = column.getFilterValue();
-  const selected = useMemo(() => {
-    const raw = filterValue;
-    return Array.isArray(raw)
-      ? (raw as string[])
-      : raw != null && raw !== undefined
-        ? [String(raw)]
-        : [];
-  }, [filterValue]);
-
-  const toggle = useCallback(
-    (value: string) => {
-      const next = selected.includes(value)
-        ? selected.filter((v) => v !== value)
-        : [...selected, value];
-      column.setFilterValue(next.length > 0 ? next : undefined);
-    },
-    [column, selected],
-  );
-
-  const count = selected.length;
-  const selectedLabels = useMemo(
-    () =>
-      selected
-        .map((v) => options.find((o) => o.value === v)?.label ?? v)
-        .filter(Boolean),
-    [selected, options],
-  );
-  const buttonLabel =
-    count === 0
-      ? title
-      : count <= 2
-        ? `${title}: ${selectedLabels.slice(0, 2).join(", ")}`
-        : `${title}: ${selectedLabels[0]} +${count - 1}`;
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={cn(
-          "flex h-9 min-w-0 max-w-[12rem] items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors sm:max-w-none",
-          count > 0
-            ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
-            : "border-stone-200 bg-white text-stone-800 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800",
-        )}
-        title={count > 0 ? selectedLabels.join(", ") : undefined}
-      >
-        <span className="truncate">{buttonLabel}</span>
-        {count > 0 && (
-          <span className="shrink-0 rounded-full bg-amber-200 px-1.5 text-[10px] font-bold text-amber-800 dark:bg-amber-800 dark:text-amber-200">
-            {count}
-          </span>
-        )}
-      </button>
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-60 w-48 overflow-y-auto rounded-lg border border-stone-200 bg-white p-1 shadow-lg dark:border-stone-700 dark:bg-stone-900">
-          {options.length === 0 && (
-            <p className="px-2 py-3 text-center text-xs text-stone-400">
-              No options
-            </p>
-          )}
-          {options.map((opt) => {
-            const isChecked = selected.includes(opt.value);
-            return (
-              <label
-                key={opt.value}
-                className={cn(
-                  "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-stone-50 dark:hover:bg-stone-800",
-                  isChecked
-                    ? "bg-amber-50 font-medium text-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
-                    : "text-stone-700 dark:text-stone-300",
-                )}
-              >
-                <input
-                  type="checkbox"
-                  checked={isChecked}
-                  onChange={() => toggle(opt.value)}
-                  className="h-3.5 w-3.5 rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
-                />
-                <span className="truncate">{opt.label}</span>
-              </label>
-            );
-          })}
-          {count > 0 && (
-            <button
-              type="button"
-              onClick={() => column.setFilterValue(undefined)}
-              className="mt-1 w-full rounded-md px-2 py-1 text-center text-xs text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Date range filter ──────────────────────────────────────────────
-
-function DateRangeFilter({ column }: { column: Column<ShotWithJoins, unknown> }) {
-  const value = (column.getFilterValue() as [string, string] | undefined);
-  const range: DateRange | undefined = value
-    ? { from: value[0] ? new Date(value[0]) : undefined, to: value[1] ? new Date(value[1]) : undefined }
-    : undefined;
-
-  function handleChange(r: DateRange | undefined) {
-    if (!r || (!r.from && !r.to)) {
-      column.setFilterValue(undefined);
-    } else {
-      column.setFilterValue([
-        r.from ? format(r.from, "yyyy-MM-dd") : "",
-        r.to ? format(r.to, "yyyy-MM-dd") : "",
-      ]);
-    }
-  }
-
-  return (
-    <DateRangePicker value={range} onChange={handleChange} placeholder="Date" />
-  );
-}
-
-// ── Filter bar (shared between mobile + desktop) ───────────────────
-
-function FilterBar({
-  table,
-  beanOptions,
-  grinderOptions,
-  machineOptions,
-  userOptions,
-}: {
-  table: ReturnType<typeof useReactTable<ShotWithJoins>>;
-  beanOptions: { label: string; value: string }[];
-  grinderOptions: { label: string; value: string }[];
-  machineOptions: { label: string; value: string }[];
-  userOptions: { label: string; value: string }[];
-}) {
-  const ratingOptions = [1, 2, 3, 4, 5].map((n) => ({
-    label: `${n}`,
-    value: `${n}`,
-  }));
-  const qualityOptions = ratingOptions;
-  const refOptions = [
-    { label: "Reference", value: "true" },
-    { label: "Not reference", value: "false" },
-  ];
-
-  const activeCount = table.getState().columnFilters.length;
-
-  return (
-    <div className="relative z-10 space-y-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <FunnelIcon className="h-4 w-4 shrink-0 text-stone-400" />
-
-        {table.getColumn("date") && (
-          <DateRangeFilter column={table.getColumn("date")!} />
-        )}
-        {table.getColumn("bean") && (
-          <MultiSelectFilter
-            column={table.getColumn("bean")!}
-            title="Bean"
-            options={beanOptions}
-          />
-        )}
-        {table.getColumn("grinder") && (
-          <MultiSelectFilter
-            column={table.getColumn("grinder")!}
-            title="Grinder"
-            options={grinderOptions}
-          />
-        )}
-        {table.getColumn("machine") && (
-          <MultiSelectFilter
-            column={table.getColumn("machine")!}
-            title="Machine"
-            options={machineOptions}
-          />
-        )}
-        {table.getColumn("quality") && (
-          <MultiSelectFilter
-            column={table.getColumn("quality")!}
-            title="Quality"
-            options={qualityOptions}
-          />
-        )}
-        {table.getColumn("rating") && (
-          <MultiSelectFilter
-            column={table.getColumn("rating")!}
-            title="Rating"
-            options={ratingOptions}
-          />
-        )}
-        {table.getColumn("ref") && (
-          <MultiSelectFilter
-            column={table.getColumn("ref")!}
-            title="Ref"
-            options={refOptions}
-          />
-        )}
-        {table.getColumn("user") && (
-          <MultiSelectFilter
-            column={table.getColumn("user")!}
-            title="User"
-            options={userOptions}
-          />
-        )}
-
-        {activeCount > 0 && (
-          <button
-            type="button"
-            onClick={() => table.resetColumnFilters()}
-            className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300"
-          >
-            <XMarkIcon className="h-3 w-3" />
-            Reset
-          </button>
-        )}
-      </div>
-
-      {/* Active filter badges */}
-      {activeCount > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          {table.getState().columnFilters.map((f) => {
-            const col = table.getColumn(f.id);
-            const label = col
-              ? String(
-                  typeof col.columnDef.header === "string"
-                    ? col.columnDef.header
-                    : f.id,
-                )
-              : f.id;
-            const val = f.value;
-            let display: string;
-            if (Array.isArray(val) && val.length === 2 && f.id === "date") {
-              const from = val[0] ? format(new Date(val[0]), "MMM d, yyyy") : "…";
-              const to = val[1] ? format(new Date(val[1]), "MMM d, yyyy") : "…";
-              display = `${from} – ${to}`;
-            } else if (Array.isArray(val)) {
-              display =
-                val.length <= 2 ? val.join(", ") : `${val.length} selected`;
-            } else {
-              display = String(val);
-            }
-            return (
-              <span
-                key={f.id}
-                className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-              >
-                {label}: {display}
-                <button
-                  type="button"
-                  onClick={() => col?.setFilterValue(undefined)}
-                  className="ml-0.5 hover:text-amber-600"
-                >
-                  <XMarkIcon className="h-3 w-3" />
-                </button>
-              </span>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ── Table hook (isolated so useReactTable's unstable API doesn't block memoization of ShotsPage) ──
 
 function useShotsTable({
@@ -889,6 +518,7 @@ function useShotsTable({
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
+    autoResetPageIndex: false,
     globalFilterFn: (row, _columnId, filterValue) => {
       const q = String(filterValue).toLowerCase().trim();
       if (!q) return true;
@@ -1279,6 +909,28 @@ export default function ShotsPage() {
       .map((v) => ({ label: v, value: v }));
   }, [data]);
 
+  const shotFilterDescriptors = useMemo((): FilterDescriptor[] => {
+    const ratingOptions = [1, 2, 3, 4, 5].map((n) => ({
+      label: `${n}`,
+      value: `${n}`,
+    }));
+    const qualityOptions = ratingOptions;
+    const refOptions = [
+      { label: "Reference", value: "true" },
+      { label: "Not reference", value: "false" },
+    ];
+    return [
+      { columnId: "date" },
+      { columnId: "bean", options: beanOptions },
+      { columnId: "grinder", options: grinderOptions },
+      { columnId: "machine", options: machineOptions },
+      { columnId: "quality", options: qualityOptions },
+      { columnId: "rating", options: ratingOptions },
+      { columnId: "ref", options: refOptions },
+      { columnId: "user", options: userOptions },
+    ];
+  }, [beanOptions, grinderOptions, machineOptions, userOptions]);
+
   // ── Loading state ────────────────────────────────────────────────
 
   if (isLoading) {
@@ -1450,18 +1102,7 @@ export default function ShotsPage() {
         </div>
 
         {/* Filter bar — visible on both mobile and desktop */}
-        <FilterBar
-          table={table}
-          beanOptions={beanOptions}
-          grinderOptions={grinderOptions}
-          machineOptions={machineOptions}
-          userOptions={userOptions}
-        />
-
-        {/* Mobile sort bar */}
-        <div className="md:hidden">
-          <MobileSortBar sorting={sorting} onSortChange={setSorting} />
-        </div>
+        <FilterBar table={table} filters={shotFilterDescriptors} />
       </div>
 
       {/* ── Desktop table ───────────────────────────────────────────── */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import Link from "next/link";
@@ -12,6 +12,12 @@ import { useShots } from "@/components/shots/hooks";
 import { useBeans } from "@/components/beans/hooks";
 import { FeedbackModal } from "@/components/common/FeedbackModal";
 import type { DateRange } from "@/components/ui/date-range-picker";
+import {
+  FilterBarStrip,
+  StandaloneDateRangeFilter,
+  StandaloneMultiSelectFilter,
+  type MultiSelectOption,
+} from "@/components/ui/filter-bar";
 
 // Dynamic imports to avoid "module factory is not available" (chunk/barrel/circular deps)
 const StatCard = dynamic(
@@ -46,11 +52,6 @@ const BeanAgeChart = dynamic(
   () => import("@/components/stats/BeanAgeChart").then((m) => m.BeanAgeChart),
   { ssr: false },
 );
-const DateRangePicker = dynamic(
-  () => import("@/components/ui/date-range-picker").then((m) => ({ default: m.DateRangePicker })),
-  { ssr: false },
-);
-
 function StatsUpgradeSplash() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
@@ -98,18 +99,22 @@ export default function StatsPage() {
   );
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
-  const [beanId, setBeanId] = useState("");
+  const [beanIds, setBeanIds] = useState<string[]>([]);
 
   const dateFrom = dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : undefined;
   const dateTo = dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : undefined;
 
   const { data: stats, isLoading: statsLoading } = useOverviewStats();
   const { data: beans } = useBeans();
+  const beansOptions: MultiSelectOption[] = useMemo(
+    () => (beans ?? []).map((b) => ({ label: b.name, value: b.id })),
+    [beans],
+  );
   const { data: shots, isLoading: shotsLoading } = useShots({
     limit: 500,
     dateFrom,
     dateTo,
-    beanId: beanId || undefined,
+    beanIds: beanIds.length > 0 ? beanIds : undefined,
   });
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
 
@@ -133,36 +138,26 @@ export default function StatsPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-medium text-stone-500 dark:text-stone-400">Bean</label>
-          <select
-            value={beanId}
-            onChange={(e) => setBeanId(e.target.value)}
-            className="h-9 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-sm text-stone-800 outline-none transition-colors focus:border-amber-400 focus:ring-1 focus:ring-amber-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:focus:border-amber-500 dark:focus:ring-amber-500"
-          >
-            <option value="">All beans</option>
-            {(beans ?? []).map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        </div>
-        <DateRangePicker
+      <FilterBarStrip
+        className="mb-6"
+        showReset={Boolean(dateRange || beanIds.length > 0)}
+        onReset={() => {
+          setDateRange(undefined);
+          setBeanIds([]);
+        }}
+      >
+        <StandaloneMultiSelectFilter
+          label="Bean"
+          options={beansOptions}
+          value={beanIds}
+          onChange={(next) => setBeanIds(next ?? [])}
+        />
+        <StandaloneDateRangeFilter
           value={dateRange}
           onChange={setDateRange}
-          placeholder="Date range"
-          numberOfMonths={2}
+          numberOfMonths={1}
         />
-        {(dateRange || beanId) && (
-          <button
-            type="button"
-            onClick={() => { setDateRange(undefined); setBeanId(""); }}
-            className="text-xs text-stone-400 transition-colors hover:text-stone-600 dark:hover:text-stone-300"
-          >
-            Clear
-          </button>
-        )}
-      </div>
+      </FilterBarStrip>
 
       {/* Stat Cards */}
       {isLoading ? (
