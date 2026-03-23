@@ -391,6 +391,30 @@ describe("ShotForm pre-population priority", () => {
     });
   });
 
+  it("keeps beanId from URL after replace clears params (not overwritten by lastShot)", async () => {
+    mockState.searchParams = new URLSearchParams("beanId=from-bean-page");
+    mockState.lastShot = makeMockShot({
+      id: "last-shot",
+      beanId: "bean-from-last-shot",
+      doseGrams: "22",
+    });
+    mockState.replace.mockImplementation(() => {
+      mockState.searchParams = new URLSearchParams();
+    });
+
+    const { rerender } = render(<ShotForm />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(mockState.replace).toHaveBeenCalled();
+    });
+    rerender(<ShotForm />);
+
+    await waitFor(() => {
+      expect(getRecipeAttr("data-bean-id")).toBe("from-bean-page");
+      expect(getRecipeAttr("data-dose-grams")).toBe("");
+    });
+  });
+
   it("leaves form blank when no URL params and no lastShot", async () => {
     render(<ShotForm />, { wrapper: createWrapper() });
 

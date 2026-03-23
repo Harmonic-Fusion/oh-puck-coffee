@@ -1,7 +1,13 @@
 "use client";
 
-import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
+import {
+  EyeSlashIcon,
+  PencilSquareIcon,
+  PlusCircleIcon,
+} from "@heroicons/react/24/outline";
 import type { BeanWithCounts } from "@/components/beans/hooks";
+import { ActionButtonBar, type ActionButtonConfig } from "@/components/shots/ActionButtonBar";
+import { BeanIcon } from "@/components/common/BeanIcon";
 import { cn } from "@/lib/utils";
 import { formatDate } from "./bean-table-utils";
 
@@ -21,6 +27,9 @@ function StatCell({ label, value }: { label: string; value: string }) {
 export interface BeanCardProps {
   bean: BeanWithCounts;
   onClick: (bean: BeanWithCounts) => void;
+  onEdit: (bean: BeanWithCounts) => void;
+  onView: (bean: BeanWithCounts) => void;
+  onBrew: (bean: BeanWithCounts) => void;
   onSelect?: (bean: BeanWithCounts) => void;
   isSelected?: boolean;
   isSelecting?: boolean;
@@ -36,8 +45,38 @@ function ratingLabel(bean: BeanWithCounts): string {
   return "—";
 }
 
-export function BeanCard({ bean, onClick, onSelect, isSelected, isSelecting }: BeanCardProps) {
+export function BeanCard({
+  bean,
+  onClick,
+  onEdit,
+  onView,
+  onBrew,
+  onSelect,
+  isSelected,
+  isSelecting,
+}: BeanCardProps) {
   const muted = bean.allShotsHidden;
+
+  const actions: ActionButtonConfig[] = [
+    {
+      key: "edit",
+      icon: PencilSquareIcon,
+      onClick: () => onEdit(bean),
+      title: "Edit bean",
+    },
+    {
+      key: "view",
+      icon: BeanIcon,
+      onClick: () => onView(bean),
+      title: "View bean",
+    },
+    {
+      key: "brew",
+      icon: PlusCircleIcon,
+      onClick: () => onBrew(bean),
+      title: "Brew",
+    },
+  ];
 
   return (
     <div
@@ -78,19 +117,6 @@ export function BeanCard({ bean, onClick, onSelect, isSelected, isSelecting }: B
               <EyeSlashIcon className="h-5 w-5" aria-hidden />
             </span>
           )}
-          <EyeIcon className="h-5 w-5 text-stone-400 dark:text-stone-500" />
-          {/* REMOVE FOR NOW:{onSelect && (
-            <input
-              type="checkbox"
-              checked={isSelected ?? false}
-              onChange={(e) => {
-                e.stopPropagation();
-                onSelect(bean);
-              }}
-              onClick={(e) => e.stopPropagation()}
-              className="h-5 w-5 shrink-0 cursor-pointer rounded border-stone-300 text-stone-600 focus:ring-stone-500 dark:border-stone-600 dark:focus:ring-stone-500"
-            />
-          )} */}
         </div>
       </div>
 
@@ -118,6 +144,40 @@ export function BeanCard({ bean, onClick, onSelect, isSelected, isSelecting }: B
           ))}
         </div>
       )}
+
+      <div
+        className="mt-3 flex h-10 w-full items-center gap-2 border-t border-stone-100 pt-2 dark:border-stone-800"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-full">
+          <ActionButtonBar actions={actions} />
+        </div>
+        {/* {!isSelecting ? (
+          <div className={onSelect ? "flex-[0.9]" : "w-full"}>
+            <ActionButtonBar actions={actions} />
+          </div>
+        ) : (
+          <div className="flex flex-[0.9] gap-2">
+            <div className="h-10 flex-1" aria-hidden="true" />
+            <div className="h-10 flex-1" aria-hidden="true" />
+            <div className="h-10 flex-1" aria-hidden="true" />
+          </div>
+        )}
+        {onSelect && (
+          <div className="flex flex-[0.1] justify-end">
+            <input
+              type="checkbox"
+              checked={isSelected ?? false}
+              onChange={(e) => {
+                e.stopPropagation();
+                onSelect(bean);
+              }}
+              className="h-5 w-5 shrink-0 cursor-pointer rounded border-stone-300 text-amber-600 focus:ring-amber-500 dark:border-stone-600"
+              title="Select"
+            />
+          </div>
+        )} */}
+      </div>
     </div>
   );
 }

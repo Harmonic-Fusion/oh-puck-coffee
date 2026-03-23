@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import type { DateRange } from "react-day-picker";
+import { format } from "date-fns";
 import { PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { StandaloneDateRangeFilter } from "@/components/ui/filter-bar";
 import { cn } from "@/lib/utils";
 import type { BeanShotContributor } from "@/components/beans/hooks";
 
@@ -314,6 +317,86 @@ function resolveSlot(
   }
 }
 
+// ── Slot URL serialization ────────────────────────────────────────────
+
+const VALID_SLOT_TYPES = new Set<string>([
+  "best-rating",
+  "reference",
+  "shot-number",
+  "typical",
+  "average",
+]);
+
+/**
+ * Encode a SlotConfig into a compact URL param value.
+ *
+ * Format: `[userId~]type[.param1[.param2]]`
+ *   best-rating              → current user, best rating
+ *   shot-number.3            → current user, shot #3
+ *   typical.2024-01-01.2024-12-31
+ *   abc123~best-rating       → user abc123, best rating
+ */
+export function serializeSlot(
+  slot: SlotConfig,
+  currentUserId: string,
+): string {
+  const prefix =
+    slot.userId && slot.userId !== currentUserId ? `${slot.userId}~` : "";
+
+  let encoded: string = slot.type;
+
+  if (slot.type === "shot-number") {
+    encoded += `.${slot.shotNumber}`;
+  } else if (
+    (slot.type === "typical" || slot.type === "average") &&
+    (slot.dateFrom || slot.dateTo)
+  ) {
+    encoded += `.${slot.dateFrom || "_"}.${slot.dateTo || "_"}`;
+  }
+
+  return prefix + encoded;
+}
+
+export function deserializeSlot(value: string, index: number): SlotConfig {
+  let userId: string | undefined;
+  let rest = value;
+
+  const tildeIdx = rest.indexOf("~");
+  if (tildeIdx !== -1) {
+    const afterTilde = rest.substring(tildeIdx + 1);
+    if (VALID_SLOT_TYPES.has(afterTilde.split(".")[0])) {
+      userId = rest.substring(0, tildeIdx);
+      rest = afterTilde;
+    }
+  }
+
+  const parts = rest.split(".");
+  const rawType = parts[0];
+  const type: ShotSlotType = VALID_SLOT_TYPES.has(rawType)
+    ? (rawType as ShotSlotType)
+    : "best-rating";
+
+  let shotNumber = 1;
+  let dateFrom = "";
+  let dateTo = "";
+
+  if (type === "shot-number" && parts.length > 1) {
+    shotNumber = parseInt(parts[1]) || 1;
+  } else if (type === "typical" || type === "average") {
+    dateFrom = parts[1] === "_" ? "" : (parts[1] ?? "");
+    dateTo = parts[2] === "_" ? "" : (parts[2] ?? "");
+  }
+
+  return {
+    id: `url-${index}`,
+    userId,
+    type,
+    shotNumber,
+    dateFrom,
+    dateTo,
+  };
+}
+
 // ── Slot type options ────────────────────────────────────────────────
 
 const SLOT_TYPE_OPTIONS: { value: ShotSlotType; label: string }[] = [
@@ -344,6 +427,25 @@ function SlotSelector({
   const upd = (partial: Partial<SlotConfig>) =>
     onChange({ ...slot, ...partial });
 
+  const dateRangeForPicker = useMemo((): DateRange | undefined => {
+    if (!slot.dateFrom && !slot.dateTo) return undefined;
+    return {
+      from: slot.dateFrom ? new Date(slot.dateFrom) : undefined,
+      to: slot.dateTo ? new Date(slot.dateTo) : undefined,
+    };
+  }, [slot.dateFrom, slot.dateTo]);
+
+  function handleDateRangeChange(r: DateRange | undefined) {
+    if (!r || (!r.from && !r.to)) {
+      upd({ dateFrom: "", dateTo: "" });
+    } else {
+      upd({
+        dateFrom: r.from ? format(r.from, "yyyy-MM-dd") : "",
+        dateTo: r.to ? format(r.to, "yyyy-MM-dd") : "",
+      });
+    }
+  }
+
   const hasMultipleUsers = contributors.length > 1;
 
   return (
@@ -354,7 +456,7 @@ function SlotSelector({
           <select
             value={slot.userId ?? currentUserId}
             onChange={(e) => upd({ userId: e.target.value })}
-            className="w-full rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-sm text-stone-700 focus:border-amber-400 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
+            className="flex h-9 w-full items-center rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 transition-colors focus:border-amber-400 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
           >
             {contributors.map((c) => (
               <option key={c.userId} value={c.userId}>
@@ -370,7 +472,7 @@ function SlotSelector({
         <select
           value={slot.type}
           onChange={(e) => upd({ type: e.target.value as ShotSlotType })}
-          className="w-full rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-sm text-stone-700 focus:border-amber-400 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
+          className="flex h-9 w-full items-center rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700 transition-colors focus:border-amber-400 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
         >
           {SLOT_TYPE_OPTIONS.map((t) => (
             <option key={t.value} value={t.value}>
@@ -391,29 +493,19 @@ function SlotSelector({
               onChange={(e) =>
                 upd({ shotNumber: parseInt(e.target.value) || 1 })
               }
-              className="w-16 rounded-lg border border-stone-200 bg-white px-2 py-1 text-xs focus:border-amber-400 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
+              className="h-9 w-16 rounded-lg border border-stone-200 bg-white px-2.5 text-center text-sm tabular-nums transition-colors focus:border-amber-400 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
             />
             <span className="text-xs text-stone-400">of {totalNonHidden}</span>
           </div>
         )}
 
-        {/* Date range input */}
         {(slot.type === "typical" || slot.type === "average") && (
-          <div className="flex items-center gap-1.5">
-            <input
-              type="date"
-              value={slot.dateFrom}
-              onChange={(e) => upd({ dateFrom: e.target.value })}
-              className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1 text-xs focus:border-amber-400 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
-            />
-            <span className="shrink-0 text-xs text-stone-400">–</span>
-            <input
-              type="date"
-              value={slot.dateTo}
-              onChange={(e) => upd({ dateTo: e.target.value })}
-              className="w-full rounded-lg border border-stone-200 bg-white px-2 py-1 text-xs focus:border-amber-400 focus:outline-none dark:border-stone-700 dark:bg-stone-900 dark:text-stone-300"
-            />
-          </div>
+          <StandaloneDateRangeFilter
+            label="Date range"
+            value={dateRangeForPicker}
+            onChange={handleDateRangeChange}
+            className="w-full max-w-none"
+          />
         )}
       </div>
       <button

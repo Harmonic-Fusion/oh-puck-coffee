@@ -176,6 +176,22 @@ export default function BeansPage() {
     [router],
   );
 
+  const handleBeanEdit = useCallback(
+    (bean: BeanWithCounts) => {
+      router.push(
+        `${resolvePath(AppRoutes.beans.beanId, { id: bean.id })}?edit=true`,
+      );
+    },
+    [router],
+  );
+
+  const handleBeanBrew = useCallback(
+    (bean: BeanWithCounts) => {
+      router.push(`${AppRoutes.log.path}?beanId=${encodeURIComponent(bean.id)}`);
+    },
+    [router],
+  );
+
   const handleToggleBeanSelect = useCallback((bean: BeanWithCounts) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -337,6 +353,9 @@ export default function BeansPage() {
           <BeansMobileCards
             rows={sortedRows}
             onBeanClick={handleBeanClick}
+            onBeanEdit={handleBeanEdit}
+            onBeanView={handleBeanClick}
+            onBeanBrew={handleBeanBrew}
             onToggleBeanSelect={handleToggleBeanSelect}
             selectedIds={selectedIds}
             isSelecting={isSelecting}

@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
-import { useFlavorStats, type FlavorStat } from "@/components/stats/hooks";
+import type { ShotWithJoins } from "@/components/shots/hooks";
+import type { FlavorStat } from "@/components/stats/hooks";
 import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
 import {
@@ -12,8 +13,8 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
 } from "recharts";
+import { ChartContainer } from "@/components/common/ChartContainer";
 
 // ── Flavor depth cache ────────────────────────────────────────────────
 
@@ -37,6 +38,35 @@ function buildFlavorDepthCache(): Map<string, number> {
 }
 
 const FLAVOR_DEPTH_CACHE = buildFlavorDepthCache();
+
+/** Matches aggregation in `GET /api/stats/flavors` for the current shot set. */
+function aggregateFlavorStatsFromShots(shots: ShotWithJoins[]): FlavorStat[] {
+  const flavorStats: Record<string, { totalRating: number; count: number }> = {};
+
+  for (const shot of shots) {
+    if (!shot.flavors || !Array.isArray(shot.flavors)) continue;
+
+    const rating = shot.rating;
+    if (rating === null) continue;
+
+    for (const flavor of shot.flavors) {
+      if (!flavorStats[flavor]) {
+        flavorStats[flavor] = { totalRating: 0, count: 0 };
+      }
+      flavorStats[flavor].totalRating += rating;
+      flavorStats[flavor].count += 1;
+    }
+  }
+
+  return Object.entries(flavorStats)
+    .map(([flavor, { totalRating, count }]) => ({
+      flavor,
+      avgRating: parseFloat((totalRating / count).toFixed(1)),
+      count,
+    }))
+    .filter((d) => d.count >= 1)
+    .sort((a, b) => b.avgRating - a.avgRating);
+}
 
 type ChartMetric = "ratings" | "count";
 
@@ -95,62 +125,53 @@ function ToggleGroup<T extends string | number>({
   );
 }
 
-const METRIC_OPTIONS: ToggleGroupOption<ChartMetric>[] = [
-  { value: "count", label: "Count" },
-  { value: "ratings", label: "Ratings" },
-];
-
 const DEPTH_OPTIONS: ToggleGroupOption<number>[] = [
   { value: 1, label: "1" },
   { value: 2, label: "2" },
   { value: 3, label: "3" },
 ];
 
-// ── Chart controls ───────────────────────────────────────────────────
+const TASTING_NOTES_DESCRIPTION =
+  "Flavor tags from the filtered shots, grouped by wheel depth. Use Count for frequency or Ratings for average score per note.";
 
-interface ChartControlsProps {
-  metric: ChartMetric;
-  onMetricChange: (metric: ChartMetric) => void;
-  selectedDepths: Set<number>;
-  onDepthToggle: (depth: number) => void;
-}
-
-function ChartControls({
+function MetricSelector({
   metric,
-  onMetricChange,
-  selectedDepths,
-  onDepthToggle,
-}: ChartControlsProps): ReactNode {
+  setMetric,
+}: {
+  metric: ChartMetric;
+  setMetric: (metric: ChartMetric) => void;
+}) {
   return (
-    <div className="mt-4 flex flex-col gap-3 border-t border-stone-200 pt-4 dark:border-stone-700 sm:flex-row sm:items-center sm:justify-between">
-      <ToggleGroup
-        label="Group by"
-        ariaLabel="Chart metric"
-        options={METRIC_OPTIONS}
-        isActive={(v) => v === metric}
-        onToggle={onMetricChange}
-      />
-      <ToggleGroup
-        label="Wheel depth"
-        ariaLabel="Wheel depth filter"
-        options={DEPTH_OPTIONS}
-        isActive={(v) => selectedDepths.has(v)}
-        onToggle={onDepthToggle}
-      />
-    </div>
+    <select
+      value={metric}
+      onChange={(e) => setMetric(e.target.value as ChartMetric)}
+      className="rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300"
+      aria-label="Metric for horizontal axis"
+    >
+      <option value="count">Count</option>
+      <option value="ratings">Ratings</option>
+    </select>
   );
 }
 
 // ── FlavorRatingsChart ───────────────────────────────────────────────
 
-export function FlavorRatingsChart({ beanId }: { beanId: string }): ReactNode {
-  const { data, isLoading } = useFlavorStats(beanId);
+export function FlavorRatingsChart({
+  shots,
+  isLoading = false,
+}: {
+  shots: ShotWithJoins[];
+  isLoading?: boolean;
+}): ReactNode {
   const [selectedDepths, setSelectedDepths] = useState<Set<number>>(
     () => new Set([1, 2, 3]),
   );
   const [metric, setMetric] = useState<ChartMetric>("count");
 
-  const allFlavors = useMemo(() => data?.flavors ?? [], [data?.flavors]);
+  const allFlavors = useMemo(
+    () => aggregateFlavorStatsFromShots(shots),
+    [shots],
+  );
 
   const flavors = useMemo(() => {
     if (selectedDepths.size === 3) {
@@ -189,92 +210,95 @@ export function FlavorRatingsChart({ beanId }: { beanId: string }): ReactNode {
     });
   }, []);
 
-  if (isLoading) {
+  if (!isLoading && allFlavors.length === 0) {
     return (
-      <div className="h-64 animate-pulse rounded-xl border border-stone-200 bg-stone-100 dark:border-stone-700 dark:bg-stone-800" />
+      <ChartContainer
+        title="Tasting Notes"
+        description={TASTING_NOTES_DESCRIPTION}
+        chartHeight={256}
+        showNoData
+        noDataOverlay="No flavor data to display"
+      />
     );
   }
 
-  if (allFlavors.length === 0) {
-    return (
-      <div className="flex h-64 items-center justify-center rounded-xl border border-stone-200 bg-white text-sm text-stone-400 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-500">
-        No flavor data to display
-      </div>
-    );
-  }
+  const chartAreaHeight = Math.max(280, chartData.length * 30);
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-5 dark:border-stone-700 dark:bg-stone-900">
-      {flavors.length === 0 ? (
-        <div className="flex h-64 items-center justify-center text-sm text-stone-400 dark:text-stone-500">
-          No flavors found at selected depth
+    <ChartContainer
+      title="Tasting Notes"
+      description={TASTING_NOTES_DESCRIPTION}
+      isLoading={isLoading}
+      chartHeight={chartAreaHeight}
+      showNoData={flavors.length === 0}
+      noDataOverlay="No flavors found at selected depth"
+      xController={
+        <MetricSelector metric={metric} setMetric={setMetric} />
+      }
+      controllers={
+        <div className="flex flex-wrap items-center gap-2">
+          <ToggleGroup
+            label="Wheel depth"
+            ariaLabel="Wheel depth filter"
+            options={DEPTH_OPTIONS}
+            isActive={(v) => selectedDepths.has(v)}
+            onToggle={handleDepthToggle}
+          />
         </div>
-      ) : (
-        <ResponsiveContainer
-          width="100%"
-          height={Math.max(280, chartData.length * 30)}
-        >
-          <BarChart
-            data={chartData}
-            layout="vertical"
-            margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-          >
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#d6d3d1"
-              horizontal={false}
-            />
-            <XAxis
-              type="number"
-              tick={{ fontSize: 12, fill: "#78716c" }}
-              tickLine={false}
-              domain={
-                metric === "ratings" ? [0, 5] : [0, maxCount]
-              }
-              allowDecimals={metric === "ratings"}
-            />
-            <YAxis
-              dataKey="flavor"
-              type="category"
-              tick={{ fontSize: 12, fill: "#78716c" }}
-              tickLine={false}
-              width={120}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: "#1c1917",
-                border: "1px solid #44403c",
-                borderRadius: "8px",
-                fontSize: "12px",
-                color: "#e7e5e4",
-              }}
-              formatter={(value, _name, props) => {
-                const p = (props as { payload: FlavorStat }).payload;
-                if (metric === "ratings") {
-                  return [`${value}/5 (${p.count} shots)`, "Avg rating"];
-                }
-                return [
-                  `${value} (${p.avgRating}/5 avg)`,
-                  "Times logged",
-                ];
-              }}
-            />
-            <Bar
-              dataKey={metric === "ratings" ? "avgRating" : "count"}
-              fill="#d97706"
-              radius={[0, 4, 4, 0]}
-              barSize={20}
-            />
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-
-      <ChartControls
-        metric={metric}
-        onMetricChange={setMetric}
-        selectedDepths={selectedDepths}
-        onDepthToggle={handleDepthToggle}
-      />
-    </div>
+      }
+    >
+      <BarChart
+        data={chartData}
+        layout="vertical"
+        margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+      >
+        <CartesianGrid
+          strokeDasharray="3 3"
+          stroke="#d6d3d1"
+          horizontal={false}
+        />
+        <XAxis
+          type="number"
+          tick={{ fontSize: 12, fill: "#78716c" }}
+          tickLine={false}
+          domain={
+            metric === "ratings" ? [0, 5] : [0, maxCount]
+          }
+          allowDecimals={metric === "ratings"}
+        />
+        <YAxis
+          dataKey="flavor"
+          type="category"
+          tick={{ fontSize: 12, fill: "#78716c" }}
+          tickLine={false}
+          width={120}
+        />
+        <Tooltip
+          contentStyle={{
+            backgroundColor: "#1c1917",
+            border: "1px solid #44403c",
+            borderRadius: "8px",
+            fontSize: "12px",
+            color: "#e7e5e4",
+          }}
+          formatter={(value, _name, props) => {
+            const p = (props as { payload: FlavorStat }).payload;
+            if (metric === "ratings") {
+              return [`${value}/5 (${p.count} shots)`, "Avg rating"];
+            }
+            return [
+              `${value} (${p.avgRating}/5 avg)`,
+              "Times logged",
+            ];
+          }}
+        />
+        <Bar
+          dataKey={metric === "ratings" ? "avgRating" : "count"}
+          fill="#d97706"
+          radius={[0, 4, 4, 0]}
+          barSize={20}
+        />
+      </BarChart>
+    </ChartContainer>
   );
 }

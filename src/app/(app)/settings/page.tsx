@@ -23,17 +23,6 @@ interface UserProfile {
   linkedAccounts: LinkedAccount[];
 }
 
-function providerLabel(provider: string): string {
-  switch (provider) {
-    case "google":
-      return "Google";
-    case "github":
-      return "GitHub";
-    default:
-      return provider.charAt(0).toUpperCase() + provider.slice(1);
-  }
-}
-
 function ProfileDetailRow({
   label,
   children,
@@ -143,8 +132,6 @@ export default function SettingsPage() {
   const displayName = profile?.name ?? session?.user?.name ?? "User";
   const email = profile?.email ?? session?.user?.email;
   const image = profile?.image ?? session?.user?.image;
-  const role = profile?.role ?? session?.user?.role ?? "member";
-  const providers = profile?.linkedAccounts ?? [];
 
   return (
     <div className="mx-auto max-w-2xl">

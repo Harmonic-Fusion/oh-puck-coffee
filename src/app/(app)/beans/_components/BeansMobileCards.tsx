@@ -7,6 +7,9 @@ import { BeanCard } from "./BeanCard";
 export function BeansMobileCards({
   rows,
   onBeanClick,
+  onBeanEdit,
+  onBeanView,
+  onBeanBrew,
   onToggleBeanSelect,
   selectedIds,
   isSelecting,
@@ -14,6 +17,9 @@ export function BeansMobileCards({
   /** All filtered rows in current sort order (no pagination). */
   rows: Row<BeanWithCounts>[];
   onBeanClick: (bean: BeanWithCounts) => void;
+  onBeanEdit: (bean: BeanWithCounts) => void;
+  onBeanView: (bean: BeanWithCounts) => void;
+  onBeanBrew: (bean: BeanWithCounts) => void;
   onToggleBeanSelect: (bean: BeanWithCounts) => void;
   selectedIds: Set<string>;
   isSelecting: boolean;
@@ -26,6 +32,9 @@ export function BeansMobileCards({
             key={row.id}
             bean={row.original}
             onClick={onBeanClick}
+            onEdit={onBeanEdit}
+            onView={onBeanView}
+            onBrew={onBeanBrew}
             onSelect={onToggleBeanSelect}
             isSelected={selectedIds.has(row.original.id)}
             isSelecting={isSelecting}

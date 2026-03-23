@@ -43,6 +43,12 @@ BEGIN
     IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_share_user_id_users_id_fk') THEN
       ALTER TABLE "beans_share" DROP CONSTRAINT "beans_share_user_id_users_id_fk";
     END IF;
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_share_sharer_user_id_users_id_fk') THEN
+      ALTER TABLE "beans_share" DROP CONSTRAINT "beans_share_sharer_user_id_users_id_fk";
+    END IF;
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_share_receiver_user_id_users_id_fk') THEN
+      ALTER TABLE "beans_share" DROP CONSTRAINT "beans_share_receiver_user_id_users_id_fk";
+    END IF;
     IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_share_invited_by_users_id_fk') THEN
       ALTER TABLE "beans_share" DROP CONSTRAINT "beans_share_invited_by_users_id_fk";
     END IF;
@@ -59,6 +65,20 @@ BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user_entitlements') AND
        EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_entitlements_user_id_users_id_fk') THEN
       ALTER TABLE "user_entitlements" DROP CONSTRAINT "user_entitlements_user_id_users_id_fk";
+    END IF;
+    -- beans.created_by still uses the original FK name from 0000 after user_id → created_by rename (0012)
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_user_id_users_id_fk') THEN
+      ALTER TABLE "beans" DROP CONSTRAINT "beans_user_id_users_id_fk";
+    END IF;
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_created_by_users_id_fk') THEN
+      ALTER TABLE "beans" DROP CONSTRAINT "beans_created_by_users_id_fk";
+    END IF;
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shot_shares_user_id_users_id_fk') THEN
+      ALTER TABLE "shot_shares" DROP CONSTRAINT "shot_shares_user_id_users_id_fk";
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user_beans') AND
+       EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_beans_user_id_users_id_fk') THEN
+      ALTER TABLE "user_beans" DROP CONSTRAINT "user_beans_user_id_users_id_fk";
     END IF;
 
     ALTER TABLE "users" ALTER COLUMN "id" TYPE text USING id::text;
@@ -80,6 +100,12 @@ BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'beans_share' AND column_name = 'user_id' AND data_type = 'uuid') THEN
       ALTER TABLE "beans_share" ALTER COLUMN "user_id" TYPE text USING user_id::text;
     END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'beans_share' AND column_name = 'sharer_user_id' AND data_type = 'uuid') THEN
+      ALTER TABLE "beans_share" ALTER COLUMN "sharer_user_id" TYPE text USING sharer_user_id::text;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'beans_share' AND column_name = 'receiver_user_id' AND data_type = 'uuid') THEN
+      ALTER TABLE "beans_share" ALTER COLUMN "receiver_user_id" TYPE text USING receiver_user_id::text;
+    END IF;
     IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'beans_share' AND column_name = 'invited_by' AND data_type = 'uuid') THEN
       ALTER TABLE "beans_share" ALTER COLUMN "invited_by" TYPE text USING invited_by::text;
     END IF;
@@ -93,6 +119,17 @@ BEGIN
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user_entitlements') AND
        EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_entitlements' AND column_name = 'user_id' AND data_type = 'uuid') THEN
       ALTER TABLE "user_entitlements" ALTER COLUMN "user_id" TYPE text USING user_id::text;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'beans' AND column_name = 'created_by' AND data_type = 'uuid') THEN
+      ALTER TABLE "beans" ALTER COLUMN "created_by" TYPE text USING created_by::text;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'shot_shares') AND
+       EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'shot_shares' AND column_name = 'user_id' AND data_type = 'uuid') THEN
+      ALTER TABLE "shot_shares" ALTER COLUMN "user_id" TYPE text USING user_id::text;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user_beans') AND
+       EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'user_beans' AND column_name = 'user_id' AND data_type = 'uuid') THEN
+      ALTER TABLE "user_beans" ALTER COLUMN "user_id" TYPE text USING user_id::text;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'accounts_user_id_users_id_fk') THEN
@@ -110,13 +147,19 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shots_user_id_users_id_fk') THEN
       ALTER TABLE "shots" ADD CONSTRAINT "shots_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_share_user_id_users_id_fk') THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'beans_share' AND column_name = 'user_id') AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_share_user_id_users_id_fk') THEN
       ALTER TABLE "beans_share" ADD CONSTRAINT "beans_share_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_share_invited_by_users_id_fk') THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'beans_share' AND column_name = 'sharer_user_id') AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_share_sharer_user_id_users_id_fk') THEN
+      ALTER TABLE "beans_share" ADD CONSTRAINT "beans_share_sharer_user_id_users_id_fk" FOREIGN KEY ("sharer_user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'beans_share' AND column_name = 'receiver_user_id') AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_share_receiver_user_id_users_id_fk') THEN
+      ALTER TABLE "beans_share" ADD CONSTRAINT "beans_share_receiver_user_id_users_id_fk" FOREIGN KEY ("receiver_user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'beans_share' AND column_name = 'invited_by') AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_share_invited_by_users_id_fk') THEN
       ALTER TABLE "beans_share" ADD CONSTRAINT "beans_share_invited_by_users_id_fk" FOREIGN KEY ("invited_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
     END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_updated_by_users_id_fk') THEN
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'beans' AND column_name = 'updated_by') AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_updated_by_users_id_fk') THEN
       ALTER TABLE "beans" ADD CONSTRAINT "beans_updated_by_users_id_fk" FOREIGN KEY ("updated_by") REFERENCES "users"("id") ON DELETE SET NULL ON UPDATE NO ACTION;
     END IF;
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'subscriptions') AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'subscriptions_user_id_users_id_fk') THEN
@@ -124,6 +167,15 @@ BEGIN
     END IF;
     IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user_entitlements') AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_entitlements_user_id_users_id_fk') THEN
       ALTER TABLE "user_entitlements" ADD CONSTRAINT "user_entitlements_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'beans_created_by_users_id_fk') THEN
+      ALTER TABLE "beans" ADD CONSTRAINT "beans_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'shot_shares') AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shot_shares_user_id_users_id_fk') THEN
+      ALTER TABLE "shot_shares" ADD CONSTRAINT "shot_shares_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'user_beans') AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_beans_user_id_users_id_fk') THEN
+      ALTER TABLE "user_beans" ADD CONSTRAINT "user_beans_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
     END IF;
   END IF;
 END $$;
@@ -171,14 +223,24 @@ BEGIN
 END $$;
 --> statement-breakpoint
 
--- ========== 5. shots.id ==========
+-- ========== 5. shots.id (drop shot_shares FK first; align shot_shares.shot_id) ==========
 DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'shots' AND column_name = 'id' AND data_type = 'uuid'
   ) THEN
+    IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shot_shares_shot_id_shots_id_fk') THEN
+      ALTER TABLE "shot_shares" DROP CONSTRAINT "shot_shares_shot_id_shots_id_fk";
+    END IF;
     ALTER TABLE "shots" ALTER COLUMN "id" TYPE text USING id::text;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'shot_shares') AND
+       EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'shot_shares' AND column_name = 'shot_id' AND data_type = 'uuid') THEN
+      ALTER TABLE "shot_shares" ALTER COLUMN "shot_id" TYPE text USING shot_id::text;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'shot_shares') AND NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shot_shares_shot_id_shots_id_fk') THEN
+      ALTER TABLE "shot_shares" ADD CONSTRAINT "shot_shares_shot_id_shots_id_fk" FOREIGN KEY ("shot_id") REFERENCES "shots"("id") ON DELETE CASCADE ON UPDATE NO ACTION;
+    END IF;
   END IF;
 END $$;
 --> statement-breakpoint

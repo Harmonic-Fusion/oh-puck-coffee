@@ -128,9 +128,8 @@ export const menuActions = {
  * Mobile main tabs (Shots, Stats, Add)
  */
 export const mobileMainTabs: NavItem[] = [
-  navItems.beans,
-  navItems.shots,
   navItems.stats,
+  navItems.beans,
   navItems.add,
 ];
 
@@ -149,6 +148,7 @@ export function getMobileMenuItems(
     menuActions.feedback,
     navItems.profile,
     navItems.tasting,
+    navItems.shots,
   ];
 }
 

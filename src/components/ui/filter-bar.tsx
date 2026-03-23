@@ -13,6 +13,7 @@ import {
 import type { DateRange } from "react-day-picker";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 export function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
@@ -302,6 +303,67 @@ export function DateRangeFilter<TData extends RowData>({
   );
 }
 
+/**
+ * Single toggle: off (default) = filter value `"false"` (not highlighted).
+ * On = `"true"` (highlighted). Semantics depend on the column `filterFn`. No count badge.
+ *
+ * Title uses `column.columnDef.header` (string). Optional secondary copy for the switch row:
+ * `column.columnDef.meta.trueFilterDescription` (see `ColumnMeta` in `src/types/tanstack-table.d.ts`).
+ */
+export function TrueFilter<TData extends RowData>({
+  column,
+}: {
+  column: Column<TData, unknown> | undefined;
+}) {
+  const filterValue = column?.getFilterValue();
+  const isOn = filterValue === "true";
+
+  const setOn = useCallback(
+    (next: boolean) => {
+      if (!column) return;
+      column.setFilterValue(next ? "true" : "false");
+    },
+    [column],
+  );
+
+  if (!column) return null;
+
+  const label = String(column.columnDef.header ?? "Filter");
+  const description = String(column.columnDef.meta?.description ?? label);
+
+  return (
+    <Popover>
+      <PopoverTrigger
+        className={cn(
+          "flex h-9 min-w-25 max-w-[12rem] items-center gap-2 rounded-lg border px-3 py-2 text-left text-sm transition-colors sm:max-w-none",
+          isOn
+            ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
+            : "border-stone-200 bg-white text-stone-800 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800",
+        )}
+        title={isOn ? description : undefined}
+      >
+        <span className="truncate">{label}</span>
+        <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-stone-400" />
+      </PopoverTrigger>
+      <PopoverContent className="flex w-56 flex-col gap-2 overflow-hidden rounded-lg p-0">
+        <div className="shrink-0 border-b border-stone-200 px-3 pb-2 pt-3 dark:border-stone-700">
+          <p className="whitespace-pre-wrap break-words text-xs leading-snug text-stone-800 dark:text-stone-200">
+            {label}
+          </p>
+        </div>
+        <div className="flex items-center justify-between gap-3 px-3 pb-3">
+          <span className="text-xs text-stone-700 dark:text-stone-300">{description}</span>
+          <Switch
+            checked={isOn}
+            onCheckedChange={setOn}
+            aria-label={description}
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 /** Same popover + checkbox UX as {@link MultiSelectFilter}, for pages without a data table (e.g. stats). */
 export function StandaloneMultiSelectFilter({
   label,
@@ -400,11 +462,14 @@ export function StandaloneDateRangeFilter({
   value,
   onChange,
   numberOfMonths = 1,
+  className,
 }: {
   label?: string;
   value: DateRange | undefined;
   onChange: (range: DateRange | undefined) => void;
   numberOfMonths?: number;
+  /** Merged onto the trigger (e.g. `w-full max-w-none` to match full-width selects). */
+  className?: string;
 }) {
   const range = value;
   const handleChange = useCallback(
@@ -441,6 +506,7 @@ export function StandaloneDateRangeFilter({
           isHighlighted
             ? "border-amber-400 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-400"
             : "border-stone-200 bg-white text-stone-800 hover:bg-stone-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800",
+          className,
         )}
         title={hasFilter && rangeSummary ? rangeSummary : undefined}
       >
@@ -485,6 +551,8 @@ export function StandaloneDateRangeFilter({
 
 export type FilterDescriptor =
   | { columnId: string; options: MultiSelectOption[] }
+  /** Uses {@link TrueFilter}; label/description come from the column def. */
+  | { columnId: string; trueFilter: true }
   | { columnId: string };
 
 /** Funnel + horizontal controls + optional reset (e.g. stats filters without a data table). */
@@ -542,6 +610,9 @@ export function FilterBar<TData extends RowData>({
                 options={filter.options}
               />
             );
+          }
+          if ("trueFilter" in filter && filter.trueFilter === true) {
+            return <TrueFilter key={filter.columnId} column={column} />;
           }
           return (
             <DateRangeFilter key={filter.columnId} column={column} />

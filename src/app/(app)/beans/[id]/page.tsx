@@ -31,10 +31,13 @@ import {
 // ── Sub-components ────────────────────────────────────────────────────
 import { SharedWith } from "./__components__/SharedWith";
 import { BeanInfoGrid } from "./__components__/BeanInfoGrid";
-import { FlavorRatingsChart } from "./__components__/FlavorRatingsChart";
-import { ComparisonMatrix } from "./__components__/ComparisonMatrix";
+import {
+  ComparisonMatrix,
+  serializeSlot,
+  deserializeSlot,
+} from "./__components__/ComparisonMatrix";
 import type { SlotConfig } from "./__components__/ComparisonMatrix";
-import { ShotHistory } from "./__components__/ShotHistory";
+import { BeanShotsSection } from "./__components__/BeanShotsSection";
 import { DuplicateBeanModal } from "./__components__/DuplicateBeanModal";
 
 // ── Page ──────────────────────────────────────────────────────────────
@@ -72,7 +75,7 @@ export default function BeanDetailPage() {
   const [editIsRoastDateBestGuess, setEditIsRoastDateBestGuess] =
     useState(false);
 
-  const handleEditOpen = () => {
+  const handleEditOpen = useCallback(() => {
     if (!bean) return;
     setEditName(bean.name);
     setEditOrigin(bean.origin ?? "");
@@ -92,7 +95,19 @@ export default function BeanDetailPage() {
     );
     setEditIsRoastDateBestGuess(bean.isRoastDateBestGuess ?? false);
     setShowEdit(true);
-  };
+  }, [
+    bean,
+    setEditName,
+    setEditOrigin,
+    setEditRoaster,
+    setEditOriginDetails,
+    setEditProcessing,
+    setEditRoast,
+    setEditRoastDate,
+    setEditOpenBagDate,
+    setEditIsRoastDateBestGuess,
+    setShowEdit,
+  ]);
 
   const handleEditSave = async () => {
     if (!editName.trim()) return;
@@ -149,17 +164,52 @@ export default function BeanDetailPage() {
     }
   }, [searchParams, router, pathname]);
 
-  // ── Comparison slots ───────────────────────────────────────────────
-  const [slots, setSlots] = useState<SlotConfig[]>([
-    {
-      id: "default-1",
-      userId: undefined, // will be resolved to currentUserId once loaded
-      type: "best-rating",
-      shotNumber: 1,
-      dateFrom: "",
-      dateTo: "",
+  // Open edit modal when ?edit=true (e.g. from beans list card action)
+  useEffect(() => {
+    if (searchParams.get("edit") !== "true" || !bean) return;
+    if (isOwner) {
+      queueMicrotask(() => handleEditOpen());
+    }
+    const url = new URL(pathname ?? "/beans", window.location.origin);
+    url.searchParams.delete("edit");
+    router.replace(url.pathname + (url.search ? url.search : ""), {
+      scroll: false,
+    });
+  }, [searchParams, bean, pathname, router, handleEditOpen, isOwner]);
+
+  // ── Comparison slots (synced to ?compareShot= URL params) ─────────
+  const [slots, setSlots] = useState<SlotConfig[]>(() => {
+    const raw = searchParams.getAll("compareShot");
+    if (raw.length === 0) {
+      return [
+        {
+          id: "default-1",
+          userId: undefined,
+          type: "best-rating",
+          shotNumber: 1,
+          dateFrom: "",
+          dateTo: "",
+        },
+      ];
+    }
+    return raw.slice(0, 3).map((v, i) => deserializeSlot(v, i));
+  });
+
+  const handleSlotsChange = useCallback(
+    (next: SlotConfig[]) => {
+      setSlots(next);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("compareShot");
+      for (const slot of next) {
+        url.searchParams.append(
+          "compareShot",
+          serializeSlot(slot, currentUserId),
+        );
+      }
+      router.replace(url.pathname + url.search, { scroll: false });
     },
-  ]);
+    [currentUserId, router],
+  );
 
   const originSuggestions = useMemo(
     () =>
@@ -190,9 +240,11 @@ export default function BeanDetailPage() {
     null,
   );
 
-  const logShotUrl = mostRecentShot
-    ? `${AppRoutes.log.path}?previousShotId=${mostRecentShot.id}`
-    : `${AppRoutes.log.path}?beanId=${id}`;
+  const logShotUrl = resolvePath(
+    AppRoutes.log,
+    {},
+    mostRecentShot ? { previousShotId: mostRecentShot.id } : { beanId: id }
+  )
 
   // ── Loading ───────────────────────────────────────────────────────
   if (isLoading) {
@@ -320,21 +372,29 @@ export default function BeanDetailPage() {
       )}
 
       {/* Bean info */}
+      <h2 className="mb-3 text-lg font-semibold text-stone-800 dark:text-stone-200">
+        Details
+      </h2>
       <BeanInfoGrid
         bean={bean}
         shotsLoading={shotsLoading}
         nonHiddenShotsLength={nonHiddenShots.length}
       />
 
-      {/* Flavor ratings chart */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold text-stone-800 dark:text-stone-200">
-          Tasting Notes
-        </h2>
-        <FlavorRatingsChart beanId={id} />
-      </div>
+      {/* Shot selectors, tasting & rating charts, history table (selection applies to charts + table) */}
+      <h2 className="mb-3 text-lg font-semibold text-stone-800 dark:text-stone-200">
+        History
+      </h2>
+      <BeanShotsSection
+        bean={bean}
+        shots={shots}
+        contributors={contributors}
+        currentUserId={currentUserId}
+        isLoading={shotsLoading}
+        isUnshared={isUnshared}
+      />
 
-      {/* Shot comparison matrix */}
+      {/* Shot comparison — all shots; independent of user/hidden filters above */}
       <div>
         <h2 className="mb-3 text-lg font-semibold text-stone-800 dark:text-stone-200">
           Shot Comparison
@@ -345,24 +405,11 @@ export default function BeanDetailPage() {
           <ComparisonMatrix
             shots={shots}
             slots={slots}
-            onSlotsChange={setSlots}
+            onSlotsChange={handleSlotsChange}
             contributors={contributors}
             currentUserId={currentUserId}
           />
         )}
-      </div>
-
-      {/* Shot History */}
-      <div>
-        <h2 className="mb-3 text-lg font-semibold text-stone-800 dark:text-stone-200">
-          Shot History
-        </h2>
-        <ShotHistory
-          shots={shots}
-          contributors={contributors}
-          currentUserId={currentUserId}
-          isLoading={shotsLoading}
-        />
       </div>
 
       {/* Share dialog */}

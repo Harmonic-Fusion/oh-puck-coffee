@@ -173,12 +173,21 @@ export function useShotPrePopulation(
   // Gate: run pre-population logic only once per URL state
   const hasPrePopulated = useRef(false);
 
+  // After Priority 2 reads query params we call router.replace("/log") to clean the URL.
+  // That clears searchParams; we must NOT reset hasPrePopulated in that case or Priority 4
+  // (lastShot) would run again and overwrite beanId from the URL.
+  const skipResetGateOnIntentionalUrlClear = useRef(false);
+
   // Reset the gate when searchParams change (e.g. "Log Another" soft navigation)
   const prevSearchParamsStr = useRef(searchParams.toString());
   useEffect(() => {
     const current = searchParams.toString();
     if (current !== prevSearchParamsStr.current) {
       prevSearchParamsStr.current = current;
+      if (skipResetGateOnIntentionalUrlClear.current && current === "") {
+        skipResetGateOnIntentionalUrlClear.current = false;
+        return;
+      }
       hasPrePopulated.current = false;
     }
   }, [searchParams]);
@@ -230,6 +239,7 @@ export function useShotPrePopulation(
 
       // Clear URL params after reading
       if (typeof window !== "undefined") {
+        skipResetGateOnIntentionalUrlClear.current = true;
         router.replace(AppRoutes.log.path, { scroll: false });
       }
       return;
