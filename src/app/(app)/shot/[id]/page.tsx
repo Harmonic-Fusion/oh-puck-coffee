@@ -1,6 +1,6 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useShot, useDeleteShot, useToggleReference, useToggleHidden } from "@/components/shots/hooks";
 import { ShotDetail } from "@/components/shots/ShotDetail";
 import { AppRoutes } from "@/app/routes";
@@ -8,7 +8,9 @@ import { AppRoutes } from "@/app/routes";
 export default function ShotDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = params.id as string;
+  const initialEditMode = searchParams.get("edit") === "1";
 
   const { data: shot, isLoading, isError } = useShot(id ?? null);
   const deleteShot = useDeleteShot();
@@ -35,6 +37,7 @@ export default function ShotDetailPage() {
     <ShotDetail
       shot={shot}
       open
+      initialEditMode={initialEditMode}
       onClose={() => router.push(AppRoutes.shots.path)}
       onDelete={async (deletedId) => {
         await deleteShot.mutateAsync(deletedId);

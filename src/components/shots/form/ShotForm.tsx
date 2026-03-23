@@ -131,6 +131,9 @@ function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: Shot
 
       const summary: ShotSummary = {
         shotId: shot.id,
+        beanId: data.beanId,
+        isReferenceShot: Boolean(shot.isReferenceShot),
+        isHidden: Boolean(shot.isHidden),
         doseGrams: data.doseGrams ?? 0,
         yieldGrams: data.yieldGrams ?? 0,
         yieldActualGrams: data.yieldActualGrams,

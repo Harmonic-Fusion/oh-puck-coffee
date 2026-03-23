@@ -3,8 +3,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SessionProvider } from "next-auth/react";
 import { useState } from "react";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { ToastProvider } from "@/components/common/Toast";
-import { ApiHealthErrorBoundary } from "@/components/common/ApiHealthErrorBoundary";
 import { LoggerInit } from "@/components/common/LoggerInit";
 import { SessionRefetchOnAuth } from "@/components/auth/SessionRefetchOnAuth";
 
@@ -17,7 +17,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <QueryClientProvider client={queryClient}>
         <LoggerInit />
         <ToastProvider>
-          <ApiHealthErrorBoundary>{children}</ApiHealthErrorBoundary>
+          <ErrorBoundary>{children}</ErrorBoundary>
         </ToastProvider>
       </QueryClientProvider>
     </SessionProvider>
