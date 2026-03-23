@@ -41,20 +41,22 @@ type ChartMetric = "ratings" | "count";
 
 export function FlavorRatingsChart({ beanId }: { beanId: string }) {
   const { data, isLoading } = useFlavorStats(beanId);
-  const [selectedDepth, setSelectedDepth] = useState<number | null>(null);
+  const [selectedDepths, setSelectedDepths] = useState<Set<number>>(
+    () => new Set([1, 2, 3]),
+  );
   const [metric, setMetric] = useState<ChartMetric>("count");
 
   const allFlavors = useMemo(() => data?.flavors ?? [], [data?.flavors]);
 
   const flavors = useMemo(() => {
-    if (selectedDepth === null) {
+    if (selectedDepths.size === 3) {
       return allFlavors;
     }
     return allFlavors.filter((f) => {
       const depth = FLAVOR_DEPTH_CACHE.get(f.flavor);
-      return depth === selectedDepth;
+      return depth !== undefined && selectedDepths.has(depth);
     });
-  }, [allFlavors, selectedDepth]);
+  }, [allFlavors, selectedDepths]);
 
   const chartData = useMemo(() => {
     const list = [...flavors];
@@ -189,26 +191,43 @@ export function FlavorRatingsChart({ beanId }: { beanId: string }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <label
-            htmlFor="flavor-depth"
-            className="text-xs font-medium text-stone-500 dark:text-stone-400"
-          >
+          <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
             Wheel depth
-          </label>
-          <select
-            id="flavor-depth"
-            value={selectedDepth === null ? "" : selectedDepth}
-            onChange={(e) => {
-              const value = e.target.value;
-              setSelectedDepth(value === "" ? null : parseInt(value, 10));
-            }}
-            className="rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-xs text-stone-700 focus:border-amber-400 focus:outline-none dark:border-stone-700 dark:bg-stone-800 dark:text-stone-300 dark:focus:border-amber-500"
+          </span>
+          <div
+            className="inline-flex rounded-lg border border-stone-200 p-0.5 dark:border-stone-700"
+            role="group"
+            aria-label="Wheel depth filter"
           >
-            <option value="">All depths</option>
-            <option value="1">Depth 1</option>
-            <option value="2">Depth 2</option>
-            <option value="3">Depth 3</option>
-          </select>
+            {([1, 2, 3] as const).map((depth) => {
+              const active = selectedDepths.has(depth);
+              return (
+                <button
+                  key={depth}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => {
+                    setSelectedDepths((prev) => {
+                      const next = new Set(prev);
+                      if (active && next.size > 1) {
+                        next.delete(depth);
+                      } else {
+                        next.add(depth);
+                      }
+                      return next;
+                    });
+                  }}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                    active
+                      ? "bg-amber-600 text-white dark:bg-amber-600"
+                      : "text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
+                  }`}
+                >
+                  {depth}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
