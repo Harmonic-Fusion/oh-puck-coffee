@@ -105,15 +105,26 @@ const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
     React.useEffect(() => {
       if (!open || !triggerRef.current) return;
 
+      const VIEWPORT_PADDING = 8;
+
       function update() {
         const rect = triggerRef.current!.getBoundingClientRect();
         let left = rect.left;
         if (align === "end") left = rect.right;
         else if (align === "center") left = rect.left + rect.width / 2;
+
+        const contentEl = contentRef.current;
+        if (contentEl) {
+          const contentWidth = contentEl.offsetWidth;
+          const maxLeft = window.innerWidth - contentWidth - VIEWPORT_PADDING;
+          left = Math.max(VIEWPORT_PADDING, Math.min(left, maxLeft));
+        }
+
         setPos({ top: rect.bottom + sideOffset, left });
       }
 
       update();
+      requestAnimationFrame(update);
       window.addEventListener("scroll", update, true);
       window.addEventListener("resize", update);
       return () => {

@@ -6,6 +6,10 @@ import Image from "next/image";
 const HOLD_DELAY_MS = 200;
 const DRAG_THRESHOLD_PX = 10;
 
+// Only one slider gesture may be active at a time across all instances.
+// Prevents leaked window listeners from driving two sliders simultaneously.
+let activeGestureCleanup: (() => void) | null = null;
+
 function clearSelectionAndBlurFormFields() {
   window.getSelection()?.removeAllRanges();
   const active = document.activeElement;
@@ -83,10 +87,39 @@ export function Slider({
       e.preventDefault();
       clearSelectionAndBlurFormFields();
 
+      // Tear down any in-flight gesture (this or another slider instance)
+      activeGestureCleanup?.();
+
+      if (!trackRef.current) return;
+      const track = trackRef.current as HTMLDivElement;
+
       const pointerId = e.pointerId;
       const startX = e.clientX;
       const startY = e.clientY;
       let armed = false;
+
+      const ac = new AbortController();
+      let holdTimer: ReturnType<typeof setTimeout> | undefined;
+
+      function cleanup() {
+        if (activeGestureCleanup === cleanup) {
+          activeGestureCleanup = null;
+        }
+        ac.abort();
+        if (holdTimer !== undefined) {
+          clearTimeout(holdTimer);
+          holdTimer = undefined;
+        }
+        try {
+          if (track.hasPointerCapture(pointerId)) {
+            track.releasePointerCapture(pointerId);
+          }
+        } catch {
+          // ignore — element may have disconnected
+        }
+      }
+
+      activeGestureCleanup = cleanup;
 
       function arm(clientX: number) {
         if (armed) return;
@@ -94,28 +127,9 @@ export function Slider({
         setHasInteracted(true);
         snapToStep(clientX);
         try {
-          e.currentTarget.setPointerCapture(pointerId);
+          track.setPointerCapture(pointerId);
         } catch {
           // setPointerCapture can throw if element disconnected
-        }
-      }
-
-      let holdTimer: ReturnType<typeof setTimeout> | undefined;
-
-      function cleanup() {
-        if (holdTimer !== undefined) {
-          clearTimeout(holdTimer);
-          holdTimer = undefined;
-        }
-        window.removeEventListener("pointermove", onMove);
-        window.removeEventListener("pointerup", onUp);
-        window.removeEventListener("pointercancel", onUp);
-        try {
-          if (e.currentTarget.hasPointerCapture(pointerId)) {
-            e.currentTarget.releasePointerCapture(pointerId);
-          }
-        } catch {
-          // ignore
         }
       }
 
@@ -146,9 +160,10 @@ export function Slider({
         }
       }, HOLD_DELAY_MS);
 
-      window.addEventListener("pointermove", onMove);
-      window.addEventListener("pointerup", onUp);
-      window.addEventListener("pointercancel", onUp);
+      const opts = { signal: ac.signal };
+      window.addEventListener("pointermove", onMove, opts);
+      window.addEventListener("pointerup", onUp, opts);
+      window.addEventListener("pointercancel", onUp, opts);
     },
     [disabled, snapToStep]
   );

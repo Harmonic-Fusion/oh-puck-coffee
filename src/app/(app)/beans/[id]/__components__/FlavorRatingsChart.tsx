@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import type { ReactNode } from "react";
 import { useFlavorStats, type FlavorStat } from "@/components/stats/hooks";
 import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
@@ -39,7 +40,110 @@ const FLAVOR_DEPTH_CACHE = buildFlavorDepthCache();
 
 type ChartMetric = "ratings" | "count";
 
-export function FlavorRatingsChart({ beanId }: { beanId: string }) {
+// ── Toggle group ─────────────────────────────────────────────────────
+
+interface ToggleGroupOption<T extends string | number> {
+  value: T;
+  label: ReactNode;
+}
+
+interface ToggleGroupProps<T extends string | number> {
+  label: string;
+  ariaLabel: string;
+  options: ToggleGroupOption<T>[];
+  isActive: (value: T) => boolean;
+  onToggle: (value: T) => void;
+}
+
+function ToggleGroup<T extends string | number>({
+  label,
+  ariaLabel,
+  options,
+  isActive,
+  onToggle,
+}: ToggleGroupProps<T>): ReactNode {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
+        {label}
+      </span>
+      <div
+        className="inline-flex rounded-lg border border-stone-200 p-0.5 dark:border-stone-700"
+        role="group"
+        aria-label={ariaLabel}
+      >
+        {options.map((opt) => {
+          const active = isActive(opt.value);
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onToggle(opt.value)}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                active
+                  ? "bg-amber-600 text-white dark:bg-amber-600"
+                  : "text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
+              }`}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const METRIC_OPTIONS: ToggleGroupOption<ChartMetric>[] = [
+  { value: "count", label: "Count" },
+  { value: "ratings", label: "Ratings" },
+];
+
+const DEPTH_OPTIONS: ToggleGroupOption<number>[] = [
+  { value: 1, label: "1" },
+  { value: 2, label: "2" },
+  { value: 3, label: "3" },
+];
+
+// ── Chart controls ───────────────────────────────────────────────────
+
+interface ChartControlsProps {
+  metric: ChartMetric;
+  onMetricChange: (metric: ChartMetric) => void;
+  selectedDepths: Set<number>;
+  onDepthToggle: (depth: number) => void;
+}
+
+function ChartControls({
+  metric,
+  onMetricChange,
+  selectedDepths,
+  onDepthToggle,
+}: ChartControlsProps): ReactNode {
+  return (
+    <div className="mt-4 flex flex-col gap-3 border-t border-stone-200 pt-4 dark:border-stone-700 sm:flex-row sm:items-center sm:justify-between">
+      <ToggleGroup
+        label="Group by"
+        ariaLabel="Chart metric"
+        options={METRIC_OPTIONS}
+        isActive={(v) => v === metric}
+        onToggle={onMetricChange}
+      />
+      <ToggleGroup
+        label="Wheel depth"
+        ariaLabel="Wheel depth filter"
+        options={DEPTH_OPTIONS}
+        isActive={(v) => selectedDepths.has(v)}
+        onToggle={onDepthToggle}
+      />
+    </div>
+  );
+}
+
+// ── FlavorRatingsChart ───────────────────────────────────────────────
+
+export function FlavorRatingsChart({ beanId }: { beanId: string }): ReactNode {
   const { data, isLoading } = useFlavorStats(beanId);
   const [selectedDepths, setSelectedDepths] = useState<Set<number>>(
     () => new Set([1, 2, 3]),
@@ -72,6 +176,18 @@ export function FlavorRatingsChart({ beanId }: { beanId: string }) {
     if (chartData.length === 0) return 1;
     return Math.max(...chartData.map((d) => d.count), 1);
   }, [chartData]);
+
+  const handleDepthToggle = useCallback((depth: number) => {
+    setSelectedDepths((prev) => {
+      const next = new Set(prev);
+      if (next.has(depth) && next.size > 1) {
+        next.delete(depth);
+      } else {
+        next.add(depth);
+      }
+      return next;
+    });
+  }, []);
 
   if (isLoading) {
     return (
@@ -153,83 +269,12 @@ export function FlavorRatingsChart({ beanId }: { beanId: string }) {
         </ResponsiveContainer>
       )}
 
-      <div className="mt-4 flex flex-col gap-3 border-t border-stone-200 pt-4 dark:border-stone-700 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
-            Group by
-          </span>
-          <div
-            className="inline-flex rounded-lg border border-stone-200 p-0.5 dark:border-stone-700"
-            role="group"
-            aria-label="Chart metric"
-          >
-            <button
-              type="button"
-              aria-pressed={metric === "count"}
-              onClick={() => setMetric("count")}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                metric === "count"
-                  ? "bg-amber-600 text-white dark:bg-amber-600"
-                  : "text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
-              }`}
-            >
-              Count
-            </button>            
-            <button
-              type="button"
-              aria-pressed={metric === "ratings"}
-              onClick={() => setMetric("ratings")}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                metric === "ratings"
-                  ? "bg-amber-600 text-white dark:bg-amber-600"
-                  : "text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
-              }`}
-            >
-              Ratings
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-medium text-stone-500 dark:text-stone-400">
-            Wheel depth
-          </span>
-          <div
-            className="inline-flex rounded-lg border border-stone-200 p-0.5 dark:border-stone-700"
-            role="group"
-            aria-label="Wheel depth filter"
-          >
-            {([1, 2, 3] as const).map((depth) => {
-              const active = selectedDepths.has(depth);
-              return (
-                <button
-                  key={depth}
-                  type="button"
-                  aria-pressed={active}
-                  onClick={() => {
-                    setSelectedDepths((prev) => {
-                      const next = new Set(prev);
-                      if (active && next.size > 1) {
-                        next.delete(depth);
-                      } else {
-                        next.add(depth);
-                      }
-                      return next;
-                    });
-                  }}
-                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                    active
-                      ? "bg-amber-600 text-white dark:bg-amber-600"
-                      : "text-stone-600 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-800"
-                  }`}
-                >
-                  {depth}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      <ChartControls
+        metric={metric}
+        onMetricChange={setMetric}
+        selectedDepths={selectedDepths}
+        onDepthToggle={handleDepthToggle}
+      />
     </div>
   );
 }
