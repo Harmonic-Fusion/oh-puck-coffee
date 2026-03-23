@@ -3,7 +3,7 @@
 import { useRef, useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 
-const HOLD_DELAY_MS = 100;
+const HOLD_DELAY_MS = 200;
 const DRAG_THRESHOLD_PX = 10;
 
 function clearSelectionAndBlurFormFields() {
