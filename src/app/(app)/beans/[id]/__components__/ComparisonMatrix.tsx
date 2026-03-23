@@ -347,7 +347,7 @@ function SlotSelector({
   const hasMultipleUsers = contributors.length > 1;
 
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-center gap-2">
       <div className="flex-1 space-y-1.5">
         {/* User picker — only shown when there are multiple contributors */}
         {hasMultipleUsers && (
@@ -421,7 +421,7 @@ function SlotSelector({
         onClick={onRemove}
         className="mt-1.5 rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600 dark:hover:bg-stone-800 dark:hover:text-stone-300"
       >
-        <XMarkIcon className="h-4 w-4" />
+        <XMarkIcon className="h-8 w-8" />
       </button>
     </div>
   );
@@ -500,7 +500,7 @@ export function ComparisonMatrix({
   return (
     <div className="space-y-4">
       {/* Slot configs */}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="flex flex-col gap-3">
         {slots.map((slot, i) => (
           <SlotSelector
             key={slot.id}
