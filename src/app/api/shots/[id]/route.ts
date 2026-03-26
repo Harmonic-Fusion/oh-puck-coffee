@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { shots, beans, users, grinders, machines } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { shots, beans, users, grinders, machines, shotImages } from "@/db/schema";
+import { count, eq } from "drizzle-orm";
 import { validateMemberAccess } from "@/lib/api-auth";
 import { createShotSchema } from "@/shared/shots/schema";
 
@@ -38,6 +38,7 @@ export async function GET(
       brewTimeSecs: shots.brewTimeSecs,
       brewTempC: shots.brewTempC,
       preInfusionDuration: shots.preInfusionDuration,
+      preInfusionWaitDuration: shots.preInfusionWaitDuration,
       brewPressure: shots.brewPressure,
       estimateMaxPressure: shots.estimateMaxPressure,
       flowControl: shots.flowControl,
@@ -76,6 +77,13 @@ export async function GET(
   );
   if (accessError) return accessError;
 
+  const [imageCountRow] = await db
+    .select({ c: count() })
+    .from(shotImages)
+    .where(eq(shotImages.shotId, id));
+
+  const imageCount = Number(imageCountRow?.c ?? 0);
+
   // Compute derived fields on read
   const dose = result.doseGrams ? parseFloat(result.doseGrams) : null;
   const yieldG = result.yieldGrams ? parseFloat(result.yieldGrams) : null;
@@ -97,6 +105,7 @@ export async function GET(
     ...result,
     brewRatio,
     daysPostRoast,
+    imageCount,
   });
 }
 
@@ -164,6 +173,7 @@ export async function PATCH(
       estimateMaxPressure: data.estimateMaxPressure ? String(data.estimateMaxPressure) : null,
       flowControl: data.flowControl ? String(data.flowControl) : null,
       preInfusionDuration: data.preInfusionDuration ? String(data.preInfusionDuration) : null,
+      preInfusionWaitDuration: data.preInfusionWaitDuration ? String(data.preInfusionWaitDuration) : null,
       brewPressure: data.brewPressure ? String(data.brewPressure) : null,
       flowRate: flowRate ? String(flowRate) : null,
       shotQuality: data.shotQuality != null ? String(data.shotQuality) : null,

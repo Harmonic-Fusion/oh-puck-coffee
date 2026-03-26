@@ -4,6 +4,11 @@ import { db } from "@/db";
 import { shots, beans, users, grinders, machines } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { SharedShotDetail } from "@/components/shots/SharedShotDetail";
+import {
+  listImagesForShot,
+  thumbnailBufferToBase64,
+} from "@/lib/images";
+import type { ShotImageListItem } from "@/shared/images/schema";
 
 interface SharePageProps {
   params: Promise<{ uid: string }>;
@@ -27,6 +32,7 @@ async function getSharedShot(uid: string) {
       brewTimeSecs: shots.brewTimeSecs,
       brewTempC: shots.brewTempC,
       preInfusionDuration: shots.preInfusionDuration,
+      preInfusionWaitDuration: shots.preInfusionWaitDuration,
       brewPressure: shots.brewPressure,
       estimateMaxPressure: shots.estimateMaxPressure,
       flowControl: shots.flowControl,
@@ -53,6 +59,16 @@ async function getSharedShot(uid: string) {
 
   if (!result) return null;
 
+  const imageRows = await listImagesForShot(result.id);
+  const shotImages: ShotImageListItem[] = imageRows.map((r) => ({
+    id: r.id,
+    url: `/api/images/${r.id}`,
+    thumbnailBase64: thumbnailBufferToBase64(r.thumbnail),
+    sizeBytes: r.sizeBytes,
+    attachedAt: r.attachedAt.toISOString(),
+    createdAt: r.createdAt.toISOString(),
+  }));
+
   // Compute derived fields
   const dose = result.doseGrams ? parseFloat(result.doseGrams) : null;
   const yieldG = result.yieldGrams ? parseFloat(result.yieldGrams) : null;
@@ -76,6 +92,7 @@ async function getSharedShot(uid: string) {
     sour: result.sour ?? null,
     brewRatio,
     daysPostRoast,
+    shotImages,
   };
 }
 
@@ -112,5 +129,9 @@ export default async function SharePage({ params }: SharePageProps) {
     notFound();
   }
 
-  return <SharedShotDetail shot={shot} />;
+  const { shotImages, ...sharedShot } = shot;
+
+  return (
+    <SharedShotDetail shot={sharedShot} shotImages={shotImages} />
+  );
 }

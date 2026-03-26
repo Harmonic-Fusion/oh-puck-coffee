@@ -35,6 +35,7 @@ export interface ShotRow {
   brewTimeSecs: string | null;
   brewTempC: string | null;
   preInfusionDuration: string | null;
+  preInfusionWaitDuration: string | null;
   brewPressure: string | null;
   flowRate: string | null;
   shotQuality: string | null;
@@ -60,6 +61,7 @@ type ComparisonFieldKey =
   | "grindLevel"
   | "brewTemp"
   | "preInfusion"
+  | "preInfusionWait"
   | "pressure"
   | "flowRate"
   | "quality"
@@ -86,7 +88,8 @@ const COMPARISON_ROWS: {
   { key: "brewTime", label: "Brew Time", unit: "s" },
   { key: "grindLevel", label: "Grind Level" },
   { key: "brewTemp", label: "Brew Temp", unit: "°C" },
-  { key: "preInfusion", label: "Pre-infusion", unit: "s" },
+  { key: "preInfusion", label: "Pre-infusion start", unit: "s" },
+  { key: "preInfusionWait", label: "Pre-infusion wait", unit: "s" },
   { key: "pressure", label: "Pressure", unit: "bar" },
   { key: "flowRate", label: "Flow Rate", unit: "g/s" },
   { key: "quality", label: "Quality", higherIsBetter: true },
@@ -141,6 +144,7 @@ function getFieldValue(
       case "grindLevel": return fmtNum(averaged.grindLevel, 2);
       case "brewTemp": return fmtNum(averaged.brewTemp);
       case "preInfusion": return fmtNum(averaged.preInfusion);
+      case "preInfusionWait": return fmtNum(averaged.preInfusionWait);
       case "pressure": return fmtNum(averaged.pressure, 2);
       case "flowRate": return fmtNum(averaged.flowRate, 2);
       case "quality": return fmtNum(averaged.quality);
@@ -160,6 +164,7 @@ function getFieldValue(
     case "grindLevel": return fmtNum(shot.grindLevel, 2);
     case "brewTemp": return fmtNum(shot.brewTempC);
     case "preInfusion": return fmtNum(shot.preInfusionDuration);
+    case "preInfusionWait": return fmtNum(shot.preInfusionWaitDuration);
     case "pressure": return fmtNum(shot.brewPressure, 2);
     case "flowRate": return fmtNum(shot.flowRate, 2);
     case "quality": return fmtNum(shot.shotQuality);
@@ -304,6 +309,7 @@ function resolveSlot(
           grindLevel: n((s) => (s.grindLevel ? parseFloat(s.grindLevel) : null)),
           brewTemp: n((s) => (s.brewTempC ? parseFloat(s.brewTempC) : null)),
           preInfusion: n((s) => (s.preInfusionDuration ? parseFloat(s.preInfusionDuration) : null)),
+          preInfusionWait: n((s) => (s.preInfusionWaitDuration ? parseFloat(s.preInfusionWaitDuration) : null)),
           pressure: n((s) => (s.brewPressure ? parseFloat(s.brewPressure) : null)),
           flowRate: n((s) => (s.flowRate ? parseFloat(s.flowRate) : null)),
           quality: n((s) => (s.shotQuality ? parseFloat(s.shotQuality) : null)),

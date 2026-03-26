@@ -3,10 +3,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiRoutes, resolvePath } from "@/app/routes";
 import type { CreateShot } from "@/shared/shots/schema";
+import type { ImageRecord } from "@/shared/images/schema";
 
 export interface ShotWithJoins {
   id: string;
   userId: string;
+  /** Count of images attached to this shot (from list/detail API). */
+  imageCount?: number;
   userName: string | null;
   beanId: string;
   beanName: string | null;
@@ -24,13 +27,14 @@ export interface ShotWithJoins {
   brewTimeSecs: string | null;
   brewTempC: string | null;
   preInfusionDuration: string | null;
+  preInfusionWaitDuration: string | null;
   brewPressure: string | null;
   brewRatio: number | null;
   estimateMaxPressure: string | null;
   flowControl: string | null;
   flowRate: string | null;
   daysPostRoast: number | null;
-  shotQuality: number;
+  shotQuality: number | null;
   rating: number | null;
   bitter: number | null;
   sour: number | null;
@@ -406,5 +410,90 @@ export function useShotMetrics(shotId: string | null) {
       return res.json();
     },
     enabled: !!shotId,
+  });
+}
+
+export interface ShotImageListItem {
+  id: string;
+  url: string;
+  thumbnailBase64: string;
+  sizeBytes: number;
+  attachedAt: string;
+  createdAt: string;
+}
+
+export function useShotImages(shotId: string | null, enabled = true) {
+  return useQuery<{ images: ShotImageListItem[] }>({
+    queryKey: ["shots", shotId, "images"],
+    queryFn: async () => {
+      if (!shotId) throw new Error("Shot ID is required");
+      const shotIdRoute = ApiRoutes.shots.shotId as { path: string; images: { path: string } };
+      const url = resolvePath(shotIdRoute.images, { id: shotId });
+      const res = await fetch(url);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(
+          typeof err === "object" && err && "error" in err && typeof (err as { error: unknown }).error === "string"
+            ? (err as { error: string }).error
+            : "Failed to fetch shot images",
+        );
+      }
+      return res.json();
+    },
+    enabled: !!shotId && enabled,
+  });
+}
+
+export function useUploadImage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (blob: Blob): Promise<ImageRecord> => {
+      const form = new FormData();
+      form.append("file", blob, "photo.jpg");
+      const res = await fetch(ApiRoutes.images.path, {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) {
+        let message = "Failed to upload image";
+        try {
+          const body = await res.json();
+          if (body && typeof body.error === "string") message = body.error;
+        } catch {
+          message = res.statusText || message;
+        }
+        throw new Error(message);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shots"] });
+    },
+  });
+}
+
+export function useDeleteImage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (imageId: string) => {
+      const res = await fetch(
+        resolvePath(ApiRoutes.images.imageId, { id: imageId }),
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        let message = "Failed to delete image";
+        try {
+          const body = await res.json();
+          if (body && typeof body.error === "string") message = body.error;
+        } catch {
+          message = res.statusText || message;
+        }
+        throw new Error(message);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shots"] });
+    },
   });
 }

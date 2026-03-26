@@ -3,8 +3,8 @@
 import { useRef, useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 
-const HOLD_DELAY_MS = 200;
-const DRAG_THRESHOLD_PX = 10;
+const HOLD_DELAY_MS = 180;
+const DRAG_THRESHOLD_PX = 4;
 
 // Only one slider gesture may be active at a time across all instances.
 // Prevents leaked window listeners from driving two sliders simultaneously.

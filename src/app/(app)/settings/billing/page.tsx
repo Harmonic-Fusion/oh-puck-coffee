@@ -58,6 +58,7 @@ const FEATURE_LABELS: Record<EntitlementKey, string> = {
   [Entitlements.NO_SHOT_VIEW_LIMIT]: "No shot view limit",
   [Entitlements.STATS_VIEW]: "Stats view",
   [Entitlements.BEAN_SHARE]: "Bean share",
+  [Entitlements.PHOTO_UPLOADS]: "Photo uploads",
 };
 
 /** Descriptions for feature tooltips on the billing page. */
@@ -68,6 +69,8 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
     "Detailed analytics, trends, and insights across all your shots",
   [Entitlements.BEAN_SHARE]:
     "Share beans with others and allow them to reshare",
+  [Entitlements.PHOTO_UPLOADS]:
+    "Higher limits for attaching photos to shots and storing image data",
 };
 
 function statusLabel(status: Subscription["status"]): string {

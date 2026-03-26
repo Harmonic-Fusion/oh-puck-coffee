@@ -10,6 +10,19 @@ import { SectionSetup } from "./__components__/SectionSetup";
 import { SectionRecipe } from "./__components__/SectionRecipe";
 import { SectionBrewing } from "./__components__/SectionBrewing";
 import { SectionTasting } from "./__components__/SectionTasting";
+import { EditInputsModal } from "./__components__/EditInputsModal";
+import {
+  DEFAULT_RECIPE_STEPS,
+  REQUIRED_RECIPE_FIELDS,
+} from "./__components__/SectionRecipe";
+import {
+  DEFAULT_RESULTS_STEPS,
+  REQUIRED_RESULTS_FIELDS,
+} from "./__components__/SectionBrewing";
+import {
+  DEFAULT_TASTING_STEPS,
+  REQUIRED_TASTING_FIELDS,
+} from "./__components__/SectionTasting";
 import { ShotSuccessModal } from "./__components__/ShotSuccessModal";
 import { useBeans } from "@/components/beans/hooks";
 import { useGrinders, useMachines } from "@/components/equipment/hooks";
@@ -18,8 +31,15 @@ import { ShotDetail } from "@/components/shots/ShotDetail";
 import { ValidationBanner } from "@/components/common/ValidationBanner";
 import { useShotPrePopulation } from "./hooks";
 import type { ShotSummary } from "./__components__/ShotSuccessModal";
+import { useQueryClient } from "@tanstack/react-query";
+import { ApiRoutes, resolvePath } from "@/app/routes";
+import {
+  type PendingShotPhoto,
+} from "@/components/shots/ShotPhotoUpload";
 
 // Shell: calls the incompatible react-hook-form APIs so ShotFormInner can be memoized
+import { useReorderableSteps } from "./hooks/useReorderableSteps";
+
 export function ShotForm({ phrase }: { phrase?: string }) {
   "use no memo";
 
@@ -38,6 +58,7 @@ export function ShotForm({ phrase }: { phrase?: string }) {
       brewTimeSecs: undefined,
       estimateMaxPressure: undefined,
       preInfusionDuration: undefined,
+      preInfusionWaitDuration: undefined,
       brewPressure: 9,
       shotQuality: undefined,
       rating: undefined,
@@ -86,6 +107,7 @@ interface ShotFormInnerProps {
 }
 
 function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: ShotFormInnerProps) {
+  const queryClient = useQueryClient();
   const createShot = useCreateShot();
   const { data: beans } = useBeans();
   const { data: grinders } = useGrinders();
@@ -105,6 +127,35 @@ function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: Shot
   const [successSummary, setSuccessSummary] = useState<ShotSummary | null>(null);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
+  const recipeSteps = useReorderableSteps({
+    defaultSteps: DEFAULT_RECIPE_STEPS,
+    orderKey: "coffee-recipe-order",
+    visibilityKey: "coffee-recipe-visibility",
+  });
+
+  const resultsSteps = useReorderableSteps({
+    defaultSteps: DEFAULT_RESULTS_STEPS,
+    orderKey: "coffee-results-order",
+    visibilityKey: "coffee-results-visibility",
+  });
+
+  const tastingSteps = useReorderableSteps({
+    defaultSteps: DEFAULT_TASTING_STEPS,
+    orderKey: "coffee-tasting-order",
+    visibilityKey: "coffee-tasting-visibility",
+  });
+
+  const [pendingPhotos, setPendingPhotos] = useState<PendingShotPhoto[]>([]);
+
+  // ── Consolidated Edit Inputs Modal State ──
+  const [showEditInputsModal, setShowEditInputsModal] = useState(false);
+  const [initialEditCategory, setInitialEditCategory] = useState<string | undefined>(undefined);
+
+  const openEditInputs = (categoryId?: string) => {
+    setInitialEditCategory(categoryId);
+    setShowEditInputsModal(true);
+  };
+
   // Warn before leaving only when in progress and user has entered results data
   useEffect(() => {
     if (formMode !== "inProgress" || !hasResultsData) return;
@@ -120,6 +171,32 @@ function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: Shot
   const onSubmit = async (data: CreateShot) => {
     try {
       const shot = await createShot.mutateAsync(data);
+
+      const shotIdRoute = ApiRoutes.shots.shotId as { path: string; images: { path: string } };
+      for (const p of pendingPhotos) {
+        const attachRes = await fetch(
+          resolvePath(shotIdRoute.images, { id: shot.id }),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imageId: p.id }),
+          },
+        );
+        if (!attachRes.ok) {
+          let msg = "Failed to attach a photo to this shot";
+          try {
+            const errBody = await attachRes.json();
+            if (errBody && typeof errBody.error === "string") msg = errBody.error;
+          } catch {
+            // ignore
+          }
+          showToast("error", msg);
+          break;
+        }
+      }
+      void queryClient.invalidateQueries({ queryKey: ["shots", shot.id, "images"] });
+      setPendingPhotos([]);
+
       const bean = beans?.find((b) => b.id === data.beanId);
       const grinder = grinders?.find((g) => g.id === data.grinderId);
       const machine = data.machineId ? machines?.find((m) => m.id === data.machineId) : null;
@@ -187,11 +264,23 @@ function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: Shot
         <SectionRecipe
           previousShotId={previousShotId}
           onViewShot={(shot) => setSelectedShot(shot)}
+          onEditInputs={() => openEditInputs("recipe")}
+          steps={recipeSteps}
         />
 
-        <SectionBrewing />
+        <SectionBrewing
+          onEditInputs={() => openEditInputs("results")}
+          steps={resultsSteps}
+          pendingPhotos={pendingPhotos}
+          onPendingPhotosChange={setPendingPhotos}
+          isUploading={createShot.isPending}
+          disabled={formMode === "logged"}
+        />
 
-        <SectionTasting />
+        <SectionTasting
+          onEditInputs={() => openEditInputs("tasting")}
+          steps={tastingSteps}
+        />
 
         <div className="mt-8 flex flex-col items-center gap-3">
           {methods.formState.isSubmitted && (
@@ -224,6 +313,50 @@ function ShotFormInner({ methods, previousShotId, hasResultsData, phrase }: Shot
         onClose={handleSuccessModalClose}
         summary={successSummary}
         phrase={phrase}
+      />
+
+      <EditInputsModal
+        open={showEditInputsModal}
+        onClose={() => setShowEditInputsModal(false)}
+        initialCategory={initialEditCategory}
+        categories={[
+          {
+            id: "recipe",
+            title: "Recipe",
+            items: DEFAULT_RECIPE_STEPS,
+            order: recipeSteps.order,
+            visibility: recipeSteps.visibility,
+            defaultOrder: DEFAULT_RECIPE_STEPS.map((s) => s.id),
+            defaultVisibility: recipeSteps.defaultVisibility,
+            requiredFields: REQUIRED_RECIPE_FIELDS,
+            onChange: recipeSteps.handleOrderChange,
+            onReset: recipeSteps.handleReset,
+          },
+          {
+            id: "results",
+            title: "Brewing",
+            items: DEFAULT_RESULTS_STEPS,
+            order: resultsSteps.order,
+            visibility: resultsSteps.visibility,
+            defaultOrder: DEFAULT_RESULTS_STEPS.map((s) => s.id),
+            defaultVisibility: resultsSteps.defaultVisibility,
+            requiredFields: REQUIRED_RESULTS_FIELDS,
+            onChange: resultsSteps.handleOrderChange,
+            onReset: resultsSteps.handleReset,
+          },
+          {
+            id: "tasting",
+            title: "Tasting Notes",
+            items: DEFAULT_TASTING_STEPS,
+            order: tastingSteps.order,
+            visibility: tastingSteps.visibility,
+            defaultOrder: DEFAULT_TASTING_STEPS.map((s) => s.id),
+            defaultVisibility: tastingSteps.defaultVisibility,
+            requiredFields: REQUIRED_TASTING_FIELDS,
+            onChange: tastingSteps.handleOrderChange,
+            onReset: tastingSteps.handleReset,
+          },
+        ]}
       />
 
       <ShotDetail

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { shots, beans } from "@/db/schema";
-import { eq, sql, gte, count, avg, and } from "drizzle-orm";
+import { eq, sql, gte, count, avg, and, isNotNull } from "drizzle-orm";
 
 export async function GET() {
   const session = await getSession();
@@ -95,11 +95,56 @@ export async function GET() {
     .where(and(...weekConditions));
   const shotsThisWeek = weekResult.count;
 
+  // Average dose (excluding hidden, only where doseGrams is not null)
+  const [avgDoseResult] = await db
+    .select({ avg: avg(shots.doseGrams) })
+    .from(shots)
+    .where(and(whereClause, isNotNull(shots.doseGrams)));
+  const avgDose = avgDoseResult.avg
+    ? parseFloat(parseFloat(avgDoseResult.avg).toFixed(1))
+    : null;
+
+  // Count of distinct beans used (excluding hidden)
+  const [beansCountResult] = await db
+    .select({ count: sql<number>`count(distinct ${shots.beanId})` })
+    .from(shots)
+    .where(whereClause);
+  const beansCount = Number(beansCountResult.count);
+
+  // Current streak: consecutive days with at least one shot, ending today or yesterday
+  const shotDates = await db
+    .select({ createdAt: shots.createdAt })
+    .from(shots)
+    .where(whereClause)
+    .orderBy(sql`${shots.createdAt} desc`);
+
+  const uniqueDays = new Set<string>();
+  for (const s of shotDates) {
+    // Use UTC date string to keep comparisons consistent server-side
+    uniqueDays.add(s.createdAt.toISOString().slice(0, 10));
+  }
+
+  let currentStreak = 0;
+  const todayUtc = new Date();
+  todayUtc.setUTCHours(0, 0, 0, 0);
+  const cursor = new Date(todayUtc);
+  // Allow streak to start from today or yesterday (so it isn't broken mid-day)
+  if (!uniqueDays.has(cursor.toISOString().slice(0, 10))) {
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  while (uniqueDays.has(cursor.toISOString().slice(0, 10))) {
+    currentStreak++;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+
   return NextResponse.json({
     totalShots,
     avgQuality,
     avgRating,
     avgBrewRatio,
+    avgDose,
+    beansCount,
+    currentStreak,
     mostUsedBean: mostUsedBean
       ? { id: mostUsedBean.beanId, name: mostUsedBean.beanName, shotCount: mostUsedBean.count }
       : null,

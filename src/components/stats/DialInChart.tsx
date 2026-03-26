@@ -37,10 +37,11 @@ const METRIC_LABELS: Record<string, string> = {
   brewTimeSecs: "Brew Time (s)",
 };
 
+const RATING_COLOR = "#16a34a";
+
 export function DialInChart({ shots }: DialInChartProps) {
   const [selectedBeanId, setSelectedBeanId] = useState<string>("");
 
-  // Build bean options from available shots (sorted by shot count desc)
   const beanOptions: BeanOption[] = useMemo(() => {
     const beanMap = new Map<string, { name: string; count: number }>();
     for (const shot of shots) {
@@ -56,19 +57,17 @@ export function DialInChart({ shots }: DialInChartProps) {
     }
     return Array.from(beanMap.entries())
       .map(([id, { name, count }]) => ({ id, name, shotCount: count }))
-      .filter((b) => b.shotCount >= 2) // Need at least 2 shots to see progression
+      .filter((b) => b.shotCount >= 2)
       .sort((a, b) => b.shotCount - a.shotCount);
   }, [shots]);
 
-  // Auto-select the first bean with the most shots
   const activeBeanId = selectedBeanId || beanOptions[0]?.id || "";
 
-  // Filter and format data for selected bean
   const data = useMemo(() => {
     if (!activeBeanId) return [];
     return [...shots]
       .filter((s) => s.beanId === activeBeanId)
-      .reverse() // Chronological order
+      .reverse()
       .map((s, i) => ({
         shot: `#${i + 1}`,
         date: new Date(s.createdAt).toLocaleDateString("en-US", {
@@ -79,7 +78,7 @@ export function DialInChart({ shots }: DialInChartProps) {
         doseGrams: s.doseGrams ? parseFloat(s.doseGrams) : null,
         yieldGrams: s.yieldGrams ? parseFloat(s.yieldGrams) : null,
         brewTimeSecs: s.brewTimeSecs ? parseFloat(s.brewTimeSecs) : null,
-        quality: s.shotQuality,
+        rating: s.rating ?? s.shotQuality ?? null,
       }));
   }, [shots, activeBeanId]);
 
@@ -118,7 +117,18 @@ export function DialInChart({ shots }: DialInChartProps) {
             tick={{ fontSize: 12, fill: "#78716c" }}
             tickLine={false}
           />
+          {/* Primary left Y-axis for mechanical metrics */}
           <YAxis
+            yAxisId="left"
+            orientation="left"
+            tick={{ fontSize: 12, fill: "#78716c" }}
+            tickLine={false}
+          />
+          {/* Secondary right Y-axis for rating (0–5) */}
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            domain={[0, 5]}
             tick={{ fontSize: 12, fill: "#78716c" }}
             tickLine={false}
           />
@@ -142,6 +152,7 @@ export function DialInChart({ shots }: DialInChartProps) {
           {Object.entries(METRIC_COLORS).map(([key, color]) => (
             <Line
               key={key}
+              yAxisId="left"
               type="monotone"
               dataKey={key}
               name={METRIC_LABELS[key]}
@@ -152,6 +163,18 @@ export function DialInChart({ shots }: DialInChartProps) {
               connectNulls
             />
           ))}
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="rating"
+            name="Rating"
+            stroke={RATING_COLOR}
+            strokeWidth={2}
+            strokeDasharray="5 3"
+            dot={{ fill: RATING_COLOR, strokeWidth: 0, r: 3 }}
+            activeDot={{ r: 5 }}
+            connectNulls
+          />
         </LineChart>
       </ResponsiveContainer>
     </div>

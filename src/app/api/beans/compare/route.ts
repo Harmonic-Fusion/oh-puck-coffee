@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
     brewTimeSecs: shots.brewTimeSecs,
     brewTempC: shots.brewTempC,
     preInfusionDuration: shots.preInfusionDuration,
+    preInfusionWaitDuration: shots.preInfusionWaitDuration,
     brewPressure: shots.brewPressure,
     flowRate: shots.flowRate,
     shotQuality: shots.shotQuality,

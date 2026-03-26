@@ -4,8 +4,10 @@ import { useState, useMemo, useCallback } from "react";
 import type { ReactNode } from "react";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import type { FlavorStat } from "@/components/stats/hooks";
-import { FLAVOR_WHEEL_DATA } from "@/shared/flavor-wheel";
-import type { FlavorNode } from "@/shared/flavor-wheel/types";
+import {
+  aggregateFlavorStatsFromShots,
+  FLAVOR_DEPTH_CACHE,
+} from "@/lib/flavor-stats";
 import {
   BarChart,
   Bar,
@@ -15,58 +17,6 @@ import {
   Tooltip,
 } from "recharts";
 import { ChartContainer } from "@/components/common/ChartContainer";
-
-// ── Flavor depth cache ────────────────────────────────────────────────
-
-function buildFlavorDepthCache(): Map<string, number> {
-  const cache = new Map<string, number>();
-
-  function traverse(node: FlavorNode, depth: number): void {
-    cache.set(node.name, depth);
-    if (node.children) {
-      for (const child of node.children) {
-        traverse(child, depth + 1);
-      }
-    }
-  }
-
-  for (const category of FLAVOR_WHEEL_DATA.children) {
-    traverse(category, 1);
-  }
-
-  return cache;
-}
-
-const FLAVOR_DEPTH_CACHE = buildFlavorDepthCache();
-
-/** Matches aggregation in `GET /api/stats/flavors` for the current shot set. */
-function aggregateFlavorStatsFromShots(shots: ShotWithJoins[]): FlavorStat[] {
-  const flavorStats: Record<string, { totalRating: number; count: number }> = {};
-
-  for (const shot of shots) {
-    if (!shot.flavors || !Array.isArray(shot.flavors)) continue;
-
-    const rating = shot.rating;
-    if (rating === null) continue;
-
-    for (const flavor of shot.flavors) {
-      if (!flavorStats[flavor]) {
-        flavorStats[flavor] = { totalRating: 0, count: 0 };
-      }
-      flavorStats[flavor].totalRating += rating;
-      flavorStats[flavor].count += 1;
-    }
-  }
-
-  return Object.entries(flavorStats)
-    .map(([flavor, { totalRating, count }]) => ({
-      flavor,
-      avgRating: parseFloat((totalRating / count).toFixed(1)),
-      count,
-    }))
-    .filter((d) => d.count >= 1)
-    .sort((a, b) => b.avgRating - a.avgRating);
-}
 
 type ChartMetric = "ratings" | "count";
 

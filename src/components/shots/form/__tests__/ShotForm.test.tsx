@@ -74,9 +74,11 @@ vi.mock("@/components/common/Toast", () => ({
 // ---------------------------------------------------------------------------
 // Mock child components – SectionRecipe exposes previousShotId + form values
 // ---------------------------------------------------------------------------
-vi.mock("../__components__/SectionRecipe", async () => {
+vi.mock("../__components__/SectionRecipe", async (importOriginal) => {
   const { useFormContext } = await import("react-hook-form");
+  const actual = await importOriginal<typeof import("../__components__/SectionRecipe")>();
   return {
+    ...actual,
     SectionRecipe: function MockSectionRecipe({
       previousShotId,
     }: {
@@ -140,6 +142,7 @@ function makeMockShot(overrides: Partial<ShotWithJoins> = {}): ShotWithJoins {
     brewTimeSecs: "30",
     brewTempC: "93",
     preInfusionDuration: "5",
+    preInfusionWaitDuration: null,
     brewPressure: "9",
     estimateMaxPressure: null,
     flowControl: null,

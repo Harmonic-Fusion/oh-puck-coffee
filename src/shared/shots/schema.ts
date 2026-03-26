@@ -22,6 +22,7 @@ export const createShotSchema = z.object({
   grindLevel: z.coerce.number().nonnegative().optional(),
   brewTempC: z.coerce.number().positive().max(200).optional(),
   preInfusionDuration: z.coerce.number().nonnegative().max(60).optional(),
+  preInfusionWaitDuration: z.coerce.number().nonnegative().max(60).optional(),
   brewPressure: z.coerce.number().positive().max(20).optional(),
   // Results
   brewTimeSecs: z.coerce.number().positive().max(120).optional(),
@@ -46,18 +47,18 @@ export const createShotSchema = z.object({
         return Math.abs(val - normalized) < 0.01;
       }, { message: "Rating must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }),
   ),
-  bitter: z.coerce.number().min(1).max(5).refine((val) => {
-    // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
+  bitter: z.coerce.number().min(0).max(4).refine((val) => {
+    // Allow only 0.5 steps: 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4
     const step = 0.5;
     const normalized = Math.round(val / step) * step;
     return Math.abs(val - normalized) < 0.01;
-  }, { message: "Bitter must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }).optional(),
-  sour: z.coerce.number().min(1).max(5).refine((val) => {
-    // Allow only 0.5 steps: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
+  }, { message: "Bitter must be in 0.5 steps (0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4)" }).optional(),
+  sour: z.coerce.number().min(0).max(4).refine((val) => {
+    // Allow only 0.5 steps: 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4
     const step = 0.5;
     const normalized = Math.round(val / step) * step;
     return Math.abs(val - normalized) < 0.01;
-  }, { message: "Sour must be in 0.5 steps (1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5)" }).optional(),
+  }, { message: "Sour must be in 0.5 steps (0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4)" }).optional(),
   toolsUsed: z.array(z.string()).optional(),
   notes: z.string().optional(),
   // Flavor data (optional) - separate fields
@@ -78,6 +79,7 @@ export const shotSchema = z.object({
   grindLevel: z.coerce.number(),
   brewTempC: z.coerce.number().nullable(),
   preInfusionDuration: z.coerce.number().nullable(),
+  preInfusionWaitDuration: z.coerce.number().nullable(),
   brewPressure: z.coerce.number().nullable(),
   // Results
   brewTimeSecs: z.coerce.number().nullable(),

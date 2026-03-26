@@ -4,13 +4,15 @@ import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "@/components/common/Modal";
 import { useTools } from "@/components/equipment/hooks";
-import type { ShotWithJoins } from "@/components/shots/hooks";
 import { AppRoutes, resolvePath } from "@/app/routes";
 import { ShotEditForm } from "@/components/shots/form/ShotEditForm";
+import { ShotPhotoGallery } from "@/components/shots/ShotPhotoGallery";
 import {
   useShot,
   useCreateShareLink,
   useShotMetrics,
+  type ShotImageListItem,
+  type ShotWithJoins,
 } from "@/components/shots/hooks";
 import { type ShotShareData } from "@/lib/share-text";
 import { ActionButtonBar } from "./ActionButtonBar";
@@ -90,6 +92,8 @@ interface ShotDetailProps {
   currentIndex?: number;
   onShotChange?: (shot: ShotWithJoins) => void;
   initialEditMode?: boolean;
+  /** SSR images for public share views (skips authenticated `/api/shots/.../images`). */
+  prefetchedShotImages?: ShotImageListItem[];
 }
 
 function DetailRow({
@@ -133,6 +137,7 @@ export function ShotDetail({
   currentIndex,
   onShotChange,
   initialEditMode = false,
+  prefetchedShotImages,
 }: ShotDetailProps) {
   const router = useRouter();
   const [tempUnit] = useTempUnit();
@@ -198,6 +203,8 @@ export function ShotDetail({
     if (shot.brewTempC) params.set("brewTempC", shot.brewTempC);
     if (shot.preInfusionDuration)
       params.set("preInfusionDuration", shot.preInfusionDuration);
+    if (shot.preInfusionWaitDuration)
+      params.set("preInfusionWaitDuration", shot.preInfusionWaitDuration);
     if (shot.brewPressure) params.set("brewPressure", shot.brewPressure);
     if (shot.toolsUsed && shot.toolsUsed.length > 0) {
       params.set("toolsUsed", shot.toolsUsed.join(","));
@@ -409,6 +416,9 @@ export function ShotDetail({
         preInfusionDuration: shot.preInfusionDuration
           ? parseFloat(shot.preInfusionDuration)
           : undefined,
+        preInfusionWaitDuration: shot.preInfusionWaitDuration
+          ? parseFloat(shot.preInfusionWaitDuration)
+          : undefined,
         brewPressure: shot.brewPressure
           ? parseFloat(shot.brewPressure)
           : undefined,
@@ -555,12 +565,25 @@ export function ShotDetail({
         >
           {/* Meta */}
           <div className="flex items-center justify-between">
-            <div className="flex-1">
-              {/* Flex row: beanName, dose, ratio, rating */}
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col flex-1">
+              <div className="flex flex-col">
                 <p className="text-lg font-semibold text-stone-800 dark:text-stone-200">
                   {shot.beanName || "Unknown bean"}
                 </p>
+                <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
+                  by {shot.userName || "Unknown user"} ·{" "}
+                  {new Date(shot.createdAt).toLocaleDateString("en-US", {
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+
+              {/* Flex row: dose, ratio, rating */}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 {shot.doseGrams && (
                   <span className="inline-flex items-center rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-800 dark:bg-stone-800 dark:text-stone-300">
                     {roundToOneDecimal(shot.doseGrams)}g
@@ -577,16 +600,6 @@ export function ShotDetail({
                   </span>
                 )}
               </div>
-              <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">
-                by {shot.userName || "Unknown user"} ·{" "}
-                {new Date(shot.createdAt).toLocaleDateString("en-US", {
-                  month: "long",
-                  day: "numeric",
-                  year: "numeric",
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </p>
             </div>
             {shot.isReferenceShot && (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
@@ -595,6 +608,12 @@ export function ShotDetail({
               </span>
             )}
           </div>
+
+          <ShotPhotoGallery
+            shotId={shot.id}
+            imageCount={shot.imageCount}
+            images={prefetchedShotImages}
+          />
 
           {/* Setup Section */}
           <div>
@@ -660,10 +679,18 @@ export function ShotDetail({
                   value={formatTemp(shot.brewTempC, tempUnit)}
                 />
                 <DetailRow
-                  label="Pre-infusion"
+                  label="Pre-infusion start"
                   value={
                     shot.preInfusionDuration
                       ? `${roundToOneDecimal(shot.preInfusionDuration)}s`
+                      : null
+                  }
+                />
+                <DetailRow
+                  label="Pre-infusion wait"
+                  value={
+                    shot.preInfusionWaitDuration
+                      ? `${roundToOneDecimal(shot.preInfusionWaitDuration)}s`
                       : null
                   }
                 />
@@ -916,7 +943,7 @@ export function ShotDetail({
                         {shot.bitter}
                       </span>
                       <span className="text-sm text-stone-400 dark:text-stone-500">
-                        / 5
+                        / 4
                       </span>
                     </span>
                   </div>
@@ -940,7 +967,7 @@ export function ShotDetail({
                         {shot.sour}
                       </span>
                       <span className="text-sm text-stone-400 dark:text-stone-500">
-                        / 5
+                        / 4
                       </span>
                     </span>
                   </div>

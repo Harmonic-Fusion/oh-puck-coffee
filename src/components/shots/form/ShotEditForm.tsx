@@ -1,19 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, FormProvider, type Resolver } from "react-hook-form";
+import { useForm, FormProvider, type Resolver, type SubmitHandler } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createShotSchema, type CreateShot } from "@/shared/shots/schema";
 import { useUpdateShot, useDeleteShot } from "@/components/shots/hooks";
 import { SectionSetup } from "./__components__/SectionSetup";
-import { SectionRecipe } from "./__components__/SectionRecipe";
-import { SectionBrewing } from "./__components__/SectionBrewing";
-import { SectionTasting } from "./__components__/SectionTasting";
+import { SectionRecipe, DEFAULT_RECIPE_STEPS } from "./__components__/SectionRecipe";
+import { SectionBrewing, DEFAULT_RESULTS_STEPS } from "./__components__/SectionBrewing";
+import { SectionTasting, DEFAULT_TASTING_STEPS } from "./__components__/SectionTasting";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { useToast } from "@/components/common/Toast";
 import { ValidationBanner } from "@/components/common/ValidationBanner";
 import { ActionButtonBar } from "@/components/shots/ActionButtonBar";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useReorderableSteps } from "./hooks/useReorderableSteps";
+import type { PendingShotPhoto } from "@/components/shots/ShotPhotoUpload";
 
 /** Inline icons to avoid Turbopack ESM "module factory not available" when passing refs to ActionButtonBar. */
 function TrashIcon({ className }: { className?: string }) {
@@ -51,6 +53,29 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
   const { showToast } = useToast();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
+  // Share the same step order/visibility keys as the log form so user preferences are consistent.
+  const recipeSteps = useReorderableSteps({
+    defaultSteps: DEFAULT_RECIPE_STEPS,
+    orderKey: "coffee-recipe-order",
+    visibilityKey: "coffee-recipe-visibility",
+    showAllInputs: true,
+  });
+  const resultsSteps = useReorderableSteps({
+    defaultSteps: DEFAULT_RESULTS_STEPS,
+    orderKey: "coffee-results-order",
+    visibilityKey: "coffee-results-visibility",
+    showAllInputs: true,
+  });
+  const tastingSteps = useReorderableSteps({
+    defaultSteps: DEFAULT_TASTING_STEPS,
+    orderKey: "coffee-tasting-order",
+    visibilityKey: "coffee-tasting-visibility",
+    showAllInputs: true,
+  });
+
+  // Photo uploads are managed separately via the shot detail gallery; start empty here.
+  const [pendingPhotos, setPendingPhotos] = useState<PendingShotPhoto[]>([]);
+
   const methods = useForm<CreateShot>({
     resolver: zodResolver(createShotSchema) as Resolver<CreateShot>,
     defaultValues: {
@@ -63,11 +88,12 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
       grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
       brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
       preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
+      preInfusionWaitDuration: shot.preInfusionWaitDuration ? parseFloat(shot.preInfusionWaitDuration) : undefined,
       brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : undefined,
       yieldActualGrams: shot.yieldActualGrams ? parseFloat(shot.yieldActualGrams) : undefined,
       brewTimeSecs: shot.brewTimeSecs ? parseFloat(shot.brewTimeSecs) : undefined,
       estimateMaxPressure: shot.estimateMaxPressure ? parseFloat(shot.estimateMaxPressure) : undefined,
-      shotQuality: shot.shotQuality,
+      shotQuality: shot.shotQuality ?? undefined,
       rating: shot.rating ?? undefined,
       bitter: shot.bitter ?? undefined,
       sour: shot.sour ?? undefined,
@@ -79,7 +105,7 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
     },
   });
 
-  const onSubmit = async (data: CreateShot) => {
+  const onSubmit: SubmitHandler<CreateShot> = async (data) => {
     try {
       await updateShot.mutateAsync({ id: shot.id, data });
       showToast("success", "Shot updated successfully!");
@@ -104,15 +130,20 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
 
           <hr className="border-stone-200 dark:border-stone-700" />
 
-          <SectionRecipe showAllInputs />
+          <SectionRecipe steps={recipeSteps} showAllInputs />
 
           <hr className="border-stone-200 dark:border-stone-700" />
 
-          <SectionBrewing showAllInputs />
+          <SectionBrewing
+            steps={resultsSteps}
+            pendingPhotos={pendingPhotos}
+            onPendingPhotosChange={setPendingPhotos}
+            showAllInputs
+          />
 
           <hr className="border-stone-200 dark:border-stone-700" />
 
-          <SectionTasting showAllInputs />
+          <SectionTasting steps={tastingSteps} showAllInputs />
         </div>
 
         <div className="sticky -bottom-6 px-6 py-4 border-t border-stone-200 bg-white dark:border-stone-700 dark:bg-stone-900">

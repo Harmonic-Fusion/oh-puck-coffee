@@ -8,7 +8,7 @@ import {
 } from "@/components/shots/ShotsHistory";
 import type { BeanShotWithUser, BeanShotContributor } from "@/components/beans/hooks";
 import type { BeanWithUserData } from "@/shared/beans/schema";
-import { FlavorRatingsChart } from "./FlavorRatingsChart";
+import { FlavorRatingsChart } from "@/components/stats/FlavorRatingsChart";
 import { ParameterRatingChart } from "@/components/shots/ParameterRatingChart";
 import { BeanShotsSelectors } from "./BeanShotsSelectors";
 import { BeanShotsTablePanel } from "./BeanShotsTablePanel";

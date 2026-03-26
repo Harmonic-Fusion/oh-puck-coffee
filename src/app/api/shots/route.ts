@@ -9,6 +9,7 @@ import {
   machines,
   tools,
   integrations,
+  shotImages,
 } from "@/db/schema";
 import { createShotSchema } from "@/shared/shots/schema";
 import {
@@ -198,6 +199,9 @@ export async function GET(request: NextRequest) {
       id: shots.id,
       userId: shots.userId,
       userName: users.name,
+      imageCount: sql<number>`coalesce((
+        select count(*)::int from ${shotImages} where ${shotImages.shotId} = ${shots.id}
+      ), 0)`.mapWith(Number),
       beanId: shots.beanId,
       beanName: beans.name,
       beanRoastLevel: beans.roastLevel,
@@ -216,6 +220,7 @@ export async function GET(request: NextRequest) {
       brewTimeSecs: shots.brewTimeSecs,
       brewTempC: shots.brewTempC,
       preInfusionDuration: shots.preInfusionDuration,
+      preInfusionWaitDuration: shots.preInfusionWaitDuration,
       brewPressure: shots.brewPressure,
       flowRate: shots.flowRate,
       shotQuality: shots.shotQuality,
@@ -264,6 +269,10 @@ export async function GET(request: NextRequest) {
       ...row,
       brewRatio,
       daysPostRoast,
+      shotQuality: row.shotQuality != null ? parseFloat(row.shotQuality) : null,
+      rating: row.rating != null ? parseFloat(row.rating) : null,
+      bitter: row.bitter != null ? parseFloat(row.bitter) : null,
+      sour: row.sour != null ? parseFloat(row.sour) : null,
     };
   });
 
@@ -285,19 +294,17 @@ export async function GET(request: NextRequest) {
       // Rating filter (check if rating falls within any selected range)
       if (ratingMin || ratingMax) {
         if (row.rating === null) return false;
-        const rating = parseFloat(row.rating);
         const min = ratingMin ? parseFloat(ratingMin) - 0.5 : 0;
         const max = ratingMax ? parseFloat(ratingMax) + 0.4 : 10;
-        if (rating < min || rating > max) return false;
+        if (row.rating < min || row.rating > max) return false;
       }
 
       // Shot quality filter (check if quality falls within any selected range)
       if (shotQualityMin || shotQualityMax) {
         if (row.shotQuality === null) return false;
-        const quality = parseFloat(row.shotQuality);
         const min = shotQualityMin ? parseFloat(shotQualityMin) - 0.5 : 0;
         const max = shotQualityMax ? parseFloat(shotQualityMax) + 0.4 : 10;
-        if (quality < min || quality > max) return false;
+        if (row.shotQuality < min || row.shotQuality > max) return false;
       }
 
       // Ratio filter (since brewRatio is computed)
@@ -403,6 +410,9 @@ export async function POST(request: NextRequest) {
         preInfusionDuration: data.preInfusionDuration
           ? String(data.preInfusionDuration)
           : null,
+        preInfusionWaitDuration: data.preInfusionWaitDuration
+          ? String(data.preInfusionWaitDuration)
+          : null,
         brewPressure: data.brewPressure ? String(data.brewPressure) : null,
         flowRate: flowRate ? String(flowRate) : null,
         shotQuality: data.shotQuality != null ? String(data.shotQuality) : null,
@@ -482,6 +492,7 @@ export async function POST(request: NextRequest) {
             brewTimeSecs: shot.brewTimeSecs,
             brewTempC: shot.brewTempC,
             preInfusionDuration: shot.preInfusionDuration,
+            preInfusionWaitDuration: shot.preInfusionWaitDuration,
             brewPressure: shot.brewPressure,
             flowRate: shot.flowRate,
             shotQuality: shot.shotQuality ? parseFloat(shot.shotQuality) : null,

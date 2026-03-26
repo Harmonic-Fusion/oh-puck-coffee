@@ -220,6 +220,8 @@ export function useShotsHistoryController({
       if (shot.brewTempC) params.set("brewTempC", shot.brewTempC);
       if (shot.preInfusionDuration)
         params.set("preInfusionDuration", shot.preInfusionDuration);
+      if (shot.preInfusionWaitDuration)
+        params.set("preInfusionWaitDuration", shot.preInfusionWaitDuration);
       if (shot.brewPressure) params.set("brewPressure", shot.brewPressure);
       if (shot.toolsUsed && shot.toolsUsed.length > 0) {
         params.set("toolsUsed", shot.toolsUsed.join(","));

@@ -22,6 +22,7 @@ interface RecipeValues {
   grindLevel?: number;
   brewTempC?: number;
   preInfusionDuration?: number;
+  preInfusionWaitDuration?: number;
   brewPressure?: number;
 }
 
@@ -38,6 +39,7 @@ function shotToRecipeValues(shot: ShotWithJoins): RecipeValues {
     grindLevel: shot.grindLevel ? parseFloat(shot.grindLevel) : undefined,
     brewTempC: shot.brewTempC ? parseFloat(shot.brewTempC) : undefined,
     preInfusionDuration: shot.preInfusionDuration ? parseFloat(shot.preInfusionDuration) : undefined,
+    preInfusionWaitDuration: shot.preInfusionWaitDuration ? parseFloat(shot.preInfusionWaitDuration) : undefined,
     brewPressure: shot.brewPressure ? parseFloat(shot.brewPressure) : undefined,
   };
 }
@@ -60,6 +62,7 @@ function applyRecipeToForm(
   if (values.grindLevel !== undefined) methods.setValue("grindLevel", values.grindLevel);
   if (values.brewTempC !== undefined) methods.setValue("brewTempC", values.brewTempC);
   if (values.preInfusionDuration !== undefined) methods.setValue("preInfusionDuration", values.preInfusionDuration);
+  if (values.preInfusionWaitDuration !== undefined) methods.setValue("preInfusionWaitDuration", values.preInfusionWaitDuration);
   if (values.brewPressure !== undefined) methods.setValue("brewPressure", values.brewPressure);
 }
 
@@ -107,6 +110,7 @@ function applyUrlParamsToForm(
     "grindLevel",
     "brewTempC",
     "preInfusionDuration",
+    "preInfusionWaitDuration",
     "brewPressure",
   ] as const;
 

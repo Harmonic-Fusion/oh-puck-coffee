@@ -6,7 +6,11 @@ import { ApiRoutes, resolvePath } from "@/app/routes";
 export interface OverviewStats {
   totalShots: number;
   avgQuality: number | null;
+  avgRating: number | null;
   avgBrewRatio: number | null;
+  avgDose: number | null;
+  beansCount: number;
+  currentStreak: number;
   mostUsedBean: { id: string; name: string | null; shotCount: number } | null;
   shotsThisWeek: number;
 }

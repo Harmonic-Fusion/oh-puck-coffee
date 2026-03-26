@@ -19,7 +19,7 @@ import { useState } from "react";
 
 // ── Step configuration ──
 
-type TastingStepId =
+export type TastingStepId =
   | "flavors"
   | "body"
   | "adjectives"
@@ -28,17 +28,17 @@ type TastingStepId =
   | "sour"
   | "notes";
 
-const DEFAULT_TASTING_STEPS: ReorderableStepConfig<TastingStepId>[] = [
-  { id: "bitter", label: "Bitter", visible: false },
-  { id: "sour", label: "Sour", visible: false },
-  { id: "flavors", label: "Flavors", visible: false },
-  { id: "body", label: "Body / Texture", visible: false },
-  { id: "adjectives", label: "Adjectives & Intensifiers", visible: false },
-  { id: "rating", label: "Rating", visible: true, required: true },
-  { id: "notes", label: "Notes", visible: true },
+export const DEFAULT_TASTING_STEPS: ReorderableStepConfig<TastingStepId>[] = [
+  { id: "bitter", label: "Bitter", description: "Bitterness level on a 0–4 scale", visible: false },
+  { id: "sour", label: "Sour", description: "Sourness / acidity level on a 0–4 scale", visible: false },
+  { id: "flavors", label: "Flavors", description: "Specific flavor notes from the flavor wheel", visible: false },
+  { id: "body", label: "Body / Texture", description: "Body and texture of the drink in your mouth.", visible: false },
+  { id: "adjectives", label: "Adjectives & Intensifiers", description: "Descriptive words and intensity qualifiers", visible: false },
+  { id: "rating", label: "Rating", description: "Overall shot rating", visible: true, required: true },
+  { id: "notes", label: "Notes", description: "Free-form notes about the shot", visible: true },
 ];
 
-const REQUIRED_TASTING_FIELDS: TastingStepId[] = getRequiredStepIds(
+export const REQUIRED_TASTING_FIELDS: TastingStepId[] = getRequiredStepIds(
   DEFAULT_TASTING_STEPS,
 );
 
@@ -46,8 +46,8 @@ const REQUIRED_TASTING_FIELDS: TastingStepId[] = getRequiredStepIds(
 
 function interpolateColor(
   value: number,
-  min: number = 1,
-  max: number = 5,
+  min: number = 0,
+  max: number = 4,
   startColor: string,
   endColor: string,
 ): string {
@@ -70,20 +70,26 @@ function interpolateColor(
 }
 
 function getSourColor(value: number): string {
-  return interpolateColor(value, 1, 5, "rgb(156, 163, 175)", "rgb(234, 179, 8)");
+  return interpolateColor(value, 0, 4, "rgb(156, 163, 175)", "rgb(234, 179, 8)");
 }
 
 function getBitterColor(value: number): string {
-  return interpolateColor(value, 1, 5, "rgb(156, 163, 175)", "rgb(69, 26, 3)");
+  return interpolateColor(value, 0, 4, "rgb(156, 163, 175)", "rgb(69, 26, 3)");
 }
 
 // ── SectionTasting Component ──
 
 interface SectionTastingProps {
   showAllInputs?: boolean;
+  onEditInputs?: () => void;
+  steps: ReturnType<typeof useReorderableSteps<TastingStepId>>;
 }
 
-export function SectionTasting({ showAllInputs = false }: SectionTastingProps) {
+export function SectionTasting({
+  showAllInputs = false,
+  onEditInputs,
+  steps,
+}: SectionTastingProps) {
   const {
     register,
     control,
@@ -108,13 +114,6 @@ export function SectionTasting({ showAllInputs = false }: SectionTastingProps) {
   if (adjectives && adjectives.length > 0)
     summaryParts.push(`${adjectives.length} adj`);
   const summaryText = summaryParts.join(" · ");
-
-  const steps = useReorderableSteps({
-    defaultSteps: DEFAULT_TASTING_STEPS,
-    orderKey: "coffee-tasting-order",
-    visibilityKey: "coffee-tasting-visibility",
-    showAllInputs,
-  });
 
   const renderStep = (stepId: TastingStepId) => {
     if (!steps.isStepVisible(stepId)) return null;
@@ -204,22 +203,22 @@ export function SectionTasting({ showAllInputs = false }: SectionTastingProps) {
             render={({ field }) => (
               <Slider
                 label="Bitter"
-                value={field.value || 1}
+                value={field.value ?? 0}
                 onChange={field.onChange}
-                min={1}
-                max={5}
+                min={0}
+                max={4}
                 step={0.5}
                 error={errors.bitter?.message}
                 id="bitter"
                 thumbColor={
-                  field.value ? getBitterColor(field.value) : undefined
+                  field.value != null ? getBitterColor(field.value) : undefined
                 }
                 labels={{
-                  1: "Not bitter",
-                  2: "Slightly bitter",
-                  3: "Moderately bitter",
-                  4: "Very bitter",
-                  5: "Extremely bitter",
+                  0: "Not bitter",
+                  1: "Slightly bitter",
+                  2: "Moderately bitter",
+                  3: "Very bitter",
+                  4: "Extremely bitter",
                 }}
               />
             )}
@@ -235,20 +234,20 @@ export function SectionTasting({ showAllInputs = false }: SectionTastingProps) {
             render={({ field }) => (
               <Slider
                 label="Sour"
-                value={field.value || 1}
+                value={field.value ?? 0}
                 onChange={field.onChange}
-                min={1}
-                max={5}
+                min={0}
+                max={4}
                 step={0.5}
                 error={errors.sour?.message}
                 id="sour"
-                thumbColor={field.value ? getSourColor(field.value) : undefined}
+                thumbColor={field.value != null ? getSourColor(field.value) : undefined}
                 labels={{
-                  1: "Not sour",
-                  2: "Slightly sour",
-                  3: "Moderately sour",
-                  4: "Very sour",
-                  5: "Extremely sour",
+                  0: "Not sour",
+                  1: "Slightly sour",
+                  2: "Moderately sour",
+                  3: "Very sour",
+                  4: "Extremely sour",
                 }}
               />
             )}
@@ -305,25 +304,9 @@ export function SectionTasting({ showAllInputs = false }: SectionTastingProps) {
       showAllInputs={showAllInputs}
       footer={
         <>
-          {!showAllInputs && (
-            <EditInputsButton
-              onClick={() => steps.setShowOrderModal(true)}
-            />
+          {!showAllInputs && onEditInputs && (
+            <EditInputsButton onClick={onEditInputs} />
           )}
-          <EditOrderModal
-            open={steps.showOrderModal}
-            onClose={() => steps.setShowOrderModal(false)}
-            title="Change Tasting Notes Inputs"
-            items={DEFAULT_TASTING_STEPS}
-            order={steps.order}
-            visibility={steps.visibility}
-            defaultOrder={DEFAULT_TASTING_STEPS.map((s) => s.id)}
-            defaultVisibility={steps.defaultVisibility}
-            onChange={steps.handleOrderChange}
-            onSave={() => steps.setIsExpanded(true)}
-            requiredFields={REQUIRED_TASTING_FIELDS}
-            onReset={steps.handleReset}
-          />
         </>
       }
     >

@@ -8,26 +8,29 @@ import { EditOrderModal } from "@/components/common/EditOrderModal";
 import { BrewTimer } from "./BrewTimer";
 import { EditInputsButton } from "./EditInputsButton";
 import { CollapsibleSection } from "./CollapsibleSection";
+import { ShotPhotoUpload, type PendingShotPhoto } from "@/components/shots/ShotPhotoUpload";
 import type { CreateShot } from "@/shared/shots/schema";
 import { getRequiredStepIds, type ReorderableStepConfig } from "../step-config";
 import { useReorderableSteps } from "../hooks/useReorderableSteps";
 
 // ── Step configuration ──
 
-type ResultsStepId =
+export type ResultsStepId =
   | "yieldActual"
   | "brewTime"
   | "estimateMaxPressure"
-  | "shotQuality";
+  | "shotQuality"
+  | "photos";
 
-const DEFAULT_RESULTS_STEPS: ReorderableStepConfig<ResultsStepId>[] = [
-  { id: "brewTime", label: "Brew Time", visible: false },
-  { id: "yieldActual", label: "Actual Yield", visible: false },
-  { id: "estimateMaxPressure", label: "Est. Max Pressure", visible: false },
-  { id: "shotQuality", label: "Shot Quality", visible: false },
+export const DEFAULT_RESULTS_STEPS: ReorderableStepConfig<ResultsStepId>[] = [
+  { id: "brewTime", label: "Brew Time", description: "Extraction duration in seconds", visible: false },
+  { id: "yieldActual", label: "Actual Yield", description: "Actual espresso weight pulled in grams", visible: false },
+  { id: "estimateMaxPressure", label: "Est. Max Pressure", description: "Peak pressure observed during extraction", visible: false },
+  { id: "shotQuality", label: "Shot Quality", description: "Quick pass/fail assessment of the shot", visible: false },
+  { id: "photos", label: "Photos", description: "Attach photos of your shot", visible: false },
 ];
 
-const REQUIRED_RESULTS_FIELDS: ResultsStepId[] = getRequiredStepIds(
+export const REQUIRED_RESULTS_FIELDS: ResultsStepId[] = getRequiredStepIds(
   DEFAULT_RESULTS_STEPS,
 );
 
@@ -37,9 +40,23 @@ const PRESSURE_OPTIONS = [6, 9, 12] as const;
 
 interface SectionBrewingProps {
   showAllInputs?: boolean;
+  onEditInputs?: () => void;
+  steps: ReturnType<typeof useReorderableSteps<ResultsStepId>>;
+  pendingPhotos: PendingShotPhoto[];
+  onPendingPhotosChange: (photos: PendingShotPhoto[]) => void;
+  isUploading?: boolean;
+  disabled?: boolean;
 }
 
-export function SectionBrewing({ showAllInputs = false }: SectionBrewingProps) {
+export function SectionBrewing({
+  showAllInputs = false,
+  onEditInputs,
+  steps,
+  pendingPhotos,
+  onPendingPhotosChange,
+  isUploading,
+  disabled,
+}: SectionBrewingProps) {
   const {
     control,
     watch,
@@ -63,14 +80,11 @@ export function SectionBrewing({ showAllInputs = false }: SectionBrewingProps) {
   if (actualRatio) summaryParts.push(`1:${actualRatio}`);
   if (flowRate) summaryParts.push(`${flowRate} g/s`);
   if (shotQuality) summaryParts.push(`Q${shotQuality}`);
+  if (pendingPhotos.length > 0)
+    summaryParts.push(
+      `${pendingPhotos.length} photo${pendingPhotos.length !== 1 ? "s" : ""}`,
+    );
   const summaryText = summaryParts.join(" · ");
-
-  const steps = useReorderableSteps({
-    defaultSteps: DEFAULT_RESULTS_STEPS,
-    orderKey: "coffee-results-order",
-    visibilityKey: "coffee-results-visibility",
-    showAllInputs,
-  });
 
   const [activePressure, setActivePressure] = useState<number | null>(null);
 
@@ -230,6 +244,16 @@ export function SectionBrewing({ showAllInputs = false }: SectionBrewingProps) {
           />
         );
 
+      case "photos":
+        return (
+          <ShotPhotoUpload
+            key="photos"
+            pendingPhotos={pendingPhotos}
+            onChange={onPendingPhotosChange}
+            disabled={disabled || isUploading}
+          />
+        );
+
       default:
         return null;
     }
@@ -246,25 +270,9 @@ export function SectionBrewing({ showAllInputs = false }: SectionBrewingProps) {
       showAllInputs={showAllInputs}
       footer={
         <>
-          {!showAllInputs && (
-            <EditInputsButton
-              onClick={() => steps.setShowOrderModal(true)}
-            />
+          {!showAllInputs && onEditInputs && (
+            <EditInputsButton onClick={onEditInputs} />
           )}
-          <EditOrderModal
-            open={steps.showOrderModal}
-            onClose={() => steps.setShowOrderModal(false)}
-            title="Change Results Inputs"
-            items={DEFAULT_RESULTS_STEPS}
-            order={steps.order}
-            visibility={steps.visibility}
-            defaultOrder={DEFAULT_RESULTS_STEPS.map((s) => s.id)}
-            defaultVisibility={steps.defaultVisibility}
-            onChange={steps.handleOrderChange}
-            onSave={() => steps.setIsExpanded(true)}
-            requiredFields={REQUIRED_RESULTS_FIELDS}
-            onReset={steps.handleReset}
-          />
         </>
       }
     >

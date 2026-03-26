@@ -82,6 +82,7 @@ export function beanShotToShotsWithJoin(
     brewTimeSecs: shot.brewTimeSecs,
     brewTempC: shot.brewTempC,
     preInfusionDuration: shot.preInfusionDuration,
+    preInfusionWaitDuration: shot.preInfusionWaitDuration,
     brewPressure: shot.brewPressure,
     flowRate: shot.flowRate,
     brewRatio: shot.brewRatio,

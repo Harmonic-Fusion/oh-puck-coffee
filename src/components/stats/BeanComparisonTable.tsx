@@ -31,11 +31,16 @@ export function BeanComparisonTable({ shots }: BeanComparisonTableProps) {
     ([beanId, beanShots]) => {
       const shotCount = beanShots.length;
 
-      const avgQuality = parseFloat(
-        (
-          beanShots.reduce((acc, s) => acc + s.shotQuality, 0) / shotCount
-        ).toFixed(1)
-      );
+      const qualityShots = beanShots.filter((s) => s.shotQuality != null);
+      const avgQuality =
+        qualityShots.length > 0
+          ? parseFloat(
+              (
+                qualityShots.reduce((acc, s) => acc + (s.shotQuality ?? 0), 0) /
+                qualityShots.length
+              ).toFixed(1),
+            )
+          : 0;
 
       const ratios = beanShots
         .map((s) => s.brewRatio)

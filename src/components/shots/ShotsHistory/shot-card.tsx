@@ -10,7 +10,7 @@ import { useShotActions } from "@/components/shots/useShotActions";
 import { AppRoutes, resolvePath } from "@/app/routes";
 import type { ShotShareData } from "@/lib/share-text";
 import { cn } from "@/lib/utils";
-import { BookmarkIcon as BookmarkIconSolid } from "@heroicons/react/24/solid";
+import { BookmarkIcon as BookmarkIconSolid, PhotoIcon } from "@heroicons/react/24/solid";
 
 export interface ShotsHistoryShotCardProps {
   shot: ShotWithJoins;
@@ -183,14 +183,22 @@ export function ShotsHistoryShotCard({
           <p className="text-xs text-stone-400 dark:text-stone-500">{date}</p>
         </div>
         <div className="ml-2 flex shrink-0 items-center gap-1.5">
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
-            {shot.shotQuality}/5
-          </span>
+          {shot.shotQuality != null && (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+              {shot.shotQuality}/5
+            </span>
+          )}
           {shot.rating != null && (
             <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
               {shot.rating}/5
             </span>
           )}
+          {shot.imageCount && shot.imageCount > 0 ? (
+            <span className="flex items-center gap-0.5 rounded-full bg-stone-100 px-2 py-0.5 text-xs font-semibold text-stone-600 dark:bg-stone-800 dark:text-stone-400">
+              <PhotoIcon className="h-3 w-3" />
+              {shot.imageCount}
+            </span>
+          ) : null}
           {isRef && <BookmarkIconSolid className="h-4 w-4 text-amber-500" />}
         </div>
       </div>

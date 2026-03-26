@@ -29,6 +29,7 @@ export async function GET(
       brewTimeSecs: shots.brewTimeSecs,
       brewTempC: shots.brewTempC,
       preInfusionDuration: shots.preInfusionDuration,
+      preInfusionWaitDuration: shots.preInfusionWaitDuration,
       brewPressure: shots.brewPressure,
       estimateMaxPressure: shots.estimateMaxPressure,
       flowControl: shots.flowControl,

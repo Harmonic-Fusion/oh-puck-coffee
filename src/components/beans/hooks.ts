@@ -219,6 +219,7 @@ export interface BeanShotWithUser {
   brewTimeSecs: string | null;
   brewTempC: string | null;
   preInfusionDuration: string | null;
+  preInfusionWaitDuration: string | null;
   brewPressure: string | null;
   flowRate: string | null;
   shotQuality: string | null;
@@ -265,6 +266,7 @@ export interface BeanCompareShot {
   brewTimeSecs: string | null;
   brewTempC: string | null;
   preInfusionDuration: string | null;
+  preInfusionWaitDuration: string | null;
   brewPressure: string | null;
   flowRate: string | null;
   shotQuality: string | null;

@@ -9,8 +9,16 @@ import {
   jsonb,
   primaryKey,
   unique,
+  customType,
 } from "drizzle-orm/pg-core";
 import type { AdapterAccountType } from "next-auth/adapters";
+
+/** PostgreSQL `bytea` — used for inline PNG thumbnails. */
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return "bytea";
+  },
+});
 
 // ============ Auth.js Tables ============
 
@@ -182,6 +190,10 @@ export const shots = pgTable("shots", {
     precision: 5,
     scale: 1,
   }),
+  preInfusionWaitDuration: numeric("pre_infusion_wait_duration", {
+    precision: 5,
+    scale: 1,
+  }),
   brewPressure: numeric("brew_pressure", { precision: 4, scale: 1 }).default(
     "9",
   ),
@@ -214,6 +226,31 @@ export const shots = pgTable("shots", {
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
 });
+
+export const images = pgTable("images", {
+  id: text("id").primaryKey(),
+  url: text("url").notNull(),
+  thumbnail: bytea("thumbnail").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const shotImages = pgTable(
+  "shot_images",
+  {
+    shotId: text("shot_id")
+      .notNull()
+      .references(() => shots.id, { onDelete: "cascade" }),
+    imageId: text("image_id")
+      .notNull()
+      .references(() => images.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.shotId, t.imageId] })],
+);
 
 export const integrations = pgTable("integrations", {
   id: uuid("id").defaultRandom().primaryKey(),

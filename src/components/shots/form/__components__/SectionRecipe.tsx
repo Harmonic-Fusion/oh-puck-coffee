@@ -18,13 +18,7 @@ import { TEMP_UNIT_KEY, fToC, cToF } from "@/lib/format-numbers";
 import { getRequiredStepIds, type ReorderableStepConfig } from "../step-config";
 import { useReorderableSteps } from "../hooks/useReorderableSteps";
 
-const RATIO_OPTIONS = [1, 2, 3, 4] as const;
-const DOSE_OPTIONS = [16, 18, 20, 22] as const;
-const PRESSURE_OPTIONS = [6, 9, 12] as const;
-const SIZE_OPTIONS = [2, 8, 12, 16, 20] as const;
-const DEFAULT_BREW_TEMP_F = 200;
-
-type RecipeStepId =
+export type RecipeStepId =
   | "beans"
   | "previousShot"
   | "dose"
@@ -36,20 +30,27 @@ type RecipeStepId =
   | "preInfusion"
   | "toolsUsed";
 
-const DEFAULT_STEPS: ReorderableStepConfig<RecipeStepId>[] = [
-  { id: "previousShot", label: "Previous Shot", visible: true },
-  { id: "beans", label: "Beans", visible: true, required: true },
-  { id: "grindLevel", label: "Grind Level", visible: false },
-  { id: "dose", label: "Dose", visible: false },
-  { id: "yield", label: "Target Yield", visible: false },
-  { id: "size", label: "Size", visible: false },
-  { id: "brewTemp", label: "Brew Temp", visible: false },
-  { id: "brewPressure", label: "Brew Pressure", visible: false },
-  { id: "preInfusion", label: "Pre-infusion", visible: false },
-  { id: "toolsUsed", label: "Tools Used", visible: false },
+export const DEFAULT_RECIPE_STEPS: ReorderableStepConfig<RecipeStepId>[] = [
+  { id: "previousShot", label: "Previous Shot", description: "Reference your last shot's parameters", visible: true },
+  { id: "beans", label: "Beans", description: "Select the coffee beans used", visible: true, required: true },
+  { id: "grindLevel", label: "Grind Level", description: "Grind setting on your grinder (e.g. 15.5)", visible: false },
+  { id: "dose", label: "Dose", description: "Amount of ground coffee in grams", visible: false },
+  { id: "yield", label: "Target Yield", description: "Target espresso output weight in grams", visible: false },
+  { id: "size", label: "Size", description: "Drink size in ounces (e.g. 2oz espresso)", visible: false },
+  { id: "brewTemp", label: "Brew Temp", description: "Water temperature during extraction", visible: false },
+  { id: "brewPressure", label: "Brew Pressure", description: "Target pump pressure in bars", visible: false },
+  { id: "preInfusion", label: "Pre-infusion", description: "Low-pressure pre-wet before full extraction", visible: false },
+  { id: "toolsUsed", label: "Tools Used", description: "WDT, distributor, tamper, or other tools", visible: false },
 ];
-const REQUIRED_RECIPE_FIELDS: RecipeStepId[] =
-  getRequiredStepIds(DEFAULT_STEPS);
+
+export const REQUIRED_RECIPE_FIELDS: RecipeStepId[] =
+  getRequiredStepIds(DEFAULT_RECIPE_STEPS);
+
+const RATIO_OPTIONS = [1, 2, 3, 4] as const;
+const DOSE_OPTIONS = [16, 18, 20, 22] as const;
+const PRESSURE_OPTIONS = [6, 9, 12] as const;
+const SIZE_OPTIONS = [2, 8, 12, 16, 20] as const;
+const DEFAULT_BREW_TEMP_F = 200;
 
 function getSavedTempUnit(): "C" | "F" {
   if (typeof window === "undefined") return "F";
@@ -66,12 +67,16 @@ interface SectionRecipeProps {
   previousShotId?: string | null;
   onViewShot?: (shot: ShotWithJoins) => void;
   showAllInputs?: boolean;
+  onEditInputs?: () => void;
+  steps: ReturnType<typeof useReorderableSteps<RecipeStepId>>;
 }
 
 export function SectionRecipe({
   previousShotId,
   onViewShot,
   showAllInputs = false,
+  onEditInputs,
+  steps,
 }: SectionRecipeProps) {
   const {
     watch,
@@ -92,13 +97,6 @@ export function SectionRecipe({
   const [activeDose, setActiveDose] = useState<number | null>(null);
   const [activePressure, setActivePressure] = useState<number | null>(9);
   const [activeSize, setActiveSize] = useState<number | null>(null);
-
-  const steps = useReorderableSteps({
-    defaultSteps: DEFAULT_STEPS,
-    orderKey: "coffee-recipe-order",
-    visibilityKey: "coffee-recipe-visibility",
-    showAllInputs,
-  });
 
   const brewTempC = watch("brewTempC");
 
@@ -549,27 +547,48 @@ export function SectionRecipe({
         );
       case "preInfusion":
         return (
-          <Controller
-            key="preInfusion"
-            name="preInfusionDuration"
-            control={control}
-            render={({ field }) => (
-              <NumberStepper
-                label="Pre-infusion"
-                suffix="sec"
-                value={field.value ?? undefined}
-                onChange={(val) =>
-                  setValue("preInfusionDuration", val, { shouldValidate: true })
-                }
-                min={0}
-                max={30}
-                step={0.5}
-                placeholder="—"
-                error={errors.preInfusionDuration?.message}
-                id="preInfusionDuration"
-              />
-            )}
-          />
+          <div key="preInfusion" className="flex flex-col gap-3">
+            <Controller
+              name="preInfusionDuration"
+              control={control}
+              render={({ field }) => (
+                <NumberStepper
+                  label="Pre-infusion start"
+                  suffix="sec"
+                  value={field.value ?? undefined}
+                  onChange={(val) =>
+                    setValue("preInfusionDuration", val, { shouldValidate: true })
+                  }
+                  min={0}
+                  max={30}
+                  step={0.5}
+                  placeholder="—"
+                  error={errors.preInfusionDuration?.message}
+                  id="preInfusionDuration"
+                />
+              )}
+            />
+            <Controller
+              name="preInfusionWaitDuration"
+              control={control}
+              render={({ field }) => (
+                <NumberStepper
+                  label="Pre-infusion wait"
+                  suffix="sec"
+                  value={field.value ?? undefined}
+                  onChange={(val) =>
+                    setValue("preInfusionWaitDuration", val, { shouldValidate: true })
+                  }
+                  min={0}
+                  max={30}
+                  step={0.5}
+                  placeholder="—"
+                  error={errors.preInfusionWaitDuration?.message}
+                  id="preInfusionWaitDuration"
+                />
+              )}
+            />
+          </div>
         );
       case "toolsUsed":
         return (
@@ -601,23 +620,9 @@ export function SectionRecipe({
       showAllInputs={showAllInputs}
       footer={
         <>
-          {!showAllInputs && (
-            <EditInputsButton onClick={() => steps.setShowOrderModal(true)} />
+          {!showAllInputs && onEditInputs && (
+            <EditInputsButton onClick={onEditInputs} />
           )}
-          <EditOrderModal
-            open={steps.showOrderModal}
-            onClose={() => steps.setShowOrderModal(false)}
-            title="Change Recipe Inputs"
-            items={DEFAULT_STEPS}
-            order={steps.order}
-            visibility={steps.visibility}
-            defaultOrder={DEFAULT_STEPS.map((s) => s.id)}
-            defaultVisibility={steps.defaultVisibility}
-            onChange={steps.handleOrderChange}
-            onSave={() => steps.setIsExpanded(true)}
-            requiredFields={REQUIRED_RECIPE_FIELDS}
-            onReset={steps.handleReset}
-          />
         </>
       }
     >

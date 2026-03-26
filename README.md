@@ -107,6 +107,19 @@ LOG_CONFIG=
 # Server-side: LOG_FILTERING_ENABLED
 # Client-side: NEXT_PUBLIC_LOG_FILTERING_ENABLED
 LOG_FILTERING_ENABLED=
+
+
+# Cloudflare R2
+# Make sure to add the R2.dev subdomain to the CORS allowed origins in Cloudflare. You can do this in the Cloudflare dashboard under the "Security" tab.
+# Go to R2 > API Tokens in the dashboard:
+# R2 API Tokens
+# Click Create Token
+# For bucket-specific: Create a custom token with bucket-level permissions
+CLOUDFLARE_R2_ACCOUNT_ID=
+CLOUDFLARE_R2_ACCESS_KEY_ID=
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=
+CLOUDFLARE_R2_BUCKET_NAME=
+CLOUDFLARE_R2_PUBLIC_URL=
 ```
 
 ### Stripe Setup (optional)

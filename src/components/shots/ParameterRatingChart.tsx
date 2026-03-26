@@ -77,9 +77,15 @@ const PARAMETERS: ParameterOption[] = [
   },
   {
     key: "preInfusionDuration",
-    label: "Pre-Infusion",
+    label: "Pre-Infusion Start",
     unit: "s",
     accessor: (s) => parseNum(s.preInfusionDuration),
+  },
+  {
+    key: "preInfusionWaitDuration",
+    label: "Pre-Infusion Wait",
+    unit: "s",
+    accessor: (s) => parseNum(s.preInfusionWaitDuration),
   },
   {
     key: "flowRate",
@@ -347,14 +353,15 @@ const ShotDetailPanel = forwardRef<HTMLDivElement, ShotDetailPanelProps>(
       { label: "Brew Time", value: formatValue(parseNum(shot.brewTimeSecs), "s") },
       { label: "Brew Temp", value: formatValue(parseNum(shot.brewTempC), "°C") },
       { label: "Brew Pressure", value: formatValue(parseNum(shot.brewPressure), "bar") },
-      { label: "Pre-Infusion", value: formatValue(parseNum(shot.preInfusionDuration), "s") },
+      { label: "Pre-Infusion Start", value: formatValue(parseNum(shot.preInfusionDuration), "s") },
+      { label: "Pre-Infusion Wait", value: formatValue(parseNum(shot.preInfusionWaitDuration), "s") },
       { label: "Flow Rate", value: formatValue(parseNum(shot.flowRate), "ml/s") },
       { label: "Brew Ratio", value: shot.brewRatio != null ? `${shot.brewRatio}:1` : "—" },
       { label: "Days Post-Roast", value: shot.daysPostRoast != null ? `${shot.daysPostRoast}d` : "—" },
       { label: "Rating", value: shot.rating != null ? `${shot.rating}/5` : "—" },
       { label: "Shot Quality", value: shot.shotQuality != null ? `${shot.shotQuality}/5` : "—" },
-      { label: "Bitter", value: shot.bitter != null ? `${shot.bitter}/5` : "—" },
-      { label: "Sour", value: shot.sour != null ? `${shot.sour}/5` : "—" },
+      { label: "Bitter", value: shot.bitter != null ? `${shot.bitter}/4` : "—" },
+      { label: "Sour", value: shot.sour != null ? `${shot.sour}/4` : "—" },
     ];
 
     if (shot.notes) {

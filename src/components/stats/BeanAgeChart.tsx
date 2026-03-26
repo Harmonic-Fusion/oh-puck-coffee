@@ -28,7 +28,7 @@ export function BeanAgeChart({ shots }: BeanAgeChartProps) {
   const data = useMemo(() => {
     const points: AgeDataPoint[] = [];
     for (const shot of shots) {
-      if (shot.daysPostRoast !== null && shot.daysPostRoast >= 0) {
+      if (shot.daysPostRoast !== null && shot.daysPostRoast >= 0 && shot.shotQuality != null) {
         points.push({
           daysPostRoast: shot.daysPostRoast,
           quality: shot.shotQuality,

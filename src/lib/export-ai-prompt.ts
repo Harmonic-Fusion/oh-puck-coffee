@@ -23,7 +23,7 @@ export interface ShotForAiExport {
   brewRatio: number | null;
   grinderName: string | null;
   machineName: string | null;
-  shotQuality: number;
+  shotQuality: number | null;
   rating: number | null;
   bitter: number | null;
   sour: number | null;
@@ -36,6 +36,7 @@ export interface ShotForAiExport {
   flowControl: string | null;
   flowRate: string | null;
   preInfusionDuration: string | null;
+  preInfusionWaitDuration: string | null;
   brewPressure: string | null;
   daysPostRoast: number | null;
 }
@@ -60,7 +61,8 @@ function formatShot(shot: ShotForAiExport): string {
     shot.grinderName ? `Grinder: ${shot.grinderName}` : null,
     shot.machineName ? `Machine: ${shot.machineName}` : null,
     shot.brewTempC ? `Temp: ${shot.brewTempC}°C` : null,
-    shot.preInfusionDuration ? `Pre-infusion: ${shot.preInfusionDuration}` : null,
+    shot.preInfusionDuration ? `Pre-infusion start: ${shot.preInfusionDuration}s` : null,
+    shot.preInfusionWaitDuration ? `Pre-infusion wait: ${shot.preInfusionWaitDuration}s` : null,
     shot.brewPressure ? `Pressure: ${shot.brewPressure}` : null,
     shot.flowControl ? `Flow control: ${shot.flowControl}` : null,
     shot.flowRate ? `Flow rate: ${shot.flowRate}` : null,

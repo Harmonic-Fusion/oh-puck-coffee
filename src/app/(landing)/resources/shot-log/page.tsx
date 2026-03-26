@@ -510,7 +510,7 @@ export default function ShotLogResourcePage() {
                     <HiddenFieldLink />
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    Rate the bitterness of the shot on a 1–5 scale. The slider uses a colored dot that transitions from neutral gray (1) to dark brown (5), providing visual feedback that matches the taste characteristic. Use this to track bitterness levels across different shots and recipes.
+                    Rate the bitterness of the shot on a 0–4 scale. The slider uses a colored dot that transitions from neutral gray (0) to dark brown (4), providing visual feedback that matches the taste characteristic. Use this to track bitterness levels across different shots and recipes.
                   </p>
                 </div>
                 <div>
@@ -519,7 +519,7 @@ export default function ShotLogResourcePage() {
                     <HiddenFieldLink />
                   </h3>
                   <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    Rate the sourness (acidity) of the shot on a 1–5 scale. The slider uses a colored dot that transitions from neutral gray (1) to bright yellow (5), providing visual feedback that matches the taste characteristic. Use this to track acidity levels and understand how different recipes affect sourness.
+                    Rate the sourness (acidity) of the shot on a 0–4 scale. The slider uses a colored dot that transitions from neutral gray (0) to bright yellow (4), providing visual feedback that matches the taste characteristic. Use this to track acidity levels and understand how different recipes affect sourness.
                   </p>
                 </div>
                 <div>

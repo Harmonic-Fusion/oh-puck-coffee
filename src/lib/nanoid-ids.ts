@@ -42,3 +42,7 @@ export function createGrinderId(): string {
 export function createFeedbackId(): string {
   return prefixedId("fbk_");
 }
+
+export function createImageId(): string {
+  return prefixedId("img_");
+}

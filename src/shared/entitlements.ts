@@ -6,6 +6,8 @@ export const Entitlements = {
   NO_SHOT_VIEW_LIMIT: "no-shot-view-limit",
   STATS_VIEW: "stats-view",
   BEAN_SHARE: "bean-share",
+  /** Higher / unlimited photo limits vs free tier caps. */
+  PHOTO_UPLOADS: "photo-uploads",
 } as const;
 
 export type EntitlementKey = (typeof Entitlements)[keyof typeof Entitlements];

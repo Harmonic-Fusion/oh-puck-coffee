@@ -130,6 +130,50 @@ function readDatabaseUrl(): string | undefined {
   return databaseUrl;
 }
 
+function trimEnv(value: string | undefined): string | undefined {
+  const t = value?.trim();
+  return t === "" ? undefined : t;
+}
+
+/**
+ * Public base URL for R2 objects. Uses `CLOUDFLARE_R2_PUBLIC_URL` when set; otherwise
+ * `https://{accountId}.r2.cloudflarestorage.com/{bucket}` when account and bucket exist.
+ */
+function resolveCloudflareR2PublicUrl(
+  explicit: string | undefined,
+  accountId: string | undefined,
+  bucketName: string | undefined,
+): string | undefined {
+  const explicitUrl = trimEnv(explicit);
+  if (explicitUrl) {
+    return explicitUrl.replace(/\/+$/, "");
+  }
+  if (accountId && bucketName) {
+    return `https://${accountId}.r2.cloudflarestorage.com/${bucketName}`;
+  }
+  return undefined;
+}
+
+const cloudflareR2AccountId = trimEnv(process.env.CLOUDFLARE_R2_ACCOUNT_ID);
+const cloudflareR2AccessKeyId = trimEnv(process.env.CLOUDFLARE_R2_ACCESS_KEY_ID);
+const cloudflareR2SecretAccessKey = trimEnv(
+  process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+);
+const cloudflareR2BucketName = trimEnv(process.env.CLOUDFLARE_R2_BUCKET_NAME);
+const cloudflareR2PublicUrl = resolveCloudflareR2PublicUrl(
+  process.env.CLOUDFLARE_R2_PUBLIC_URL,
+  cloudflareR2AccountId,
+  cloudflareR2BucketName,
+);
+
+/** True when all credentials required for S3 API upload/delete are present. */
+const cloudflareR2UploadReady = Boolean(
+  cloudflareR2AccountId &&
+    cloudflareR2AccessKeyId &&
+    cloudflareR2SecretAccessKey &&
+    cloudflareR2BucketName,
+);
+
 export const config = {
   /** Database connection string */
   databaseUrl: readDatabaseUrl(),
@@ -252,4 +296,41 @@ export const config = {
    * Defaults to 10.
    */
   maxBeanShares: parseInt(process.env.MAX_BEAN_SHARES ?? "10", 10),
+
+  /**
+   * Cloudflare R2 (S3-compatible) for user-uploaded images.
+   * Optional until image upload is configured in an environment.
+   */
+  cloudflareR2AccountId,
+  cloudflareR2AccessKeyId,
+  cloudflareR2SecretAccessKey,
+  cloudflareR2BucketName,
+  /**
+   * Public URL prefix for objects. Set `CLOUDFLARE_R2_PUBLIC_URL`, or omit it to default to
+   * `https://{accountId}.r2.cloudflarestorage.com/{bucket}` when account and bucket are set.
+   */
+  cloudflareR2PublicUrl,
+  /**
+   * Use before upload/delete API calls. False when any required credential is missing (e.g. empty
+   * secret); `cloudflareR2PublicUrl` may still be set for read-only URL display when account +
+   * bucket are known.
+   */
+  cloudflareR2UploadReady,
+
+  /**
+   * Max photos per shot on the free tier (raised for `photo-uploads` entitlement in API logic).
+   * Defaults to 3.
+   */
+  maxPhotosPerShot: parseInt(
+    process.env.FEATURE_MAX_PHOTOS_PER_SHOT ?? "3",
+    10,
+  ),
+
+  /**
+   * Max total bytes of image storage per user on the free tier (50 MB default).
+   */
+  maxImageStorageBytes: parseInt(
+    process.env.FEATURE_MAX_IMAGE_STORAGE_BYTES ?? "52428800",
+    10,
+  ),
 } as const;

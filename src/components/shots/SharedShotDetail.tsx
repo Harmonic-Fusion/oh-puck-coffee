@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { ShotDetail } from "@/components/shots/ShotDetail";
-import type { ShotWithJoins } from "@/components/shots/hooks";
+import type { ShotImageListItem, ShotWithJoins } from "@/components/shots/hooks";
 
 interface SharedShotData {
   id: string;
@@ -20,6 +20,7 @@ interface SharedShotData {
   brewTimeSecs: string | null;
   brewTempC: string | null;
   preInfusionDuration: string | null;
+  preInfusionWaitDuration: string | null;
   brewPressure: string | null;
   estimateMaxPressure: string | null;
   flowControl: string | null;
@@ -41,9 +42,10 @@ interface SharedShotData {
 
 interface SharedShotDetailProps {
   shot: SharedShotData;
+  shotImages?: ShotImageListItem[];
 }
 
-export function SharedShotDetail({ shot }: SharedShotDetailProps) {
+export function SharedShotDetail({ shot, shotImages }: SharedShotDetailProps) {
   // Transform server data to ShotWithJoins format
   const shotWithJoins: ShotWithJoins = useMemo(() => ({
     id: shot.id,
@@ -65,6 +67,7 @@ export function SharedShotDetail({ shot }: SharedShotDetailProps) {
     brewTimeSecs: shot.brewTimeSecs,
     brewTempC: shot.brewTempC,
     preInfusionDuration: shot.preInfusionDuration,
+    preInfusionWaitDuration: shot.preInfusionWaitDuration,
     brewPressure: shot.brewPressure,
     brewRatio: shot.brewRatio,
     estimateMaxPressure: shot.estimateMaxPressure,
@@ -92,6 +95,7 @@ export function SharedShotDetail({ shot }: SharedShotDetailProps) {
       open={true}
       onClose={() => {}} // No-op for share page
       readOnly={true}
+      prefetchedShotImages={shotImages}
     />
   );
 }

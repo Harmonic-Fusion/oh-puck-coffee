@@ -137,8 +137,8 @@ export function getAdjectiveColor(adjective: string): string {
  */
 function interpolateColor(
   value: number,
-  min: number = 1,
-  max: number = 5,
+  min: number = 0,
+  max: number = 4,
   startColor: string,
   endColor: string,
 ): string {
@@ -160,7 +160,7 @@ function interpolateColor(
  * Get color for bitter scale (neutral gray → dark brown)
  */
 export function getBitterColor(value: number): string {
-  return interpolateColor(value, 1, 5, "rgb(156, 163, 175)", "rgb(69, 26, 3)");
+  return interpolateColor(value, 0, 4, "rgb(156, 163, 175)", "rgb(69, 26, 3)");
 }
 
 /**
@@ -169,8 +169,8 @@ export function getBitterColor(value: number): string {
 export function getSourColor(value: number): string {
   return interpolateColor(
     value,
-    1,
-    5,
+    0,
+    4,
     "rgb(156, 163, 175)",
     "rgb(234, 179, 8)",
   );

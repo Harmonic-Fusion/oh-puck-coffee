@@ -117,6 +117,13 @@ export const ApiRoutes = routesBuilder({
     machines: "/machines",
     tools: "/tools",
   },
+  // Images (generic uploads; attach to shots via shot routes)
+  images: {
+    path: "/api/images",
+    imageId: {
+      path: "/:id",
+    },
+  },
   // Shots
   shots: {
     path: "/api/shots",
@@ -125,6 +132,12 @@ export const ApiRoutes = routesBuilder({
       path: "/:id",
       reference: "/reference",
       hidden: "/hide",
+      images: {
+        path: "/images",
+        imageId: {
+          path: "/:imageId",
+        },
+      },
     },
   },
   // Stats

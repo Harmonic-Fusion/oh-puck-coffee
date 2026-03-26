@@ -1,6 +1,7 @@
 export interface ReorderableStepConfig<TId extends string> {
   id: TId;
   label: string;
+  description?: string;
   visible: boolean;
   required?: true;
 }

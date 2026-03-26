@@ -40,6 +40,7 @@ interface ShotDetail {
   grindLevel: string | null;
   brewTempC: string | null;
   preInfusionDuration: string | null;
+  preInfusionWaitDuration: string | null;
   brewPressure: string | null;
   brewTimeSecs: string | null;
   estimateMaxPressure: string | null;
@@ -154,7 +155,8 @@ export default function AdminShotDetailPage({
             <InfoRow label="Target Yield" value={data.yieldGrams ? `${data.yieldGrams}g` : null} />
             <InfoRow label="Grind Level" value={data.grindLevel} />
             <InfoRow label="Brew Temp" value={data.brewTempC ? `${data.brewTempC}°C` : null} />
-            <InfoRow label="Pre-infusion" value={data.preInfusionDuration ? `${data.preInfusionDuration}s` : null} />
+            <InfoRow label="Pre-infusion start" value={data.preInfusionDuration ? `${data.preInfusionDuration}s` : null} />
+            <InfoRow label="Pre-infusion wait" value={data.preInfusionWaitDuration ? `${data.preInfusionWaitDuration}s` : null} />
             <InfoRow label="Brew Pressure" value={data.brewPressure ? `${data.brewPressure} bar` : null} />
           </div>
 

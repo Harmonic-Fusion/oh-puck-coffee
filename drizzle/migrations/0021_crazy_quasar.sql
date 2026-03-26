@@ -1,0 +1,1 @@
+ALTER TABLE "shots" ADD COLUMN IF NOT EXISTS "pre_infusion_wait_duration" numeric(5, 1);

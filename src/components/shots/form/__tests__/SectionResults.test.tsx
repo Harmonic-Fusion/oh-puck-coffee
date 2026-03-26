@@ -2,12 +2,13 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FormProvider, useForm } from "react-hook-form";
-import { SectionBrewing } from "../__components__/SectionBrewing";
-import { SectionTasting } from "../__components__/SectionTasting";
+import { useEffect, type ReactNode } from "react";
+import { SectionBrewing, DEFAULT_RESULTS_STEPS } from "../__components__/SectionBrewing";
+import { SectionTasting, DEFAULT_TASTING_STEPS } from "../__components__/SectionTasting";
 import type { CreateShot } from "@/shared/shots/schema";
-import React from "react";
+import { useReorderableSteps } from "../hooks/useReorderableSteps";
 
-function TestWrapper({ children }: { children: React.ReactNode }) {
+function TestWrapper({ children }: { children: ReactNode }) {
   const methods = useForm<CreateShot>({
     defaultValues: {
       beanId: "",
@@ -20,11 +21,35 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
   return <FormProvider {...methods}>{children}</FormProvider>;
 }
 
+function BrewingWrapper() {
+  const steps = useReorderableSteps({
+    defaultSteps: DEFAULT_RESULTS_STEPS,
+    orderKey: "coffee-results-order",
+    visibilityKey: "coffee-results-visibility",
+  });
+  return (
+    <SectionBrewing
+      steps={steps}
+      pendingPhotos={[]}
+      onPendingPhotosChange={() => {}}
+    />
+  );
+}
+
+function TastingWrapper() {
+  const steps = useReorderableSteps({
+    defaultSteps: DEFAULT_TASTING_STEPS,
+    orderKey: "coffee-tasting-order",
+    visibilityKey: "coffee-tasting-visibility",
+  });
+  return <SectionTasting steps={steps} />;
+}
+
 describe("SectionBrewing", () => {
   it("renders section title", () => {
     render(
       <TestWrapper>
-        <SectionBrewing />
+        <BrewingWrapper />
       </TestWrapper>
     );
     expect(screen.getByText("Brewing")).toBeInTheDocument();
@@ -41,7 +66,7 @@ describe("SectionBrewing", () => {
 
     render(
       <TestWrapper>
-        <SectionBrewing />
+        <BrewingWrapper />
       </TestWrapper>
     );
     expect(screen.getByText("Shot Quality")).toBeInTheDocument();
@@ -52,7 +77,7 @@ describe("SectionTasting", () => {
   it("renders section title", () => {
     render(
       <TestWrapper>
-        <SectionTasting />
+        <TastingWrapper />
       </TestWrapper>
     );
     expect(screen.getByText("Tasting Notes")).toBeInTheDocument();
@@ -61,7 +86,7 @@ describe("SectionTasting", () => {
   it("renders Notes textarea", () => {
     render(
       <TestWrapper>
-        <SectionTasting />
+        <TastingWrapper />
       </TestWrapper>
     );
     expect(screen.getByLabelText("Notes")).toBeInTheDocument();
@@ -71,7 +96,7 @@ describe("SectionTasting", () => {
     const user = userEvent.setup();
     render(
       <TestWrapper>
-        <SectionTasting />
+        <TastingWrapper />
       </TestWrapper>
     );
 
@@ -84,7 +109,7 @@ describe("SectionTasting", () => {
   });
 
   it("displays error message for notes field", () => {
-    function TestWrapperWithError({ children }: { children: React.ReactNode }) {
+    function TestWrapperWithError({ children }: { children: ReactNode }) {
       const methods = useForm<CreateShot>({
         defaultValues: {
           beanId: "",
@@ -94,7 +119,7 @@ describe("SectionTasting", () => {
         },
       });
 
-      React.useEffect(() => {
+      useEffect(() => {
         methods.setError("notes", { message: "Notes are required" });
         // eslint-disable-next-line react-hooks/exhaustive-deps
       }, []);
@@ -104,7 +129,7 @@ describe("SectionTasting", () => {
 
     render(
       <TestWrapperWithError>
-        <SectionTasting />
+        <TastingWrapper />
       </TestWrapperWithError>
     );
 
@@ -114,7 +139,7 @@ describe("SectionTasting", () => {
   it("has correct placeholder for Notes", () => {
     render(
       <TestWrapper>
-        <SectionTasting />
+        <TastingWrapper />
       </TestWrapper>
     );
     expect(
@@ -125,7 +150,7 @@ describe("SectionTasting", () => {
   it("Notes textarea has rows attribute set to 4", () => {
     render(
       <TestWrapper>
-        <SectionTasting />
+        <TastingWrapper />
       </TestWrapper>
     );
     const notesTextarea = screen.getByLabelText("Notes");

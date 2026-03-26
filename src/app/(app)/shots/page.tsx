@@ -1,15 +1,25 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useShots } from "@/components/shots/hooks";
+import { useBeans } from "@/components/beans/hooks";
 import { AppRoutes, ApiRoutes } from "@/app/routes";
 import { PlusCircleIcon } from "@heroicons/react/24/outline";
 import { ShotsListView } from "@/components/shots/ShotsListView";
+import { useFilterParams } from "@/lib/use-filter-params";
 
-export default function ShotsPage() {
-  const { data: shots, isLoading } = useShots();
+function ShotsPageContent() {
+  const filterParams = useFilterParams();
+  const { dateFrom, dateTo, beanIds } = filterParams;
+
+  const { data: shots, isLoading } = useShots({
+    dateFrom,
+    dateTo,
+    beanIds: beanIds.length > 0 ? beanIds : undefined,
+  });
+  const { data: beans = [] } = useBeans();
   const data = useMemo(() => shots ?? [], [shots]);
 
   const { data: shotCountData } = useQuery<{ total: number; limit: number | null }>({
@@ -39,7 +49,7 @@ export default function ShotsPage() {
     );
   }
 
-  if (data.length === 0) {
+  if (data.length === 0 && !filterParams.hasActiveFilters) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <span className="text-4xl">☕</span>
@@ -60,5 +70,20 @@ export default function ShotsPage() {
     );
   }
 
-  return <ShotsListView shots={data} shotCount={shotCountData} />;
+  return (
+    <ShotsListView
+      shots={data}
+      shotCount={shotCountData}
+      filterParams={filterParams}
+      beans={beans}
+    />
+  );
+}
+
+export default function ShotsPage() {
+  return (
+    <Suspense>
+      <ShotsPageContent />
+    </Suspense>
+  );
 }

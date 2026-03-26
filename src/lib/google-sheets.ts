@@ -81,7 +81,8 @@ const HEADER_ROW = [
   "Grind Level",
   "Brew Time (s)",
   "Brew Temp (°C)",
-  "Pre-infusion (s)",
+  "Pre-infusion start (s)",
+  "Pre-infusion wait (s)",
   "Brew Pressure (bar)",
   "Flow Rate (g/s)",
   "Shot Quality",
@@ -157,6 +158,7 @@ export async function appendShotRow(
     brewTimeSecs?: string | null;
     brewTempC?: string | null;
     preInfusionDuration?: string | null;
+    preInfusionWaitDuration?: string | null;
     brewPressure?: string | null;
     flowRate?: string | null;
     shotQuality: number | null;
@@ -194,6 +196,7 @@ export async function appendShotRow(
     shot.brewTimeSecs ?? "",
     shot.brewTempC ?? "",
     shot.preInfusionDuration ?? "",
+    shot.preInfusionWaitDuration ?? "",
     shot.brewPressure ?? "",
     shot.flowRate ?? "",
     shot.shotQuality ?? "",

@@ -12,6 +12,7 @@ vi.mock("@/components/shots/hooks", () => ({
   useShot: () => ({ data: undefined, isLoading: false, isError: false, refetch: vi.fn() }),
   useCreateShareLink: () => ({ mutate: vi.fn(), isPending: false }),
   useShotMetrics: () => ({ data: undefined }),
+  useShotImages: () => ({ data: { images: [] }, isLoading: false }),
 }));
 
 // Mock QRCode component to avoid canvas issues in tests
@@ -36,6 +37,7 @@ const mockShot: ShotWithJoins = {
   brewTimeSecs: "30",
   brewTempC: "93",
   preInfusionDuration: "5",
+  preInfusionWaitDuration: null,
   brewPressure: "9",
   estimateMaxPressure: null,
   flowControl: null,
