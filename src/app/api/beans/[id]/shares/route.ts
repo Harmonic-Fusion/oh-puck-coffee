@@ -139,7 +139,7 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  if (!hasEntitlement(session.user.entitlements, Entitlements.BEAN_SHARE)) {
+  if (!hasEntitlement(session.user.entitlements, Entitlements.BEANS_SHARE)) {
     return NextResponse.json(
       {
         error: "Upgrade required to share with others",
@@ -169,7 +169,7 @@ export async function POST(
 
   if (
     reshareAllowed &&
-    !hasEntitlement(session.user.entitlements, Entitlements.BEAN_SHARE)
+    !hasEntitlement(session.user.entitlements, Entitlements.BEANS_SHARE)
   ) {
     return NextResponse.json(
       {

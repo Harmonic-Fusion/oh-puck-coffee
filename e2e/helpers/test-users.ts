@@ -93,7 +93,7 @@ export const ALICE: TestUserDef = {
   name: "Alice",
   email: "alice@e2e.local",
   role: "member",
-  entitlements: [Entitlements.BEAN_SHARE],
+  entitlements: [Entitlements.BEANS_SHARE],
 };
 
 /** Predefined Bob: receiver, has bean-share. */
@@ -102,7 +102,7 @@ export const BOB: TestUserDef = {
   name: "Bob",
   email: "bob@e2e.local",
   role: "member",
-  entitlements: [Entitlements.BEAN_SHARE],
+  entitlements: [Entitlements.BEANS_SHARE],
 };
 
 /** Predefined Carol: visitor, no entitlements. */

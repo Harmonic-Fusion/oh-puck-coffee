@@ -57,7 +57,7 @@ const ALL_ENTITLEMENT_KEYS = Object.values(
 const FEATURE_LABELS: Record<EntitlementKey, string> = {
   [Entitlements.NO_SHOT_VIEW_LIMIT]: "No shot view limit",
   [Entitlements.STATS_VIEW]: "Stats view",
-  [Entitlements.BEAN_SHARE]: "Bean share",
+  [Entitlements.BEANS_SHARE]: "Bean share",
   [Entitlements.PHOTO_UPLOADS]: "Photo uploads",
 };
 
@@ -67,7 +67,7 @@ const FEATURE_DESCRIPTIONS: Record<string, string> = {
     "Access your complete shot history with no cap on older entries",
   [Entitlements.STATS_VIEW]:
     "Detailed analytics, trends, and insights across all your shots",
-  [Entitlements.BEAN_SHARE]:
+  [Entitlements.BEANS_SHARE]:
     "Share beans with others and allow them to reshare",
   [Entitlements.PHOTO_UPLOADS]:
     "Higher limits for attaching photos to shots and storing image data",

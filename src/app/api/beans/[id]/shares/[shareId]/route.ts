@@ -79,7 +79,7 @@ export async function PATCH(
 
   if (
     reshareAllowed === true &&
-    !hasEntitlement(session.user.entitlements, Entitlements.BEAN_SHARE)
+    !hasEntitlement(session.user.entitlements, Entitlements.BEANS_SHARE)
   ) {
     return NextResponse.json(
       {

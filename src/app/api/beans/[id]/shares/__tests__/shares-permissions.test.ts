@@ -101,7 +101,7 @@ import { POST as acceptShare } from "@/app/api/beans/[id]/shares/[shareId]/accep
 import { POST as addToCollection } from "@/app/api/beans/[id]/add-to-collection/route";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function makeSession(userId: string, entitlements: string[] = [Entitlements.BEAN_SHARE]) {
+function makeSession(userId: string, entitlements: string[] = [Entitlements.BEANS_SHARE]) {
   return { user: { id: userId, role: "member" as const, entitlements } };
 }
 
@@ -331,7 +331,7 @@ describe("Bean sharing API", () => {
       });
 
       it("returns 403 when at max bean shares limit (direct invites)", async () => {
-        mock.session = makeSession(ALICE_ID, [Entitlements.BEAN_SHARE]);
+        mock.session = makeSession(ALICE_ID, [Entitlements.BEANS_SHARE]);
         mock.canAccessBeanResult = makeAccessAllowed(ALICE_ID, true);
         const tenShares = Array.from({ length: 10 }, (_, i) => ({
           id: `share-${i}`,
