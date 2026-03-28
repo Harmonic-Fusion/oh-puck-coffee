@@ -5,7 +5,12 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
 import { AppRoutes, ApiRoutes } from "@/app/routes";
-import { Entitlements, FreeEntitlementDefaults } from "@/shared/entitlements";
+import {
+  ALL_ENTITLEMENT_KEYS,
+  Entitlements,
+  FreeEntitlementDefaults,
+  getEntitlementDef,
+} from "@/shared/entitlements";
 import type { EntitlementKey } from "@/shared/entitlements";
 import { Card } from "@/components/common/Card";
 
@@ -47,31 +52,6 @@ interface PlansResponse {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
-
-/** Full list of entitlement keys for comparison table (order stable). */
-const ALL_ENTITLEMENT_KEYS = Object.values(
-  Entitlements,
-) as EntitlementKey[];
-
-/** Row labels for each entitlement on the billing page. */
-const FEATURE_LABELS: Record<EntitlementKey, string> = {
-  [Entitlements.NO_SHOT_VIEW_LIMIT]: "No shot view limit",
-  [Entitlements.STATS_VIEW]: "Stats view",
-  [Entitlements.BEANS_SHARE]: "Bean share",
-  [Entitlements.PHOTO_UPLOADS]: "Photo uploads",
-};
-
-/** Descriptions for feature tooltips on the billing page. */
-const FEATURE_DESCRIPTIONS: Record<string, string> = {
-  [Entitlements.NO_SHOT_VIEW_LIMIT]:
-    "Access your complete shot history with no cap on older entries",
-  [Entitlements.STATS_VIEW]:
-    "Detailed analytics, trends, and insights across all your shots",
-  [Entitlements.BEANS_SHARE]:
-    "Share beans with others and allow them to reshare",
-  [Entitlements.PHOTO_UPLOADS]:
-    "Higher limits for attaching photos to shots and storing image data",
-};
 
 function statusLabel(status: Subscription["status"]): string {
   switch (status) {
@@ -410,8 +390,7 @@ function PlanComparisonTable({
           </tr>
           {entitlementKeys.map((key) => {
             const freeIncluded = FreeEntitlementDefaults.includes(key);
-            const label = FEATURE_LABELS[key];
-            const description = FEATURE_DESCRIPTIONS[key];
+            const { label, description } = getEntitlementDef(key);
             return (
               <tr
                 key={key}
