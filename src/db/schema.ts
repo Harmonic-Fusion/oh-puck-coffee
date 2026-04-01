@@ -144,6 +144,7 @@ export const beansShare = pgTable(
     // Owner-granted permission: can this member invite others?
     reshareAllowed: boolean("reshare_allowed").default(false).notNull(),
     beansOpenDate: timestamp("beans_open_date", { mode: "date" }),
+    chatId: text("chat_id"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   },
