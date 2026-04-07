@@ -1,5 +1,6 @@
 import type { Provider } from "next-auth/providers";
 import NextAuth, { type Session } from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { eq } from "drizzle-orm";
@@ -51,6 +52,19 @@ function buildProviders(): Provider[] {
     authLogger.warn(
       "GOOGLE_CLIENT_ID and/or GOOGLE_CLIENT_SECRET are not set. " +
         "Google OAuth will be unavailable.",
+    );
+    // Auth.js requires at least one provider. This credentials provider never
+    // authenticates (authorize always returns null); it only satisfies the
+    // config when OAuth env vars are missing (e.g. fresh clone before .env setup).
+    providers.push(
+      Credentials({
+        id: "oauth-not-configured",
+        name: "OAuth not configured",
+        credentials: {},
+        authorize() {
+          return null;
+        },
+      }),
     );
   }
 
@@ -339,6 +353,63 @@ async function ensureDevUser(): Promise<void> {
 }
 
 /**
+ * JWT sessions can outlive the database (e.g. after `docker compose down -v`).
+ * Foreign keys require a `users` row — recreate it from session claims when missing.
+ */
+async function ensureSessionUserRow(session: Session): Promise<Session | null> {
+  const userId = session.user?.id;
+  if (!userId) {
+    return session;
+  }
+
+  const [existing] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (existing) {
+    return session;
+  }
+
+  const email = session.user.email?.trim() || null;
+  const name = session.user.name ?? null;
+  const image = session.user.image ?? null;
+
+  try {
+    await db.insert(users).values({
+      id: userId,
+      email,
+      name,
+      image,
+      role: (session.user.role as "member" | "admin" | "super-admin") ?? "member",
+    });
+    if (config.enableDebugging) {
+      authLogger.info("Restored users row from JWT after missing in DB", {
+        userId,
+        email: email ?? undefined,
+      });
+    }
+  } catch {
+    const [afterRace] = await db
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    if (afterRace) {
+      return session;
+    }
+    authLogger.warn(
+      "Session user id not in database and could not insert users row; sign in again",
+      { userId, hasEmail: !!email },
+    );
+    return null;
+  }
+
+  return session;
+}
+
+/**
  * Returns the current session.
  * Use this instead of `auth()` in API routes.
  *
@@ -366,16 +437,21 @@ export async function getSession(): Promise<Session | null> {
 
   try {
     const session = await auth();
-    if (session) {
+    if (session?.user) {
+      const ensured = await ensureSessionUserRow(session);
+      if (!ensured) {
+        return null;
+      }
       if (config.enableDebugging) {
         authLogger.debug("Session retrieved successfully", {
-          userId: session.user?.id,
-          email: session.user?.email,
-          expires: session.expires,
+          userId: ensured.user?.id,
+          email: ensured.user?.email,
+          expires: ensured.expires,
         });
       }
-      return session;
+      return ensured;
     }
+    return session;
   } catch (error) {
     if (config.enableDebugging) {
       authLogger.error("Error retrieving session:", {

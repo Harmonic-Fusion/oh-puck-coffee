@@ -84,6 +84,50 @@ export const verificationTokens = pgTable(
   ],
 );
 
+// ============ AI (chats + metered suggestions + memory) ============
+
+export const chats = pgTable("chats", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  title: text("title"),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const chatMessages = pgTable("chat_messages", {
+  id: text("id").primaryKey(),
+  chatId: text("chat_id")
+    .notNull()
+    .references(() => chats.id, { onDelete: "cascade" }),
+  messageIndex: integer("index").notNull(),
+  role: text("role")
+    .$type<"system" | "developer" | "user" | "assistant">()
+    .notNull(),
+  content: text("content").notNull(),
+  modelIdentifier: text("model_identifier"),
+  tokenCount: integer("token_count"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+export const aiUserMemory = pgTable(
+  "ai_user_memory",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    modelIdentifier: text("model_identifier"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [unique("ai_user_memory_user_id_key").on(t.userId)],
+);
+
 // ============ Domain Tables ============
 
 export const origins = pgTable("origins", {
@@ -118,6 +162,21 @@ export const beans = pgTable("beans", {
   updatedBy: text("updated_by").references(() => users.id, { onDelete: "set null" }),
 });
 
+export const aiBeansMemory = pgTable(
+  "ai_beans_memory",
+  {
+    id: text("id").primaryKey(),
+    beanId: text("bean_id")
+      .notNull()
+      .references(() => beans.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    modelIdentifier: text("model_identifier"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [unique("ai_beans_memory_bean_id_key").on(t.beanId)],
+);
+
 export const beansShare = pgTable(
   "beans_share",
   {
@@ -144,6 +203,9 @@ export const beansShare = pgTable(
     // Owner-granted permission: can this member invite others?
     reshareAllowed: boolean("reshare_allowed").default(false).notNull(),
     beansOpenDate: timestamp("beans_open_date", { mode: "date" }),
+    chatId: text("chat_id").references(() => chats.id, {
+      onDelete: "set null",
+    }),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
   },

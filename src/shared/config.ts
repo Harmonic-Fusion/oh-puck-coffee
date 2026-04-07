@@ -333,4 +333,29 @@ export const config = {
     process.env.FEATURE_MAX_IMAGE_STORAGE_BYTES ?? "52428800",
     10,
   ),
+
+  /** OpenAI API key for AI shot suggestions and background memory (server-only). */
+  openaiApiKey: trimEnv(process.env.OPENAI_API_KEY),
+
+  /**
+   * Base URL for an OpenAI-compatible HTTP API. Omit to use the SDK default
+   * (`https://api.openai.com/v1`). Set to use another host (OpenRouter, LiteLLM,
+   * Azure OpenAI deployment URL, local OpenAI-compatible servers, etc.).
+   */
+  openaiBaseUrl: trimEnv(process.env.OPENAI_BASE_URL),
+
+  /**
+   * Optional OpenAI organization id (`org_...`) for accounts with multiple organizations.
+   */
+  openaiOrganization: trimEnv(process.env.OPENAI_ORGANIZATION),
+
+  /**
+   * Chat model id for AI shot suggestions (OpenAI-compatible id, e.g. `gpt-4o`).
+   */
+  openaiModel: trimEnv(process.env.OPENAI_MODEL) ?? "gpt-4o",
+
+  /**
+   * Bearer secret for `POST /api/ai-memory/refresh` (cron / workers). Omit to disable that route.
+   */
+  aiMemoryRefreshSecret: trimEnv(process.env.AI_MEMORY_REFRESH_SECRET),
 } as const;

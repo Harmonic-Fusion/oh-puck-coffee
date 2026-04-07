@@ -39,6 +39,7 @@ import {
 import type { SlotConfig } from "./__components__/ComparisonMatrix";
 import { BeanShotsSection } from "./__components__/BeanShotsSection";
 import { DuplicateBeanModal } from "./__components__/DuplicateBeanModal";
+import { AiShotSuggestion } from "@/components/ai-suggestions/AiShotSuggestion";
 
 // ── Page ──────────────────────────────────────────────────────────────
 
@@ -380,6 +381,8 @@ export default function BeanDetailPage() {
         shotsLoading={shotsLoading}
         nonHiddenShotsLength={nonHiddenShots.length}
       />
+
+      <AiShotSuggestion beanId={id} />
 
       {/* Shot selectors, tasting & rating charts, history table (selection applies to charts + table) */}
       <h2 className="mb-3 text-lg font-semibold text-stone-800 dark:text-stone-200">

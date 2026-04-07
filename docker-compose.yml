@@ -22,6 +22,10 @@ services:
     command: listen --forward-to http://host.docker.internal:8787/api/webhooks/stripe
     env_file:
       - .env
+    # `stripe listen` in test mode requires an unrestricted secret key. If STRIPE_API_KEY is a
+    # restricted key, set STRIPE_CLI_API_KEY to the standard test secret key (Dashboard → API keys).
+    environment:
+      STRIPE_API_KEY: ${STRIPE_CLI_API_KEY:-${STRIPE_API_KEY}}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     profiles:

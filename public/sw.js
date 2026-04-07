@@ -1,4 +1,4 @@
-const CACHE_NAME = "coffee-tracker-v1";
+const CACHE_NAME = "coffee-tracker-v2";
 // Only pre-cache truly static assets that are guaranteed to exist
 const STATIC_ASSETS = [
   "/manifest.json",
@@ -39,13 +39,36 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Fetch: network-first for API, cache-first for static
+// Fetch: never serve stale HTML (breaks Next.js chunk URLs after deploys).
+// API: untouched (falls through). Other GET: cache-first with network update.
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET and API requests (always go to network)
   if (request.method !== "GET" || url.pathname.startsWith("/api/")) {
+    return;
+  }
+
+  // HTML navigations must always hit the network so document script tags match
+  // current /_next/static/* hashes. Cache-first HTML caused chunk 404s after deploys.
+  if (request.mode === "navigate") {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // Next.js build output: prefer network so new deployments win; cache as offline fallback
+  if (url.pathname.startsWith("/_next/")) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
     return;
   }
 
@@ -53,7 +76,6 @@ self.addEventListener("fetch", (event) => {
     caches.match(request).then((cached) => {
       const fetched = fetch(request)
         .then((response) => {
-          // Clone and cache successful responses
           if (response.ok) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));

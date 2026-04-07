@@ -93,7 +93,7 @@ export default function BeansPage() {
   const handleCreateBean = useCallback(async () => {
     if (!newName.trim()) return;
     try {
-      await createBean.mutateAsync({
+      const bean = await createBean.mutateAsync({
         name: newName.trim(),
         origin: newOrigin.trim() || undefined,
         roaster: newRoaster.trim() || undefined,
@@ -108,6 +108,7 @@ export default function BeansPage() {
       });
       setShowCreate(false);
       resetCreateForm();
+      router.push(resolvePath(AppRoutes.beans.beanId, { id: bean.id }));
     } catch {
       // Error handled by mutation
     }
@@ -123,6 +124,7 @@ export default function BeansPage() {
     newIsRoastDateBestGuess,
     createBean,
     resetCreateForm,
+    router,
   ]);
 
   const handleCancelCreate = useCallback(() => {

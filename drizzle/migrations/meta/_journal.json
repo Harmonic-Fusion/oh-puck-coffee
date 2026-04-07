@@ -155,6 +155,20 @@
       "when": 1774515046853,
       "tag": "0021_crazy_quasar",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1775321094302,
+      "tag": "0022_steep_vengeance",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1776000000000,
+      "tag": "0027_beans_share_legacy_to_user_invited",
+      "breakpoints": true
     }
   ]
 }

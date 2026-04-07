@@ -168,7 +168,7 @@ export function ShareBeanDialog({
   const { data: session } = useSession();
   const hasBeanShareEntitlement = hasEntitlement(
     session?.user?.entitlements,
-    Entitlements.BEAN_SHARE,
+    Entitlements.BEANS_SHARE,
   );
 
   const { data: sharesData, isLoading } = useBeanShares(beanId);

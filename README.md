@@ -71,12 +71,29 @@ ENABLE_DEBUGGING=
 # NEXTAUTH_TRUST_HOST is also accepted as an alias
 AUTH_TRUST_HOST=
 
-# ── Stripe Billing ────────────────────────────────────────────────────────
-# Stripe API key (from https://dashboard.stripe.com/apikeys)
+# ── Stripe Billing (optional) ─────────────────────────────────────────────
+# Dashboard: https://dashboard.stripe.com — use Test mode keys for local development.
+#
+# STRIPE_API_KEY — Standard test secret key (sk_test_...) from Developers → API keys.
+# The Next.js app uses this. Restricted keys are fine for the app, but Stripe CLI `listen`
+# rejects restricted keys in test mode (403). If you use a restricted key here, set
+# STRIPE_CLI_API_KEY below to a standard secret key for the Docker listener only.
 STRIPE_API_KEY=sk_test_...
-
-# Stripe webhook signing secret (from https://dashboard.stripe.com/webhooks)
-# Run `stripe listen --forward-to localhost:8787/api/webhooks/stripe` locally
+#
+# STRIPE_CLI_API_KEY — Optional. Unrestricted test secret key for Docker only (`pnpm stripe:listen`).
+# Uncomment and set when STRIPE_API_KEY is restricted and stripe-cli logs show 403 / "restricted keys".
+# docker-compose maps this into the stripe-cli container; the app still uses STRIPE_API_KEY.
+# STRIPE_CLI_API_KEY=sk_test_...
+#
+# STRIPE_WEBHOOK_SECRET — Signing secret to verify webhook payloads (constructWebhookEvent).
+# Local: Webhooks must reach the dev server on port 8787 (same as `pnpm dev`). Run the listener,
+#   pnpm stripe:listen
+# then copy the value that starts with whsec_ from:
+#   docker compose --profile stripe logs stripe-cli
+# After changing STRIPE_API_KEY / STRIPE_CLI_API_KEY, recreate the container so listen reconnects:
+#   docker compose --profile stripe up stripe-cli -d --force-recreate
+# Production / staging: use the signing secret from Developers → Webhooks for your HTTPS endpoint
+# (https://dashboard.stripe.com/webhooks), not the CLI.
 STRIPE_WEBHOOK_SECRET=whsec_...
 
 # Stripe publishable key (safe to expose to the client)
@@ -84,6 +101,35 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 
 # Maximum number of shots a free-tier user can view from history (default: 100)
 # FEATURE_SHOT_VIEW_LIMIT=100
+
+# ── OpenAI / AI shot suggestions (optional) ─────────────────────────────────
+# Server-only. Used for metered AI shot suggestions and background memory updates
+# (see `src/shared/config.ts`). Without OPENAI_API_KEY, AI endpoints that call the
+# model will fail at runtime.
+#
+# OPENAI_API_KEY — Required for calls to the configured API. For the official API,
+# create a key at https://platform.openai.com/api-keys
+OPENAI_API_KEY=
+#
+# OPENAI_BASE_URL — Optional. Overrides the default OpenAI API origin
+# (`https://api.openai.com/v1`). Use this to point at another OpenAI-compatible
+# HTTP API instead of api.openai.com, for example:
+#   - OpenRouter: https://openrouter.ai/api/v1
+#   - LiteLLM or another proxy in front of multiple providers
+#   - A local OpenAI-compatible server (often http://127.0.0.1:<port>/v1)
+#   - Azure OpenAI: your deployment base URL (includes /openai/deployments/... per Azure docs)
+# Many providers expect a path ending in `/v1`; check their docs if requests fail with 404.
+# OPENAI_BASE_URL=https://api.openai.com/v1
+#
+# OPENAI_ORGANIZATION — Optional. OpenAI-only: `org_...` id when your account uses organizations.
+# OPENAI_ORGANIZATION=
+#
+# OPENAI_MODEL — Optional. Chat completion model id (default: gpt-4o). Must match the provider behind OPENAI_BASE_URL.
+# OPENAI_MODEL=gpt-4o
+#
+# AI_MEMORY_REFRESH_SECRET — Optional. Bearer token for POST /api/ai-memory/refresh (cron / workers).
+# Omit to disable that route (503). Does not use the metered suggestion quota.
+# AI_MEMORY_REFRESH_SECRET=
 
 # ── Logging Configuration ──────────────────────────────────────────────────
 
@@ -124,21 +170,16 @@ CLOUDFLARE_R2_PUBLIC_URL=
 
 ### Stripe Setup (optional)
 
-To enable billing locally, set your Stripe test keys in `.env` and forward webhooks to the dev server.
+Configure the Stripe variables in the [Environment Variables](#environment-variables) block above (`STRIPE_API_KEY`, optional `STRIPE_CLI_API_KEY`, `STRIPE_WEBHOOK_SECRET`, publishable key).
 
-**One-time setup** — get your local webhook signing secret:
-
-```bash
-pnpm stripe:listen
-# prints: Your webhook signing secret is whsec_...
-```
-
-Copy that `whsec_...` value into `.env` as `STRIPE_WEBHOOK_SECRET`.
-
-**Running during development:**
+**Commands** (also summarized in `.env` comments):
 
 ```bash
+# Start the Stripe CLI forwarder (Docker). Ensure `pnpm dev` is running on port 8787.
 pnpm stripe:listen
+
+# Read the local signing secret (whsec_...) for STRIPE_WEBHOOK_SECRET
+docker compose --profile stripe logs stripe-cli
 ```
 
 ### Google OAuth Setup

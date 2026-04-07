@@ -12,7 +12,14 @@ END $$;
 --> statement-breakpoint
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'beans' AND column_name = 'updated_by') THEN
-    ALTER TABLE "beans" ADD COLUMN "updated_by" uuid REFERENCES "users"("id") ON DELETE SET NULL;
+    IF EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'users' AND column_name = 'id' AND udt_name = 'uuid'
+    ) THEN
+      ALTER TABLE "beans" ADD COLUMN "updated_by" uuid REFERENCES "users"("id") ON DELETE SET NULL;
+    ELSE
+      ALTER TABLE "beans" ADD COLUMN "updated_by" text REFERENCES "users"("id") ON DELETE SET NULL;
+    END IF;
   END IF;
 END $$;
 --> statement-breakpoint

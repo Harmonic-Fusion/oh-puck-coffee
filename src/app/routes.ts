@@ -253,4 +253,11 @@ export const ApiRoutes = routesBuilder({
     path: "/api/webhooks",
     stripe: "/stripe",
   },
+  /** Metered shot-suggestion chats (Vercel AI). Paths live under `/api/chats`, not `/api/ai/...`, to avoid duplicating the `api` + `ai` namespace in URLs and route maps. */
+  chats: {
+    path: "/api/chats",
+    usage: "/usage",
+  },
+  /** Internal/cron: refresh rolling markdown memory (not metered). */
+  aiMemoryRefresh: "/api/ai-memory/refresh",
 });

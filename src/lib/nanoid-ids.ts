@@ -46,3 +46,19 @@ export function createFeedbackId(): string {
 export function createImageId(): string {
   return prefixedId("img_");
 }
+
+export function createChatId(): string {
+  return prefixedId("chat_");
+}
+
+export function createChatMessageId(): string {
+  return prefixedId("cmsg_");
+}
+
+export function createAiUserMemoryId(): string {
+  return prefixedId("aum_");
+}
+
+export function createAiBeansMemoryId(): string {
+  return prefixedId("abm_");
+}
