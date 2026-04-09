@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { NumberStepper } from "@/components/common/NumberStepper";
 import { Slider } from "@/components/common/Slider";
-import { EditOrderModal } from "@/components/common/EditOrderModal";
 import { BrewTimer } from "./BrewTimer";
 import { EditInputsButton } from "./EditInputsButton";
 import { CollapsibleSection } from "./CollapsibleSection";

@@ -13,7 +13,6 @@ import {
 } from "recharts";
 
 type ActiveShapeFn = NonNullable<PieProps["activeShape"]>;
-import { ChartContainer } from "@/components/common/ChartContainer";
 import type { ShotWithJoins } from "@/components/shots/hooks";
 import { ROAST_LEVELS } from "@/shared/beans/constants";
 
@@ -277,12 +276,10 @@ const RANK_MEDALS = ["🥇", "🥈", "🥉"];
 
 function RankList({
   slices,
-  metric,
   activeLevel,
   onHover,
 }: {
   slices: RoastSlice[];
-  metric: Metric;
   activeLevel: string | null;
   onHover: (level: string | null) => void;
 }) {
@@ -480,7 +477,6 @@ export function RoastRatingPanel({
           {/* Rank list */}
           <RankList
             slices={slices}
-            metric={metric}
             activeLevel={effectiveActive}
             onHover={setHoverLevel}
           />

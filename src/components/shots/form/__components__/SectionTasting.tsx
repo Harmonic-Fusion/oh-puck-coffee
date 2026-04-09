@@ -3,7 +3,6 @@
 import { useFormContext, Controller } from "react-hook-form";
 import { Slider } from "@/components/common/Slider";
 import { Textarea } from "@/components/common/Textarea";
-import { EditOrderModal } from "@/components/common/EditOrderModal";
 import { NestedFlavorWheel } from "@/components/flavor-wheel/NestedFlavorWheel";
 import { NestedBodySelector } from "@/components/flavor-wheel/NestedBodySelector";
 import { AdjectivesIntensifiersSelector } from "@/components/flavor-wheel/AdjectivesIntensifiersSelector";

@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { NumberStepper } from "@/components/common/NumberStepper";
-import { EditOrderModal } from "@/components/common/EditOrderModal";
 import { ToolSelector } from "@/components/equipment/ToolSelector";
 import { BeanSection } from "./BeanSection";
 import { EditInputsButton } from "./EditInputsButton";

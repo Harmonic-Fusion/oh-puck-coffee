@@ -7,7 +7,6 @@ import { useQuery } from "@tanstack/react-query";
 import { AppRoutes, ApiRoutes } from "@/app/routes";
 import {
   ALL_ENTITLEMENT_KEYS,
-  Entitlements,
   FreeEntitlementDefaults,
   getEntitlementDef,
 } from "@/shared/entitlements";
