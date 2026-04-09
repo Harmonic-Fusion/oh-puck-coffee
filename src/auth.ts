@@ -5,12 +5,22 @@ import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { eq } from "drizzle-orm";
 import { db } from "./db";
-import { users, accounts, verificationTokens, userEntitlements } from "./db/schema";
+import {
+  users,
+  accounts,
+  verificationTokens,
+  userEntitlements,
+  subscriptions,
+} from "./db/schema";
 import { createUserId } from "./lib/nanoid-ids";
 import { authConfig } from "./auth.config";
 import { config } from "./shared/config";
 import { createLogger } from "./lib/logger";
-import { FreeEntitlementDefaults, Entitlements } from "./shared/entitlements";
+import {
+  FreeEntitlementDefaults,
+  resolveSubType,
+} from "./shared/entitlements";
+import { syncUserBillingFromStripe } from "./lib/billing/sync-user-billing-from-stripe";
 
 // Initialize logger early
 import "./lib/logger-init";
@@ -129,7 +139,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   })(),
   providers: buildProviders(),
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
       }
@@ -138,28 +148,69 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const userId = (token.id ?? user?.id) as string | undefined;
       if (userId) {
         const [dbUser] = await db
-          .select({ role: users.role })
+          .select({
+            role: users.role,
+            stripeCustomerId: users.stripeCustomerId,
+          })
           .from(users)
           .where(eq(users.id, userId))
           .limit(1);
         token.role =
           (dbUser?.role as "member" | "admin" | "super-admin") ?? "member";
 
+        const SYNC_INTERVAL_MS = 60_000;
+        const lastSync = token.stripeBillingLastSync;
+        const shouldSyncStripe =
+          !!dbUser?.stripeCustomerId &&
+          !!config.stripeApiKey &&
+          (trigger === "update" ||
+            trigger === "signIn" ||
+            lastSync == null ||
+            Date.now() - lastSync > SYNC_INTERVAL_MS);
+
+        if (shouldSyncStripe) {
+          const syncResult = await syncUserBillingFromStripe(userId);
+          if (syncResult.ok && syncResult.skipped === undefined) {
+            token.stripeBillingLastSync = Date.now();
+          } else if (!syncResult.ok) {
+            // Throttle retries after a failed Stripe call (network / rate limit).
+            token.stripeBillingLastSync = Date.now();
+          }
+          if (config.enableDebugging && !syncResult.ok) {
+            authLogger.debug("Stripe sync on JWT skipped or failed", {
+              userId,
+              syncResult,
+            });
+          }
+        }
+
         const entitlementRows = await db
           .select({ lookupKey: userEntitlements.lookupKey })
           .from(userEntitlements)
           .where(eq(userEntitlements.userId, userId));
-        token.entitlements =
+
+        const [subRow] = await db
+          .select({ status: subscriptions.status })
+          .from(subscriptions)
+          .where(eq(subscriptions.userId, userId))
+          .limit(1);
+
+        const keys =
           entitlementRows.length > 0
             ? entitlementRows.map((r) => r.lookupKey)
             : FreeEntitlementDefaults;
-        // Default plan is Free; Pro only when Stripe/DB has the entitlement
-        token.subType =
-          entitlementRows.some(
-            (r) => r.lookupKey === Entitlements.NO_SHOT_VIEW_LIMIT,
-          )
-            ? "pro"
-            : "free";
+        token.entitlements = keys;
+        token.subType = resolveSubType(keys, subRow ?? null);
+
+        if (config.enableDebugging) {
+          authLogger.debug("JWT billing snapshot", {
+            userId,
+            trigger: trigger ?? "(initial)",
+            subType: token.subType,
+            subscriptionStatus: subRow?.status,
+            entitlementCount: keys.length,
+          });
+        }
       }
       return token;
     },

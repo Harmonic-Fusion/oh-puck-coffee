@@ -25,5 +25,7 @@ declare module "next-auth/jwt" {
     role: "member" | "admin" | "super-admin";
     entitlements?: string[];
     subType?: "free" | "pro";
+    /** Unix ms — last successful Stripe → DB sync for this token (JWT callback throttle). */
+    stripeBillingLastSync?: number;
   }
 }

@@ -4,7 +4,7 @@
 
 import type { Sql } from "postgres";
 
-import { Entitlements } from "@/shared/entitlements";
+import { Entitlements, resolveSubType } from "@/shared/entitlements";
 
 export type TestUserRole = "member" | "admin" | "super-admin";
 
@@ -76,9 +76,7 @@ export async function mintSessionCookie(
       name: user.name,
       email: user.email,
       entitlements: user.entitlements.length > 0 ? user.entitlements : undefined,
-      subType: user.entitlements.includes(Entitlements.NO_SHOT_VIEW_LIMIT)
-        ? "pro"
-        : "free",
+      subType: resolveSubType(user.entitlements, null),
     },
     secret,
     salt: COOKIE_NAME,

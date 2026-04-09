@@ -5,9 +5,13 @@ import { users, subscriptions, userEntitlements } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import type Stripe from "stripe";
 import { Entitlements } from "@/shared/entitlements";
+import { createLogger } from "@/lib/logger";
+import "@/lib/logger-init";
 
 // Stripe sends the raw body for signature verification — do NOT parse as JSON.
 export const runtime = "nodejs";
+
+const webhookLogger = createLogger("stripe-webhook", "info");
 
 async function syncEntitlementsFromSubscription(
   userId: string,
@@ -18,7 +22,14 @@ async function syncEntitlementsFromSubscription(
 
   const isActive =
     status === "active" || status === "trialing";
-  if (!isActive || !stripeProductId) return;
+  if (!isActive || !stripeProductId) {
+    webhookLogger.info("Subscription sync: cleared entitlements (inactive or no product)", {
+      userId,
+      status,
+      stripeProductId,
+    });
+    return;
+  }
 
   try {
     const stripe = getStripeClient();
@@ -40,8 +51,18 @@ async function syncEntitlementsFromSubscription(
     await db.insert(userEntitlements).values(
       keysToInsert.map((lookupKey) => ({ userId, lookupKey })),
     );
+    webhookLogger.info("Subscription sync: wrote entitlements from product features", {
+      userId,
+      stripeProductId,
+      status,
+      lookupKeys: keysToInsert,
+    });
   } catch (err) {
-    console.error("[webhook] Failed to sync product features to entitlements:", err);
+    webhookLogger.error("Failed to sync product features to entitlements", {
+      userId,
+      stripeProductId,
+      error: err instanceof Error ? err.message : String(err),
+    });
   }
 }
 
@@ -57,9 +78,17 @@ export async function POST(request: NextRequest) {
   try {
     event = await constructWebhookEvent(body, signature);
   } catch (err) {
-    console.error("[webhook] Signature verification failed:", err);
+    webhookLogger.error("Signature verification failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
+
+  webhookLogger.info("Stripe webhook received", {
+    id: event.id,
+    type: event.type,
+    livemode: event.livemode,
+  });
 
   try {
     switch (event.type) {
@@ -71,6 +100,10 @@ export async function POST(request: NextRequest) {
             .update(users)
             .set({ stripeCustomerId: String(session.customer) })
             .where(eq(users.id, session.client_reference_id));
+          webhookLogger.info("checkout.session.completed: linked Stripe customer", {
+            userId: session.client_reference_id,
+            customerId: String(session.customer),
+          });
         }
         break;
       }
@@ -91,7 +124,14 @@ export async function POST(request: NextRequest) {
           .where(eq(users.stripeCustomerId, customerId))
           .limit(1);
 
-        if (!user) break;
+        if (!user) {
+          webhookLogger.warn("Subscription event: no user for Stripe customer", {
+            customerId,
+            subscriptionId: sub.id,
+            status: sub.status,
+          });
+          break;
+        }
 
         const item = sub.items.data[0];
         const status = sub.status as
@@ -141,6 +181,13 @@ export async function POST(request: NextRequest) {
         const productId =
           item?.price.product != null ? String(item.price.product) : null;
         await syncEntitlementsFromSubscription(user.id, productId, status);
+        webhookLogger.info("customer.subscription: updated DB subscription row", {
+          userId: user.id,
+          subscriptionId: sub.id,
+          status,
+          stripeProductId: productId,
+          stripePriceId: item?.price.id ?? null,
+        });
         break;
       }
 
@@ -157,7 +204,12 @@ export async function POST(request: NextRequest) {
           .where(eq(users.stripeCustomerId, customerId))
           .limit(1);
 
-        if (!user) break;
+        if (!user) {
+          webhookLogger.warn("entitlement summary: no user for Stripe customer", {
+            customerId,
+          });
+          break;
+        }
 
         const activeKeys = summary.entitlements.data.map((e) => e.lookup_key);
 
@@ -171,15 +223,27 @@ export async function POST(request: NextRequest) {
             activeKeys.map((key) => ({ userId: user.id, lookupKey: key })),
           );
         }
+        webhookLogger.info("entitlements.active_entitlement_summary: replaced user entitlements", {
+          userId: user.id,
+          customerId,
+          lookupKeys: activeKeys,
+        });
         break;
       }
 
       default:
-        // Ignore unhandled event types
+        webhookLogger.debug("Unhandled Stripe event type (ignored)", {
+          type: event.type,
+          id: event.id,
+        });
         break;
     }
   } catch (err) {
-    console.error("[webhook] Handler error:", err);
+    webhookLogger.error("Webhook handler error", {
+      eventId: event.id,
+      eventType: event.type,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }
 

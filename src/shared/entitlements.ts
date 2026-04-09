@@ -53,6 +53,16 @@ export const Entitlements = Object.fromEntries(
 
 export type EntitlementKey = (typeof Entitlements)[keyof typeof Entitlements];
 
+/**
+ * Entitlement lookup keys that imply a paid ("pro") tier for JWT `subType` and UI.
+ * Includes Double Shot (`ai-shot-suggestions-plus`) and legacy Pro (`no-shot-view-limit`).
+ */
+export const ProSubTypeEntitlementKeys: readonly EntitlementKey[] = [
+  Entitlements.NO_SHOT_VIEW_LIMIT,
+  Entitlements.AI_SHOT_SUGGESTIONS,
+  Entitlements.AI_SHOT_SUGGESTIONS_PLUS,
+];
+
 /** Full list of entitlement keys (order stable). */
 export const ALL_ENTITLEMENT_KEYS = Object.values(
   Entitlements,
@@ -79,6 +89,29 @@ export function hasEntitlement(
   key: EntitlementKey,
 ): boolean {
   return entitlements?.includes(key) ?? false;
+}
+
+const proSubtypeKeySet = new Set<string>(ProSubTypeEntitlementKeys);
+
+/**
+ * Resolves JWT/session `subType` from DB-mirrored entitlements and optional subscription row.
+ * Uses Stripe-backed subscription status as a fallback when entitlements lag after a plan change.
+ */
+export function resolveSubType(
+  entitlementKeys: string[],
+  subscription: { status: string } | null | undefined,
+): "free" | "pro" {
+  for (const k of entitlementKeys) {
+    if (proSubtypeKeySet.has(k)) return "pro";
+  }
+  const sub = subscription;
+  if (
+    sub &&
+    (sub.status === "active" || sub.status === "trialing")
+  ) {
+    return "pro";
+  }
+  return "free";
 }
 
 /** Weekly cap for user-initiated AI shot suggestion chats (Monday 00:00 UTC window). */
