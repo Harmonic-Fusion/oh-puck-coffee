@@ -277,9 +277,6 @@ export default function SettingsPage() {
           Send Feedback
         </button>
 
-        {/* Billing link */}
-        <BillingCard />
-
         {/* Integrations link */}
         <Link
           href={AppRoutes.settings.integrations.path}
@@ -332,42 +329,5 @@ export default function SettingsPage() {
         onClose={() => setIsFeedbackModalOpen(false)}
       />
     </div>
-  );
-}
-
-// ── Billing card with current plan ────────────────────────────────────
-
-function BillingCard() {
-  const { data: session } = useSession();
-  const isPro = session?.user?.subType === "pro";
-
-  return (
-    <Link
-      href={AppRoutes.settings.billing.path}
-      className="block rounded-xl border border-stone-200 bg-white p-6 transition-colors hover:border-amber-300 hover:bg-amber-50/50 dark:border-stone-700 dark:bg-stone-900 dark:hover:border-amber-800 dark:hover:bg-amber-950/20"
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-stone-800 dark:text-stone-200">
-              Billing
-            </h2>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                isPro
-                  ? "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
-                  : "bg-stone-100 text-stone-500 dark:bg-stone-800 dark:text-stone-400"
-              }`}
-            >
-              {isPro ? "Pro" : "Free"}
-            </span>
-          </div>
-          <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
-            Manage your subscription and plan
-          </p>
-        </div>
-        <span className="text-stone-400">&rarr;</span>
-      </div>
-    </Link>
   );
 }

@@ -60,6 +60,13 @@ function ArrowRightStartOnRectangleIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+function CreditCardIcon({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6.75v12a2.25 2.25 0 0 0 2.25 2.25Z" />
+    </svg>
+  );
+}
 
 export type NavItem = {
   label: string;
@@ -83,6 +90,11 @@ export const navItems = {
     label: "Settings",
     href: AppRoutes.settings.path,
     icon: Cog6ToothIcon,
+  },
+  billing: {
+    label: "Billing",
+    href: AppRoutes.billing.path,
+    icon: CreditCardIcon,
   },
   tasting: {
     label: "Tasting",
@@ -147,6 +159,7 @@ export function getMobileMenuItems(
     ...adminItems,
     menuActions.feedback,
     navItems.profile,
+    navItems.billing,
     navItems.tasting,
     navItems.shots,
   ];
@@ -177,6 +190,7 @@ export function getDesktopUserMenuItems(
   return [
     ...adminItems,
     navItems.profile,
+    navItems.billing,
     menuActions.feedback,
     menuActions.signOut,
   ];

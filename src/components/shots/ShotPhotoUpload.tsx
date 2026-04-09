@@ -221,7 +221,7 @@ export function ShotPhotoUpload({
               <p className="text-xs text-amber-700 dark:text-amber-400">
                 Free tier is limited to {maxPhotos} photos per shot.{" "}
                 <Link
-                  href={AppRoutes.settings.billing.path}
+                  href={AppRoutes.billing.path}
                   className="font-semibold underline underline-offset-2 hover:no-underline"
                 >
                   Upgrade to Pro

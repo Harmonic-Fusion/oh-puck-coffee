@@ -34,7 +34,7 @@ export async function POST() {
   }
 
   const baseUrl = config.nextAuthUrl;
-  const returnUrl = `${baseUrl}${AppRoutes.settings.billing.path}`;
+  const returnUrl = `${baseUrl}${AppRoutes.billing.path}`;
 
   const { url } = await createPortalSession(customerId, returnUrl);
   return NextResponse.json({ url });

@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useQuery } from "@tanstack/react-query";
-import { AppRoutes, ApiRoutes } from "@/app/routes";
+import { ApiRoutes } from "@/app/routes";
 import {
   ALL_ENTITLEMENT_KEYS,
   FreeEntitlementDefaults,
@@ -540,19 +539,9 @@ export default function Billing2Page() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      {/* Breadcrumb */}
-      <div className="mb-6 flex items-center gap-3">
-        <Link
-          href={AppRoutes.settings.path}
-          className="text-sm text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-        >
-          Settings
-        </Link>
-        <span className="text-stone-300 dark:text-stone-600">&rsaquo;</span>
-        <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-200">
-          Billing
-        </h1>
-      </div>
+      <h1 className="mb-6 text-2xl font-bold text-stone-800 dark:text-stone-200">
+        Billing
+      </h1>
 
       {actionError && (
         <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">

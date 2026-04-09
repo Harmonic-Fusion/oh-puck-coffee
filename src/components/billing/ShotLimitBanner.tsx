@@ -30,7 +30,7 @@ export function ShotLimitBanner({ totalCount, limit }: ShotLimitBannerProps) {
           You&apos;ve reached your {limit}-shot history limit. Older shots are
           hidden.{" "}
           <Link
-            href={AppRoutes.settings.billing.path}
+            href={AppRoutes.billing.path}
             className="font-semibold underline underline-offset-2 hover:no-underline"
           >
             Upgrade to Pro
@@ -46,7 +46,7 @@ export function ShotLimitBanner({ totalCount, limit }: ShotLimitBannerProps) {
       <p className="text-sm text-amber-700 dark:text-amber-400">
         You&apos;ve logged {totalCount} of {limit} shots.{" "}
         <Link
-          href={AppRoutes.settings.billing.path}
+          href={AppRoutes.billing.path}
           className="font-semibold underline underline-offset-2 hover:no-underline"
         >
           Upgrade to Pro

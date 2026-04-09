@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
   }
 
   const baseUrl = config.nextAuthUrl;
-  const returnUrl = `${baseUrl}${AppRoutes.settings.billing.path}`;
+  const returnUrl = `${baseUrl}${AppRoutes.billing.path}`;
 
   const { url } = await createCheckoutSession(customerId, priceId, returnUrl);
   return NextResponse.json({ url });

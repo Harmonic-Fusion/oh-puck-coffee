@@ -401,7 +401,7 @@ export function ShareBeanDialog({
                     />
                     {!hasBeanShareEntitlement && (
                       <Link
-                        href={AppRoutes.settings.billing.path}
+                        href={AppRoutes.billing.path}
                         className="mt-0.5 block text-xs text-amber-600 hover:underline dark:text-amber-400"
                       >
                         Upgrade to enable
@@ -423,7 +423,7 @@ export function ShareBeanDialog({
                     </button>
                     {!hasBeanShareEntitlement && (
                       <Link
-                        href={AppRoutes.settings.billing.path}
+                        href={AppRoutes.billing.path}
                         className="text-xs text-amber-600 hover:underline dark:text-amber-400"
                       >
                         Upgrade to share with others
@@ -552,7 +552,7 @@ export function ShareBeanDialog({
                           </span>
                           {!hasBeanShareEntitlement && (
                             <Link
-                              href={AppRoutes.settings.billing.path}
+                              href={AppRoutes.billing.path}
                               className="text-xs text-amber-600 hover:underline dark:text-amber-400"
                             >
                               Upgrade

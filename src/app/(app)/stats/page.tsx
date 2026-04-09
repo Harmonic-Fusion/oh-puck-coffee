@@ -69,7 +69,7 @@ function StatsUpgradeSplash() {
           </li>
         </ul>
         <Link
-          href={AppRoutes.settings.billing.path}
+          href={AppRoutes.billing.path}
           className="mt-8 inline-block rounded-lg bg-amber-600 px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-700"
         >
           Upgrade to Pro

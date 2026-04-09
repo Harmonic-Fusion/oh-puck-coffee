@@ -19,6 +19,7 @@ export const AppRoutes = routesBuilder({
     compare: "/compare",
   },
   stats: "/stats",
+  billing: "/billing",
   shot: {
     path: "/shot",
     id: { path: "/:id" },
@@ -26,7 +27,6 @@ export const AppRoutes = routesBuilder({
   settings: {
     path: "/settings",
     integrations: "/integrations",
-    billing: "/billing",
     advance: "/advance",
   },
   tasting: "/tasting",

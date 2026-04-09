@@ -67,6 +67,10 @@ export function Sidebar() {
   const pendingInviteCount = invites?.filter((i) => i.id).length ?? 0;
   const showBeansBadge = pendingInviteCount > 0;
 
+  const accountSectionActive =
+    isRouteActive(pathname, AppRoutes.settings.path) ||
+    isRouteActive(pathname, AppRoutes.billing.path);
+
   function handleUserMenuItemClick(item: typeof userMenuItems[0]) {
     if (isNavItem(item)) {
       router.push(item.href);
@@ -180,9 +184,7 @@ export function Sidebar() {
                 <Button
                   variant="ghost"
                   className={`w-full justify-start gap-3 px-3 py-2 h-auto ${
-                    isRouteActive(pathname, AppRoutes.settings.path)
-                      ? "bg-amber-50 dark:bg-amber-900/30"
-                      : ""
+                    accountSectionActive ? "bg-amber-50 dark:bg-amber-900/30" : ""
                   }`}
                   title={collapsed ? userName : undefined}
                 >
@@ -202,7 +204,7 @@ export function Sidebar() {
                     <div className="flex-1 min-w-0 text-left">
                       <p
                         className={`text-sm font-medium truncate ${
-                          isRouteActive(pathname, AppRoutes.settings.path)
+                          accountSectionActive
                             ? "text-amber-800 dark:text-amber-400"
                             : "text-stone-800 dark:text-stone-200"
                         }`}
@@ -247,9 +249,17 @@ export function Sidebar() {
                       {showSeparator && <DropdownMenuSeparator />}
                       <DropdownMenuItem
                         onClick={() => handleUserMenuItemClick(item)}
-                        className={isNavItem(item) && item.href === AppRoutes.settings.path ? "gap-3 p-0" : "gap-3"}
+                        className={
+                          isNavItem(item) &&
+                          (item.href === AppRoutes.settings.path ||
+                            item.href === AppRoutes.billing.path)
+                            ? "gap-3 p-0"
+                            : "gap-3"
+                        }
                       >
-                        {isNavItem(item) && item.href === AppRoutes.settings.path ? (
+                        {isNavItem(item) &&
+                        (item.href === AppRoutes.settings.path ||
+                          item.href === AppRoutes.billing.path) ? (
                           <Link
                             href={item.href}
                             className="flex w-full items-center gap-3 px-2 py-1.5"
