@@ -14,7 +14,7 @@ export type SyncUserBillingResult =
       ok: true;
       skipped?: undefined;
       stripeCustomerId: string;
-      subscription: "upserted" | "none";
+      subscription: "upserted" | "cleared" | "none";
       entitlementCount: number;
     }
   | { ok: false; error: string };
@@ -60,7 +60,7 @@ export async function syncUserBillingFromStripe(
       subsRes.data.find((s) => s.status === "active" || s.status === "trialing") ??
       subsRes.data[0];
 
-    let subscriptionResult: "upserted" | "none" = "none";
+    let subscriptionResult: "upserted" | "cleared" | "none" = "none";
 
     if (sub) {
       const typedSub = sub as Stripe.Subscription & {
@@ -110,6 +110,12 @@ export async function syncUserBillingFromStripe(
         });
 
       subscriptionResult = "upserted";
+    } else {
+      const removed = await db
+        .delete(subscriptions)
+        .where(eq(subscriptions.userId, userId))
+        .returning({ id: subscriptions.id });
+      subscriptionResult = removed.length > 0 ? "cleared" : "none";
     }
 
     const activeKeys = entitlementsRes.data.map((e) => e.lookup_key);

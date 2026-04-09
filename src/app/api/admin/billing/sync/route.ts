@@ -9,7 +9,7 @@ interface SyncResult {
   userId: string;
   email: string | null;
   stripeCustomerId: string;
-  subscription: "upserted" | "none" | "error";
+  subscription: "upserted" | "cleared" | "none" | "error";
   entitlements: number | "error";
   error?: string;
 }
@@ -63,7 +63,14 @@ export async function POST() {
   }
 
   const synced = results.filter((r) => r.subscription === "upserted").length;
+  const cleared = results.filter((r) => r.subscription === "cleared").length;
   const errors = results.filter((r) => r.error).length;
 
-  return NextResponse.json({ synced, errors, total: results.length, results });
+  return NextResponse.json({
+    synced,
+    cleared,
+    errors,
+    total: results.length,
+    results,
+  });
 }

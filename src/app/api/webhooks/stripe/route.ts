@@ -108,9 +108,38 @@ export async function POST(request: NextRequest) {
         break;
       }
 
-      case "customer.subscription.created":
-      case "customer.subscription.updated":
       case "customer.subscription.deleted": {
+        const sub = event.data.object as Stripe.Subscription;
+        const customerId = String(sub.customer);
+
+        const [user] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.stripeCustomerId, customerId))
+          .limit(1);
+
+        if (!user) {
+          webhookLogger.warn("Subscription event: no user for Stripe customer", {
+            customerId,
+            subscriptionId: sub.id,
+            status: sub.status,
+          });
+          break;
+        }
+
+        await db.delete(subscriptions).where(eq(subscriptions.userId, user.id));
+        const status = sub.status as string;
+        await syncEntitlementsFromSubscription(user.id, null, status);
+        webhookLogger.info("customer.subscription.deleted: removed DB subscription row", {
+          userId: user.id,
+          subscriptionId: sub.id,
+          status,
+        });
+        break;
+      }
+
+      case "customer.subscription.created":
+      case "customer.subscription.updated": {
         // current_period_start/end are in the Stripe API but not typed in v20 SDK
         const sub = event.data.object as Stripe.Subscription & {
           current_period_start?: number;

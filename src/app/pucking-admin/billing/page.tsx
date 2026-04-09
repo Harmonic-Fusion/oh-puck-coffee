@@ -46,13 +46,14 @@ interface SyncResult {
   userId: string;
   email: string | null;
   stripeCustomerId: string;
-  subscription: "upserted" | "none" | "error";
+  subscription: "upserted" | "cleared" | "none" | "error";
   entitlements: number | "error";
   error?: string;
 }
 
 interface SyncResponse {
   synced: number;
+  cleared: number;
   errors: number;
   total: number;
   results: SyncResult[];
@@ -214,7 +215,13 @@ export default function AdminBillingPage() {
                 Sync complete
               </span>
               <span className="text-sm text-stone-500 dark:text-stone-400">
-                {syncResult.synced} subscription{syncResult.synced !== 1 ? "s" : ""} upserted
+                {syncResult.synced} upserted
+                {(syncResult.cleared ?? 0) > 0 && (
+                  <>
+                    &nbsp;·&nbsp;
+                    {syncResult.cleared} cleared
+                  </>
+                )}
                 &nbsp;·&nbsp;
                 {syncResult.errors} error{syncResult.errors !== 1 ? "s" : ""}
                 &nbsp;·&nbsp;
@@ -234,9 +241,11 @@ export default function AdminBillingPage() {
                     className={
                       r.subscription === "upserted"
                         ? "text-green-600 dark:text-green-400"
-                        : r.subscription === "error"
-                        ? "text-red-500 dark:text-red-400"
-                        : "text-stone-400"
+                        : r.subscription === "cleared"
+                          ? "text-amber-600 dark:text-amber-400"
+                          : r.subscription === "error"
+                            ? "text-red-500 dark:text-red-400"
+                            : "text-stone-400"
                     }
                   >
                     sub: {r.subscription}
