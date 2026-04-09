@@ -101,7 +101,7 @@ export function AiShotSuggestion({
         : null;
     if (!latestId) return pastItems;
     return pastItems.filter((item) => item.chatId !== latestId);
-  }, [pastItems, suggestion.isSuccess, suggestion.data?.chatId]);
+  }, [pastItems, suggestion.isSuccess, suggestion.data]);
 
   if (!enabled) {
     return null;

@@ -41,6 +41,33 @@ export async function createOrRetrieveCustomer(
   return customer.id;
 }
 
+/**
+ * Returns a Stripe customer id that exists in the current Stripe account.
+ * If the stored id is missing in Stripe (deleted, wrong API mode, etc.), creates or looks up by email and returns that id.
+ */
+export async function resolveStripeCustomerId(
+  userId: string,
+  email: string,
+  storedCustomerId: string | null,
+): Promise<{ customerId: string; shouldPersist: boolean }> {
+  const stripe = getStripeClient();
+  if (storedCustomerId) {
+    try {
+      await stripe.customers.retrieve(storedCustomerId);
+      return { customerId: storedCustomerId, shouldPersist: false };
+    } catch (err: unknown) {
+      const missing =
+        err instanceof Stripe.errors.StripeInvalidRequestError &&
+        err.code === "resource_missing";
+      if (!missing) throw err;
+      const customerId = await createOrRetrieveCustomer(userId, email);
+      return { customerId, shouldPersist: true };
+    }
+  }
+  const customerId = await createOrRetrieveCustomer(userId, email);
+  return { customerId, shouldPersist: true };
+}
+
 export async function createPortalSession(
   customerId: string,
   returnUrl: string,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
-import { createCheckoutSession, createOrRetrieveCustomer } from "@/lib/billing/stripe";
+import { createCheckoutSession, resolveStripeCustomerId } from "@/lib/billing/stripe";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -28,9 +28,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  let customerId = dbUser.stripeCustomerId;
-  if (!customerId) {
-    customerId = await createOrRetrieveCustomer(dbUser.id, dbUser.email ?? "");
+  const { customerId, shouldPersist } = await resolveStripeCustomerId(
+    dbUser.id,
+    dbUser.email ?? "",
+    dbUser.stripeCustomerId,
+  );
+  if (shouldPersist) {
     await db
       .update(users)
       .set({ stripeCustomerId: customerId })
