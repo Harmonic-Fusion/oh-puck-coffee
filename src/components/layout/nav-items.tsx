@@ -122,25 +122,6 @@ function PlusCircleIcon({ className }: { className?: string }) {
     </svg>
   );
 }
-function WrenchScrewdriverIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      className={className}
-      aria-hidden
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655-5.653a2.548 2.548 0 0 0-3.586-3.586l-4.365 4.365a2.548 2.548 0 0 0 3.586 3.586l5.653 4.655Zm0 0L9.5 8.5m0 0 3-3 3 3-3 3-3-3Z"
-      />
-    </svg>
-  );
-}
 function ChatBubbleLeftRightIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -192,6 +173,7 @@ function SteamCupIcon({ className }: { className?: string }) {
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
+      className={className}
     >
       <path d="M9 3c-.5 1-.5 2 0 3s.5 2 0 3" />
       <path d="M13 3c-.5 1-.5 2 0 3s.5 2 0 3" />

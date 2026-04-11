@@ -67,7 +67,11 @@ export function SectionSetup() {
   const router = useRouter();
   const { setValue, watch, control, getValues } = useFormContext<CreateShot>();
 
-  const equipmentIds = watch("equipmentIds") ?? [];
+  const watchedEquipmentIds = watch("equipmentIds");
+  const equipmentIds = useMemo(
+    () => watchedEquipmentIds ?? [],
+    [watchedEquipmentIds],
+  );
   const toolsUsed = watch("toolsUsed");
   const { data: grinders } = useGrinders();
   const { data: machines } = useMachines();

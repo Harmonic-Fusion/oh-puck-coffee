@@ -41,7 +41,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { slug: _ignoredSlug, ...rest } = parsed.data;
+  const { slug, ...rest } = parsed.data;
+  void slug;
   if (Object.keys(rest).length === 0) {
     return NextResponse.json(
       { error: "Validation failed", details: { formErrors: ["Provide at least one updatable field (slug is not valid for grinders)"] } },
