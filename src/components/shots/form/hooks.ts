@@ -13,6 +13,7 @@ import { AppRoutes } from "@/app/routes";
 
 interface RecipeValues {
   beanId?: string;
+  equipmentIds?: string[];
   grinderId?: string;
   machineId?: string;
   toolsUsed?: string[];
@@ -28,8 +29,18 @@ interface RecipeValues {
 
 /** Convert a ShotWithJoins (string numeric fields) into parsed RecipeValues. */
 function shotToRecipeValues(shot: ShotWithJoins): RecipeValues {
+  const legacyEquipmentIds = (): string[] | undefined => {
+    if (shot.equipmentIds && shot.equipmentIds.length > 0) {
+      return shot.equipmentIds;
+    }
+    const ids: string[] = [];
+    if (shot.grinderId) ids.push(shot.grinderId);
+    if (shot.machineId) ids.push(shot.machineId);
+    return ids.length > 0 ? ids : undefined;
+  };
   return {
     beanId: shot.beanId || undefined,
+    equipmentIds: legacyEquipmentIds(),
     grinderId: shot.grinderId || undefined,
     machineId: shot.machineId || undefined,
     toolsUsed: shot.toolsUsed || undefined,
@@ -44,13 +55,16 @@ function shotToRecipeValues(shot: ShotWithJoins): RecipeValues {
   };
 }
 
-/** Apply recipe values to the form via setValue (setup + recipe fields only). */
+/** Apply recipe values to the form via setValue (bean, equipment, and recipe fields only). */
 function applyRecipeToForm(
   methods: UseFormReturn<CreateShot>,
   values: RecipeValues,
 ): void {
-  // Setup section
+  // Bean + equipment (grinder, machine, tools)
   if (values.beanId) methods.setValue("beanId", values.beanId);
+  if (values.equipmentIds && values.equipmentIds.length > 0) {
+    methods.setValue("equipmentIds", values.equipmentIds);
+  }
   if (values.grinderId) methods.setValue("grinderId", values.grinderId);
   if (values.machineId) methods.setValue("machineId", values.machineId);
   if (values.toolsUsed) methods.setValue("toolsUsed", values.toolsUsed);
@@ -87,7 +101,6 @@ function applyUrlParamsToForm(
   methods: UseFormReturn<CreateShot>,
   urlParams: URLSearchParams,
 ): void {
-  // Setup section
   const beanId = urlParams.get("beanId");
   if (beanId) methods.setValue("beanId", beanId);
 
@@ -96,6 +109,14 @@ function applyUrlParamsToForm(
 
   const machineId = urlParams.get("machineId");
   if (machineId) methods.setValue("machineId", machineId);
+
+  const equipmentIds = urlParams.get("equipmentIds");
+  if (equipmentIds) {
+    methods.setValue(
+      "equipmentIds",
+      equipmentIds.split(",").filter(Boolean),
+    );
+  }
 
   const toolsUsed = urlParams.get("toolsUsed");
   if (toolsUsed) {
@@ -139,12 +160,12 @@ function applyUrlParamsToForm(
  *
  * Priority order:
  *   0. `previousShotId=` (empty) in URL → start fresh, no pre-population
- *   1. `previousShotId=<id>` or `shotId=<id>` in URL → fetch & apply that shot (Setup + Recipe only)
+ *   1. `previousShotId=<id>` or `shotId=<id>` in URL → fetch & apply that shot (equipment + recipe fields only)
  *   2. Individual recipe params in URL (QR code / direct link)
  *   3. Duplicate shot data in sessionStorage (`duplicateShot` key)
  *   4. Last shot from the database (most recent)
  *
- * Only Setup and Recipe are populated from the previous shot. Brewing and Tasting
+ * Only equipment, bean, and recipe parameters are populated from the previous shot. Brewing and Tasting
  * are explicitly reset to defaults every time we pre-populate.
  */
 export function useShotPrePopulation(

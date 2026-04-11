@@ -5,6 +5,7 @@ import type { FieldErrors } from "react-hook-form";
 /** Human-readable labels for form field names */
 const FIELD_LABELS: Record<string, string> = {
   beanId: "Bean",
+  equipmentIds: "Equipment",
   grinderId: "Grinder",
   machineId: "Machine",
   doseGrams: "Dose",
@@ -27,9 +28,10 @@ const FIELD_LABELS: Record<string, string> = {
 
 /** Map field names to their section IDs */
 const FIELD_SECTIONS: Record<string, string> = {
-  beanId: "setup",
-  grinderId: "setup",
-  machineId: "setup",
+  beanId: "recipe",
+  equipmentIds: "equipment",
+  grinderId: "equipment",
+  machineId: "equipment",
   doseGrams: "recipe",
   yieldGrams: "recipe",
   grindLevel: "recipe",
@@ -37,7 +39,7 @@ const FIELD_SECTIONS: Record<string, string> = {
   preInfusionDuration: "recipe",
   preInfusionWaitDuration: "recipe",
   brewPressure: "recipe",
-  toolsUsed: "recipe",
+  toolsUsed: "equipment",
   yieldActualGrams: "results",
   brewTimeSecs: "results",
   estimateMaxPressure: "results",

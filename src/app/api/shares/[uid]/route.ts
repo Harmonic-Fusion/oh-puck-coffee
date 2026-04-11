@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { shots, beans, users, grinders, machines } from "@/db/schema";
+import { shots, beans, users } from "@/db/schema";
+import {
+  grinderEquipment,
+  machineEquipment,
+} from "@/lib/equipment-shot-joins";
 import { eq } from "drizzle-orm";
 
 /**
@@ -21,8 +25,8 @@ export async function GET(
       beanName: beans.name,
       beanRoastLevel: beans.roastLevel,
       beanRoastDate: beans.roastDate,
-      grinderName: grinders.name,
-      machineName: machines.name,
+      grinderName: grinderEquipment.name,
+      machineName: machineEquipment.name,
       doseGrams: shots.doseGrams,
       yieldGrams: shots.yieldGrams,
       grindLevel: shots.grindLevel,
@@ -48,8 +52,8 @@ export async function GET(
     .from(shots)
     .leftJoin(users, eq(shots.userId, users.id))
     .leftJoin(beans, eq(shots.beanId, beans.id))
-    .leftJoin(grinders, eq(shots.grinderId, grinders.id))
-    .leftJoin(machines, eq(shots.machineId, machines.id))
+    .leftJoin(grinderEquipment, eq(shots.grinderId, grinderEquipment.id))
+    .leftJoin(machineEquipment, eq(shots.machineId, machineEquipment.id))
     .where(eq(shots.shareSlug, uid))
     .limit(1);
 

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/api-auth";
 import { db } from "@/db";
-import { grinders } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { createGrinderSchema } from "@/shared/equipment/schema";
+import { equipment } from "@/db/schema";
+import { adminPatchEquipmentBodySchema } from "@/shared/equipment/schema";
+import { and, eq } from "drizzle-orm";
+
+const GRINDER = "grinder" as const;
 
 export async function GET(
   _request: NextRequest,
@@ -15,8 +17,8 @@ export async function GET(
   const { id } = await params;
   const [grinder] = await db
     .select()
-    .from(grinders)
-    .where(eq(grinders.id, id))
+    .from(equipment)
+    .where(and(eq(equipment.id, id), eq(equipment.type, GRINDER)))
     .limit(1);
 
   if (!grinder) {
@@ -34,15 +36,23 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await request.json();
-  const parsed = createGrinderSchema.safeParse(body);
+  const parsed = adminPatchEquipmentBodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
   }
 
+  const { slug: _ignoredSlug, ...rest } = parsed.data;
+  if (Object.keys(rest).length === 0) {
+    return NextResponse.json(
+      { error: "Validation failed", details: { formErrors: ["Provide at least one updatable field (slug is not valid for grinders)"] } },
+      { status: 400 },
+    );
+  }
+
   const [grinder] = await db
-    .update(grinders)
-    .set({ name: parsed.data.name })
-    .where(eq(grinders.id, id))
+    .update(equipment)
+    .set(rest)
+    .where(and(eq(equipment.id, id), eq(equipment.type, GRINDER)))
     .returning();
 
   if (!grinder) {

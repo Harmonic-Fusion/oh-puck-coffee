@@ -80,6 +80,15 @@ export function ShotEditForm({ shot, onSuccess, onCancel, onDelete }: ShotEditFo
     resolver: zodResolver(createShotSchema) as Resolver<CreateShot>,
     defaultValues: {
       beanId: shot.beanId,
+      equipmentIds: (() => {
+        if (shot.equipmentIds && shot.equipmentIds.length > 0) {
+          return shot.equipmentIds;
+        }
+        const ids: string[] = [];
+        if (shot.grinderId) ids.push(shot.grinderId);
+        if (shot.machineId) ids.push(shot.machineId);
+        return ids;
+      })(),
       grinderId: shot.grinderId,
       machineId: shot.machineId || undefined,
       doseGrams: shot.doseGrams ? parseFloat(shot.doseGrams) : undefined,

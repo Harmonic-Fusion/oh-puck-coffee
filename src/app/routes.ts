@@ -18,6 +18,7 @@ export const AppRoutes = routesBuilder({
     },
     compare: "/compare",
   },
+  equipment: "/equipment",
   stats: "/stats",
   billing: "/billing",
   shot: {
@@ -67,6 +68,7 @@ export const AppRoutes = routesBuilder({
     equipment: {
       path: "/equipment",
       _require_super_admin: true,
+      item: { path: "/:id", _require_super_admin: true },
       tools: { path: "/tools", _require_super_admin: true },
       machines: { path: "/machines", _require_super_admin: true },
       grinders: { path: "/grinders", _require_super_admin: true },
@@ -77,7 +79,7 @@ export const AppRoutes = routesBuilder({
 /** Flat path → route map for O(1) lookups (used by middleware). */
 export const AppRouteMap = buildRouteMap(AppRoutes);
 
-export const ApiRoutes = routesBuilder({
+const apiRoutesBuilt = routesBuilder({
   // Health
   health: "/api/health",
   // Auth
@@ -113,9 +115,42 @@ export const ApiRoutes = routesBuilder({
   // Equipment
   equipment: {
     path: "/api/equipment",
-    grinders: "/grinders",
-    machines: "/machines",
-    tools: "/tools",
+    grinders: {
+      path: "/grinders",
+      grinderId: { path: "/:id" },
+    },
+    machines: {
+      path: "/machines",
+      machineId: { path: "/:id" },
+    },
+    tools: {
+      path: "/tools",
+      toolId: { path: "/:id" },
+    },
+    /** Kettle, scale, pour over, etc. — list + PATCH photo */
+    items: {
+      path: "/items",
+      itemId: { path: "/:id" },
+    },
+    my: {
+      path: "/my",
+      grinders: {
+        path: "/grinders",
+        grinderId: { path: "/:id" },
+      },
+      machines: {
+        path: "/machines",
+        machineId: { path: "/:id" },
+      },
+      tools: {
+        path: "/tools",
+        toolId: { path: "/:id" },
+      },
+      items: {
+        path: "/items",
+        itemId: { path: "/:id" },
+      },
+    },
   },
   // Images (generic uploads; attach to shots via shot routes)
   images: {
@@ -187,6 +222,7 @@ export const ApiRoutes = routesBuilder({
     },
     equipment: {
       path: "/equipment",
+      search: "/search",
       tools: {
         path: "/tools",
         toolId: { path: "/:id" },
@@ -198,6 +234,16 @@ export const ApiRoutes = routesBuilder({
       grinders: {
         path: "/grinders",
         grinderId: { path: "/:id" },
+      },
+      links: {
+        path: "/links",
+        linkId: { path: "/:linkId" },
+      },
+      equipmentId: {
+        path: "/:id",
+        links: "/links",
+        searchLinks: "/search-links",
+        searchSpecs: "/search-specs",
       },
     },
   },
@@ -261,3 +307,57 @@ export const ApiRoutes = routesBuilder({
   /** Internal/cron: refresh rolling markdown memory (not metered). */
   aiMemoryRefresh: "/api/ai-memory/refresh",
 });
+
+/**
+ * `RouteSpec` in `@/lib/routes-builder` includes `[key: string]: …`, so TypeScript widens `keyof`
+ * for nested route nodes and `BuiltRouteObject` stops preserving specific children. That shows up
+ * on deep branches like `equipment.my.*` / `*.grinderId`, not because `equipment` is wrong here.
+ *
+ * Wrapping everything under `api: { path: "/api", equipment: { path: "/equipment", … } }` would
+ * only change access shape (`ApiRoutes.api.equipment…`); it does not remove the index signature,
+ * so the same inference loss would apply unless `RouteSpec` / the builder types are changed.
+ */
+export type ApiEquipmentRoutesTree = {
+  path: string;
+  grinders: { path: string; grinderId: { path: string } };
+  machines: { path: string; machineId: { path: string } };
+  tools: { path: string; toolId: { path: string } };
+  items: { path: string; itemId: { path: string } };
+  my: {
+    path: string;
+    grinders: { path: string; grinderId: { path: string } };
+    machines: { path: string; machineId: { path: string } };
+    tools: { path: string; toolId: { path: string } };
+    items: { path: string; itemId: { path: string } };
+  };
+};
+
+/** Preserves `admin.equipment.*` children for `resolvePath` (avoids index-signature collapse). */
+export type AdminApiEquipmentRoutesTree = {
+  path: string;
+  search: { path: string };
+  tools: { path: string; toolId: { path: string } };
+  machines: { path: string; machineId: { path: string } };
+  grinders: { path: string; grinderId: { path: string } };
+  links: { path: string; linkId: { path: string } };
+  equipmentId: {
+    path: string;
+    links: { path: string };
+    searchLinks: { path: string };
+    searchSpecs: { path: string };
+  };
+};
+
+export const ApiRoutes = {
+  ...apiRoutesBuilt,
+  equipment: apiRoutesBuilt.equipment as ApiEquipmentRoutesTree,
+  admin: {
+    ...apiRoutesBuilt.admin,
+    equipment: apiRoutesBuilt.admin.equipment as AdminApiEquipmentRoutesTree,
+  },
+} as typeof apiRoutesBuilt & {
+  equipment: ApiEquipmentRoutesTree;
+  admin: Omit<(typeof apiRoutesBuilt)["admin"], "equipment"> & {
+    equipment: AdminApiEquipmentRoutesTree;
+  };
+};

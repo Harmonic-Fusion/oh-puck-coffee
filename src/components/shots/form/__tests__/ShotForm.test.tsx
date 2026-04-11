@@ -65,6 +65,8 @@ vi.mock("@/components/beans/hooks", () => ({
 vi.mock("@/components/equipment/hooks", () => ({
   useGrinders: () => ({ data: [] }),
   useMachines: () => ({ data: [] }),
+  useTools: () => ({ data: [] }),
+  useExtraGearList: () => ({ data: [] }),
 }));
 
 vi.mock("@/components/common/Toast", () => ({
@@ -156,6 +158,7 @@ function makeMockShot(overrides: Partial<ShotWithJoins> = {}): ShotWithJoins {
     flavors: [],
     bodyTexture: [],
     adjectives: [],
+    equipmentIds: null,
     toolsUsed: [],
     notes: null,
     isReferenceShot: false,

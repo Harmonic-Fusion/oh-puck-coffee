@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/api-auth";
 import { db } from "@/db";
-import { shots, beans, users, grinders, machines } from "@/db/schema";
+import { shots, beans, users } from "@/db/schema";
+import {
+  grinderEquipment,
+  machineEquipment,
+} from "@/lib/equipment-shot-joins";
 import { desc, count, and, SQL, eq } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
@@ -24,9 +28,9 @@ export async function GET(request: NextRequest) {
         beanId: shots.beanId,
         beanName: beans.name,
         grinderId: shots.grinderId,
-        grinderName: grinders.name,
+        grinderName: grinderEquipment.name,
         machineId: shots.machineId,
-        machineName: machines.name,
+        machineName: machineEquipment.name,
         doseGrams: shots.doseGrams,
         yieldGrams: shots.yieldGrams,
         yieldActualGrams: shots.yieldActualGrams,
@@ -40,8 +44,8 @@ export async function GET(request: NextRequest) {
       .from(shots)
       .leftJoin(users, eq(shots.userId, users.id))
       .leftJoin(beans, eq(shots.beanId, beans.id))
-      .leftJoin(grinders, eq(shots.grinderId, grinders.id))
-      .leftJoin(machines, eq(shots.machineId, machines.id))
+      .leftJoin(grinderEquipment, eq(shots.grinderId, grinderEquipment.id))
+      .leftJoin(machineEquipment, eq(shots.machineId, machineEquipment.id))
       .where(whereClause)
       .orderBy(desc(shots.createdAt))
       .limit(limit)

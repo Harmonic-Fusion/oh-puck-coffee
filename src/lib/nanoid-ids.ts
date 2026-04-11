@@ -31,10 +31,20 @@ export function createRoasterId(): string {
   return prefixedId("roast_");
 }
 
+export function createEquipmentId(): string {
+  return prefixedId("eq_");
+}
+
+export function createPurchaseLinkId(): string {
+  return prefixedId("epl_");
+}
+
+/** @deprecated Use createEquipmentId() */
 export function createMachineId(): string {
   return prefixedId("mach_");
 }
 
+/** @deprecated Use createEquipmentId() */
 export function createGrinderId(): string {
   return prefixedId("grind_");
 }

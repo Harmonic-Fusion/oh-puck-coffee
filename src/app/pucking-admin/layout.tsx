@@ -15,9 +15,7 @@ const adminNavLinks = [
   { href: puckingAdmin.billing.path, label: "Billing & Sync" },
   { href: puckingAdmin.beans.path, label: "Beans" },
   { href: puckingAdmin.shots.path, label: "Shots" },
-  { href: pa.equipment.grinders.path as string, label: "Grinders" },
-  { href: pa.equipment.machines.path as string, label: "Machines" },
-  { href: pa.equipment.tools.path as string, label: "Tools" },
+  { href: pa.equipment.path as string, label: "Equipment" },
 ];
 
 export default async function AdminLayout({

@@ -212,15 +212,118 @@ export const beansShare = pgTable(
   (t) => [unique("beans_share_bean_user_key").on(t.beanId, t.userId)],
 );
 
+/** User-uploaded blobs (R2 URLs + inline thumbnails). Defined before equipment so grinders/machines can reference `image_id`. */
+export const images = pgTable("images", {
+  id: text("id").primaryKey(),
+  url: text("url").notNull(),
+  thumbnail: bytea("thumbnail").notNull(),
+  sizeBytes: integer("size_bytes").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+// ============ Equipment (unified) ============
+
+export const equipment = pgTable(
+  "equipment",
+  {
+    id: text("id").primaryKey(),
+    type: text("type")
+      .$type<
+        | "grinder"
+        | "machine"
+        | "tool"
+        | "kettle"
+        | "scale"
+        | "pour_over"
+        | "french_press"
+        | "moka_pot"
+        | "cold_brew"
+      >()
+      .notNull(),
+    name: text("name").notNull(),
+    brand: text("brand"),
+    slug: text("slug"),
+    description: text("description"),
+    specs: jsonb("specs").$type<Record<string, unknown>>(),
+    createdBy: text("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    isGlobal: boolean("is_global").default(true).notNull(),
+    adminApproved: boolean("admin_approved").default(false).notNull(),
+    imageId: text("image_id").references(() => images.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [unique("equipment_type_name_key").on(t.type, t.name)],
+);
+
+/** Retailer / affiliate listings for unified equipment rows. */
+export const equipmentPurchaseLink = pgTable("equipment_purchase_link", {
+  id: text("id").primaryKey(),
+  equipmentId: text("equipment_id")
+    .notNull()
+    .references(() => equipment.id, { onDelete: "cascade" }),
+  marketplace: text("marketplace").notNull(),
+  affiliateProgram: text("affiliate_program"),
+  baseUrl: text("base_url").notNull(),
+  affiliateTag: text("affiliate_tag"),
+  priceUsd: numeric("price_usd", { precision: 10, scale: 2 }),
+  region: text("region").default("US").notNull(),
+  isCanonical: boolean("is_canonical").default(false).notNull(),
+  approvedByUserId: text("approved_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  lastVerifiedAt: timestamp("last_verified_at", { mode: "date" }),
+  deactivatedAt: timestamp("deactivated_at", { mode: "date" }),
+});
+
+export const userEquipment = pgTable(
+  "user_equipment",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    equipmentId: text("equipment_id")
+      .notNull()
+      .references(() => equipment.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.equipmentId] })],
+);
+
+// ============ Legacy equipment tables ============
+// @deprecated — use `equipment` + `userEquipment` instead.
+// Kept so Drizzle does not generate DROP TABLE migrations.
+
 export const grinders = pgTable("grinders", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
+  createdBy: text("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  isGlobal: boolean("is_global").default(true).notNull(),
+  imageId: text("image_id").references(() => images.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
 export const machines = pgTable("machines", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
+  createdBy: text("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  isGlobal: boolean("is_global").default(true).notNull(),
+  imageId: text("image_id").references(() => images.id, {
+    onDelete: "set null",
+  }),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
@@ -229,8 +332,54 @@ export const tools = pgTable("tools", {
   slug: text("slug").notNull().unique(),
   name: text("name").notNull(),
   description: text("description"),
+  createdBy: text("created_by").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  isGlobal: boolean("is_global").default(true).notNull(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
+
+export const equipmentUsersGrinders = pgTable(
+  "equipment_users_grinders",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    grinderId: text("grinder_id")
+      .notNull()
+      .references(() => grinders.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.grinderId] })],
+);
+
+export const equipmentUsersMachines = pgTable(
+  "equipment_users_machines",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    machineId: text("machine_id")
+      .notNull()
+      .references(() => machines.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.machineId] })],
+);
+
+export const equipmentUsersTools = pgTable(
+  "equipment_users_tools",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    toolId: uuid("tool_id")
+      .notNull()
+      .references(() => tools.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.toolId] })],
+);
 
 export const shots = pgTable("shots", {
   id: text("id").primaryKey(),
@@ -241,8 +390,10 @@ export const shots = pgTable("shots", {
   beanId: text("bean_id")
     .notNull()
     .references(() => beans.id, { onDelete: "cascade" }),
-  grinderId: text("grinder_id").references(() => grinders.id),
-  machineId: text("machine_id").references(() => machines.id),
+  grinderId: text("grinder_id").references(() => equipment.id),
+  machineId: text("machine_id").references(() => equipment.id),
+  /** Ordered equipment.id values (grinders, machines, kettles, etc.) used on this shot. */
+  equipmentIds: jsonb("equipment_ids").$type<string[]>(),
   // Recipe
   doseGrams: numeric("dose_grams", { precision: 5, scale: 1 }),
   yieldGrams: numeric("yield_grams", { precision: 5, scale: 1 }),
@@ -287,17 +438,6 @@ export const shots = pgTable("shots", {
   shareSlug: text("share_slug").unique(),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
-});
-
-export const images = pgTable("images", {
-  id: text("id").primaryKey(),
-  url: text("url").notNull(),
-  thumbnail: bytea("thumbnail").notNull(),
-  sizeBytes: integer("size_bytes").notNull(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
 export const shotImages = pgTable(

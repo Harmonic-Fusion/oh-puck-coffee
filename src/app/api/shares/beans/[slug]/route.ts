@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { beans, shots, users, grinders, machines, beansShare } from "@/db/schema";
+import { beans, shots, users, beansShare } from "@/db/schema";
+import {
+  grinderEquipment,
+  machineEquipment,
+} from "@/lib/equipment-shot-joins";
 import { eq, and, desc, inArray, or } from "drizzle-orm";
 
 /**
@@ -109,16 +113,16 @@ export async function GET(
     createdAt: shots.createdAt,
     userName: users.name,
     userImage: users.image,
-    grinderName: grinders.name,
-    machineName: machines.name,
+    grinderName: grinderEquipment.name,
+    machineName: machineEquipment.name,
   };
 
   const allShotsQuery = await db
     .select(shotSelect)
     .from(shots)
     .leftJoin(users, eq(shots.userId, users.id))
-    .leftJoin(grinders, eq(shots.grinderId, grinders.id))
-    .leftJoin(machines, eq(shots.machineId, machines.id))
+    .leftJoin(grinderEquipment, eq(shots.grinderId, grinderEquipment.id))
+    .leftJoin(machineEquipment, eq(shots.machineId, machineEquipment.id))
     .where(
       and(
         eq(shots.beanId, beanId),

@@ -8,8 +8,8 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { drizzle } from "drizzle-orm/postgres-js";
 import { sql } from "drizzle-orm";
 import { validateTestEnvironment } from "./guardrails";
-import { createGrinderId, createMachineId } from "../../src/lib/nanoid-ids";
-import { grinders, machines, tools } from "../../src/db/schema";
+import { createEquipmentId } from "../../src/lib/nanoid-ids";
+import { equipment } from "../../src/db/schema";
 
 const TEST_DB_NAME = "coffee_test";
 
@@ -101,14 +101,42 @@ export async function seedTestDb(databaseUrl: string): Promise<void> {
   const db = drizzle(client);
 
   for (const name of DEFAULT_GRINDERS) {
-    await db.insert(grinders).values({ id: createGrinderId(), name }).onConflictDoNothing({ target: grinders.name });
+    await db
+      .insert(equipment)
+      .values({
+        id: createEquipmentId(),
+        type: "grinder",
+        name,
+        isGlobal: true,
+        adminApproved: true,
+      })
+      .onConflictDoNothing({ target: [equipment.type, equipment.name] });
   }
   for (const name of DEFAULT_MACHINES) {
-    await db.insert(machines).values({ id: createMachineId(), name }).onConflictDoNothing({ target: machines.name });
+    await db
+      .insert(equipment)
+      .values({
+        id: createEquipmentId(),
+        type: "machine",
+        name,
+        isGlobal: true,
+        adminApproved: true,
+      })
+      .onConflictDoNothing({ target: [equipment.type, equipment.name] });
   }
   for (const t of DEFAULT_TOOLS) {
-    await db.insert(tools).values({ slug: t.slug, name: t.name, description: t.description })
-      .onConflictDoNothing({ target: tools.slug });
+    await db
+      .insert(equipment)
+      .values({
+        id: createEquipmentId(),
+        type: "tool",
+        name: t.name,
+        slug: t.slug,
+        description: t.description,
+        isGlobal: true,
+        adminApproved: true,
+      })
+      .onConflictDoNothing({ target: [equipment.type, equipment.name] });
   }
   await client.end();
 }
@@ -132,11 +160,17 @@ export async function truncateTables(databaseUrl: string): Promise<void> {
       beans,
       user_beans,
       beans_share,
+      equipment_users_grinders,
+      equipment_users_machines,
+      equipment_users_tools,
       grinders,
       machines,
       tools,
       shots,
       shot_shares,
+      user_equipment,
+      equipment_purchase_link,
+      equipment,
       integrations,
       feedback,
       subscriptions,

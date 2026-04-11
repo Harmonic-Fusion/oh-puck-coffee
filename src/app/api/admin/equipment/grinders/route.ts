@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSuperAdmin } from "@/lib/api-auth";
 import { db } from "@/db";
-import { grinders } from "@/db/schema";
-import { asc, count } from "drizzle-orm";
+import { equipment } from "@/db/schema";
+import { asc, count, eq } from "drizzle-orm";
 import { createGrinderSchema } from "@/shared/equipment/schema";
-import { createGrinderId } from "@/lib/nanoid-ids";
+import { createEquipmentId } from "@/lib/nanoid-ids";
+
+const GRINDER = "grinder" as const;
 
 export async function GET(request: NextRequest) {
   const { error } = await requireSuperAdmin();
@@ -14,9 +16,17 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(parseInt(searchParams.get("limit") || "25", 10), 100);
   const offset = parseInt(searchParams.get("offset") || "0", 10);
 
+  const typeCond = eq(equipment.type, GRINDER);
+
   const [data, [{ total }]] = await Promise.all([
-    db.select().from(grinders).orderBy(asc(grinders.name)).limit(limit).offset(offset),
-    db.select({ total: count() }).from(grinders),
+    db
+      .select()
+      .from(equipment)
+      .where(typeCond)
+      .orderBy(asc(equipment.name))
+      .limit(limit)
+      .offset(offset),
+    db.select({ total: count() }).from(equipment).where(typeCond),
   ]);
 
   return NextResponse.json({ data, total, limit, offset });
@@ -32,6 +42,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Validation failed", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const [grinder] = await db.insert(grinders).values({ ...parsed.data, id: createGrinderId() }).returning();
+  const [grinder] = await db
+    .insert(equipment)
+    .values({
+      id: createEquipmentId(),
+      type: GRINDER,
+      name: parsed.data.name,
+      isGlobal: true,
+      adminApproved: true,
+    })
+    .returning();
   return NextResponse.json(grinder, { status: 201 });
 }

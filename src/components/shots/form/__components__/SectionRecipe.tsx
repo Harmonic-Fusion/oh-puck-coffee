@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { useFormContext, Controller } from "react-hook-form";
 import { NumberStepper } from "@/components/common/NumberStepper";
-import { ToolSelector } from "@/components/equipment/ToolSelector";
 import { BeanSection } from "./BeanSection";
 import { EditInputsButton } from "./EditInputsButton";
 import { CollapsibleSection } from "./CollapsibleSection";
@@ -26,8 +25,7 @@ export type RecipeStepId =
   | "grindLevel"
   | "brewTemp"
   | "brewPressure"
-  | "preInfusion"
-  | "toolsUsed";
+  | "preInfusion";
 
 export const DEFAULT_RECIPE_STEPS: ReorderableStepConfig<RecipeStepId>[] = [
   { id: "previousShot", label: "Previous Shot", description: "Reference your last shot's parameters", visible: true },
@@ -39,7 +37,6 @@ export const DEFAULT_RECIPE_STEPS: ReorderableStepConfig<RecipeStepId>[] = [
   { id: "brewTemp", label: "Brew Temp", description: "Water temperature during extraction", visible: false },
   { id: "brewPressure", label: "Brew Pressure", description: "Target pump pressure in bars", visible: false },
   { id: "preInfusion", label: "Pre-infusion", description: "Low-pressure pre-wet before full extraction", visible: false },
-  { id: "toolsUsed", label: "Tools Used", description: "WDT, distributor, tamper, or other tools", visible: false },
 ];
 
 export const REQUIRED_RECIPE_FIELDS: RecipeStepId[] =
@@ -588,20 +585,6 @@ export function SectionRecipe({
               )}
             />
           </div>
-        );
-      case "toolsUsed":
-        return (
-          <Controller
-            key="toolsUsed"
-            name="toolsUsed"
-            control={control}
-            render={({ field }) => (
-              <ToolSelector
-                value={field.value || []}
-                onChange={field.onChange}
-              />
-            )}
-          />
         );
       default:
         return null;

@@ -15,6 +15,8 @@ export interface ShotWithJoins {
   beanName: string | null;
   beanRoastDate: string | null;
   beanRoastLevel: string | null;
+  equipmentIds?: string[] | null;
+  equipmentUsedDetails?: { id: string; name: string; type: string }[] | null;
   grinderId: string;
   grinderName: string | null;
   machineId: string | null;

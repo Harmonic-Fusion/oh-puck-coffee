@@ -5,6 +5,8 @@ import { useState, useRef, useEffect } from "react";
 export interface SearchableSelectOption {
   value: string;
   label: string;
+  /** PNG thumbnail from API (`thumbnailBase64`); rendered as a data URL. */
+  thumbnailBase64?: string | null;
 }
 
 interface SearchableSelectProps {
@@ -40,6 +42,11 @@ export function SearchableSelect({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
+
+  function thumbSrc(b64: string | null | undefined): string | undefined {
+    if (!b64) return undefined;
+    return `data:image/png;base64,${b64}`;
+  }
 
   // Filter options based on search query
   const filteredOptions = options.filter((opt) =>
@@ -90,7 +97,7 @@ export function SearchableSelect({
         id={id}
         onClick={handleToggle}
         disabled={disabled}
-        className={`h-16 w-full rounded-xl border-2 px-4 text-left text-base transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
+        className={`flex h-16 w-full items-center justify-between gap-3 rounded-xl border-2 px-4 text-left text-base transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-1 ${
           error
             ? "border-red-400"
             : "border-stone-300 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
@@ -98,14 +105,27 @@ export function SearchableSelect({
           disabled ? "cursor-not-allowed opacity-50" : ""
         }`}
       >
-        <span className={selectedOption ? "" : "text-stone-400"}>
-          {selectedOption
-            ? selectedOption.label
-            : isLoading
-              ? "Loading..."
-              : placeholder}
+        <span
+          className={`flex min-w-0 flex-1 items-center gap-2 ${selectedOption ? "" : "text-stone-400"}`}
+        >
+          {selectedOption?.thumbnailBase64 ? (
+            // Thumbnails are inline data URLs or small API paths; skip next/image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={thumbSrc(selectedOption.thumbnailBase64)}
+              alt=""
+              className="h-8 w-8 shrink-0 rounded-md object-cover"
+            />
+          ) : null}
+          <span className="min-w-0 truncate">
+            {selectedOption
+              ? selectedOption.label
+              : isLoading
+                ? "Loading..."
+                : placeholder}
+          </span>
         </span>
-        <span className="float-right mt-1 text-stone-400">
+        <span className="shrink-0 text-stone-400" aria-hidden>
           {isOpen ? "▲" : "▼"}
         </span>
       </button>
@@ -141,13 +161,23 @@ export function SearchableSelect({
                   key={option.value}
                   type="button"
                   onClick={() => handleSelect(option.value)}
-                  className={`w-full px-4 py-2 text-left text-sm transition-colors hover:bg-stone-100 dark:hover:bg-stone-700 ${
+                  className={`flex w-full items-center gap-2 px-4 py-2 text-left text-sm transition-colors hover:bg-stone-100 dark:hover:bg-stone-700 ${
                     option.value === value
                       ? "bg-amber-50 font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
                       : "text-stone-800 dark:text-stone-200"
                   }`}
                 >
-                  {option.label}
+                  {option.thumbnailBase64 ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={thumbSrc(option.thumbnailBase64)}
+                      alt=""
+                      className="h-7 w-7 shrink-0 rounded object-cover"
+                    />
+                  ) : (
+                    <span className="h-7 w-7 shrink-0 rounded bg-stone-200 dark:bg-stone-700" />
+                  )}
+                  <span className="min-w-0 truncate">{option.label}</span>
                 </button>
               ))
             )}

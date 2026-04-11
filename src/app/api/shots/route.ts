@@ -5,12 +5,15 @@ import {
   shots,
   beans,
   users,
-  grinders,
-  machines,
   tools,
   integrations,
   shotImages,
+  equipment,
 } from "@/db/schema";
+import {
+  grinderEquipment,
+  machineEquipment,
+} from "@/lib/equipment-shot-joins";
 import { createShotSchema } from "@/shared/shots/schema";
 import {
   eq,
@@ -206,10 +209,11 @@ export async function GET(request: NextRequest) {
       beanName: beans.name,
       beanRoastLevel: beans.roastLevel,
       beanRoastDate: beans.roastDate,
+      equipmentIds: shots.equipmentIds,
       grinderId: shots.grinderId,
-      grinderName: grinders.name,
+      grinderName: grinderEquipment.name,
       machineId: shots.machineId,
-      machineName: machines.name,
+      machineName: machineEquipment.name,
       doseGrams: shots.doseGrams,
       yieldGrams: shots.yieldGrams,
       sizeOz: shots.sizeOz,
@@ -240,12 +244,33 @@ export async function GET(request: NextRequest) {
     .from(shots)
     .leftJoin(users, eq(shots.userId, users.id))
     .leftJoin(beans, eq(shots.beanId, beans.id))
-    .leftJoin(grinders, eq(shots.grinderId, grinders.id))
-    .leftJoin(machines, eq(shots.machineId, machines.id))
+    .leftJoin(grinderEquipment, eq(shots.grinderId, grinderEquipment.id))
+    .leftJoin(machineEquipment, eq(shots.machineId, machineEquipment.id))
     .where(whereClause)
     .orderBy(orderFn(sortColumn))
     .limit(effectiveLimit)
     .offset(effectiveOffset);
+
+  const equipmentIdSet = new Set<string>();
+  for (const row of results) {
+    const arr = row.equipmentIds as string[] | null | undefined;
+    if (arr) for (const id of arr) equipmentIdSet.add(id);
+  }
+  let equipmentDetailById = new Map<
+    string,
+    { id: string; name: string; type: string }
+  >();
+  if (equipmentIdSet.size > 0) {
+    const eqRows = await db
+      .select({
+        id: equipment.id,
+        name: equipment.name,
+        type: equipment.type,
+      })
+      .from(equipment)
+      .where(inArray(equipment.id, [...equipmentIdSet]));
+    equipmentDetailById = new Map(eqRows.map((r) => [r.id, r]));
+  }
 
   // Compute derived fields on read
   let enriched = results.map((row) => {
@@ -265,8 +290,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const eqIds = (row.equipmentIds as string[] | null) ?? null;
+    const equipmentUsedDetails =
+      eqIds?.length && equipmentDetailById.size > 0
+        ? eqIds
+            .map((id) => equipmentDetailById.get(id))
+            .filter((x): x is NonNullable<typeof x> => x != null)
+        : null;
+
     return {
       ...row,
+      equipmentUsedDetails:
+        equipmentUsedDetails && equipmentUsedDetails.length > 0
+          ? equipmentUsedDetails
+          : null,
       brewRatio,
       daysPostRoast,
       shotQuality: row.shotQuality != null ? parseFloat(row.shotQuality) : null,
@@ -395,6 +432,7 @@ export async function POST(request: NextRequest) {
         beanId: data.beanId,
         grinderId: data.grinderId || null,
         machineId: data.machineId || null,
+        equipmentIds: data.equipmentIds?.length ? data.equipmentIds : null,
         doseGrams: data.doseGrams != null ? String(data.doseGrams) : null,
         yieldGrams: data.yieldGrams != null ? String(data.yieldGrams) : null,
         sizeOz: data.sizeOz != null ? String(data.sizeOz) : null,

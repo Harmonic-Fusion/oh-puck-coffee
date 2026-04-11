@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import {
   Table,
   TableHeader,
@@ -34,6 +34,18 @@ interface GenericDataTableProps<T extends Record<string, any>> {
   toolbar?: React.ReactNode;
   rowActions?: (row: T) => React.ReactNode;
   rowHref?: (row: T) => string;
+  /** Appended as query params (e.g. type filter). Omit empty values. */
+  extraParams?: Record<string, string>;
+  /** When true, first column is row checkboxes + header select-all for the current page. */
+  selectable?: boolean;
+  /** Stable row id for selection (defaults to `String(row.id)`). */
+  getRowId?: (row: T) => string;
+  /** When this value changes, selection is cleared (e.g. `JSON.stringify(extraParams)`). */
+  selectionResetKey?: string;
+  /** Called whenever the selected id set changes. */
+  onSelectionChange?: (selectedIds: string[]) => void;
+  /** Renders above the table when at least one row is selected. */
+  bulkActions?: (selectedIds: string[], clearSelection: () => void) => React.ReactNode;
 }
 
 function formatValue(value: unknown): React.ReactNode {
@@ -95,6 +107,12 @@ export function GenericDataTable<T extends Record<string, any>>({
   toolbar,
   rowActions,
   rowHref,
+  extraParams,
+  selectable = false,
+  getRowId = (row: T) => String((row as { id?: string }).id ?? ""),
+  selectionResetKey,
+  onSelectionChange,
+  bulkActions,
 }: GenericDataTableProps<T>) {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(defaultPageSize);
@@ -102,11 +120,33 @@ export function GenericDataTable<T extends Record<string, any>>({
   const [searchInput, setSearchInput] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const headerCheckboxRef = useRef<HTMLInputElement>(null);
+  const onSelectionChangeRef = useRef(onSelectionChange);
+  onSelectionChangeRef.current = onSelectionChange;
+  const prevSelectionResetKey = useRef(selectionResetKey);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds([]);
+  }, []);
+
+  useEffect(() => {
+    if (selectionResetKey === undefined) return;
+    if (prevSelectionResetKey.current !== selectionResetKey) {
+      setSelectedIds([]);
+    }
+    prevSelectionResetKey.current = selectionResetKey;
+  }, [selectionResetKey]);
+
+  useEffect(() => {
+    onSelectionChangeRef.current?.(selectedIds);
+  }, [selectedIds]);
 
   const { data, isLoading, isError, error } = useAdminData<T>(endpoint, {
     limit: pageSize,
     offset: page * pageSize,
     search: search || undefined,
+    extraParams,
   });
 
   const handleSearch = useCallback(
@@ -143,6 +183,38 @@ export function GenericDataTable<T extends Record<string, any>>({
       return sortDir === "asc" ? cmp : -cmp;
     });
   }, [data, sortKey, sortDir]);
+
+  const pageRowIds = useMemo(
+    () => sortedRows.map((row) => getRowId(row)).filter((id) => id.length > 0),
+    [sortedRows, getRowId],
+  );
+
+  useEffect(() => {
+    const el = headerCheckboxRef.current;
+    if (!el || !selectable) return;
+    const n = pageRowIds.length;
+    const selectedOnPage = pageRowIds.filter((id) => selectedIds.includes(id)).length;
+    el.indeterminate = selectedOnPage > 0 && selectedOnPage < n;
+  }, [selectable, pageRowIds, selectedIds]);
+
+  function toggleSelectAllOnPage() {
+    const allSelected =
+      pageRowIds.length > 0 && pageRowIds.every((id) => selectedIds.includes(id));
+    if (allSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !pageRowIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => [...new Set([...prev, ...pageRowIds])]);
+    }
+  }
+
+  function toggleRow(id: string) {
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  const allOnPageSelected =
+    selectable &&
+    pageRowIds.length > 0 &&
+    pageRowIds.every((id) => selectedIds.includes(id));
 
   const totalPages = data ? Math.ceil(data.total / pageSize) : 0;
   const currentPage = page + 1;
@@ -212,9 +284,26 @@ export function GenericDataTable<T extends Record<string, any>>({
 
         {!isLoading && !isError && data && (
           <>
+            {selectable && selectedIds.length > 0 && bulkActions && (
+              <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 border-b border-stone-200 bg-amber-50/95 px-4 py-2.5 dark:border-stone-700 dark:bg-stone-800/95">
+                {bulkActions(selectedIds, clearSelection)}
+              </div>
+            )}
             <Table>
               <TableHeader>
                 <TableRow>
+                  {selectable && (
+                    <TableHead className="w-10">
+                      <input
+                        ref={headerCheckboxRef}
+                        type="checkbox"
+                        checked={allOnPageSelected}
+                        onChange={toggleSelectAllOnPage}
+                        className="h-4 w-4 rounded border-stone-300 text-amber-700 focus:ring-amber-500"
+                        aria-label="Select all on this page"
+                      />
+                    </TableHead>
+                  )}
                   {columns.map((col) => {
                     const key = String(col.key);
                     const isSorted = sortKey === key;
@@ -251,7 +340,9 @@ export function GenericDataTable<T extends Record<string, any>>({
                 {sortedRows.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={columns.length + (rowActions ? 1 : 0)}
+                      colSpan={
+                        columns.length + (rowActions ? 1 : 0) + (selectable ? 1 : 0)
+                      }
                       className="py-8 text-center text-stone-400"
                     >
                       No records found
@@ -260,11 +351,27 @@ export function GenericDataTable<T extends Record<string, any>>({
                 ) : (
                   sortedRows.map((row, rowIndex) => {
                     const href = rowHref?.(row);
+                    const rowId = getRowId(row);
                     return (
                       <TableRow
-                        key={String(row.id ?? rowIndex)}
+                        key={rowId || String(rowIndex)}
                         className={href ? "cursor-pointer hover:bg-stone-50 dark:hover:bg-stone-800/50" : undefined}
                       >
+                        {selectable && (
+                          <TableCell
+                            className="w-10"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(rowId)}
+                              disabled={!rowId}
+                              onChange={() => toggleRow(rowId)}
+                              className="h-4 w-4 rounded border-stone-300 text-amber-700 focus:ring-amber-500"
+                              aria-label={`Select row ${rowId}`}
+                            />
+                          </TableCell>
+                        )}
                         {columns.map((col) => {
                           const value = row[col.key as keyof T];
                           const cell = col.render

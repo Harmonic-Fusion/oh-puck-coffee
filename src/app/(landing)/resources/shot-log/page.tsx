@@ -4,7 +4,7 @@ import { PlusIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 import { AppRoutes } from "@/app/routes";
 
 const SECTIONS = [
-  { id: "Setup", label: "Setup" },
+  { id: "Equipment", label: "Equipment" },
   { id: "Recipe", label: "Recipe" },
   { id: "Results", label: "Results" },
   { id: "Tasting-Notes", label: "Tasting Notes" },
@@ -105,48 +105,18 @@ export default function ShotLogResourcePage() {
           </div>
 
           <div className="mt-12 space-y-20">
-            {/* Setup */}
-            <section id="Setup" className="scroll-mt-24">
+            {/* Equipment */}
+            <section id="Equipment" className="scroll-mt-24">
               <h2 className="mb-8 border-b-2 border-stone-200 pb-4 text-3xl font-bold text-stone-900 dark:border-stone-700 dark:text-stone-100">
-                Setup
+                Equipment
               </h2>
               <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-                Configure your equipment and beans before pulling the shot. These
-                selections form the foundation of every shot log and help you
-                understand results in context.
+                Pick the grinder, machine, and tools from <strong>your</strong> collection.
+                Only gear you&apos;ve added on My Equipment appears here — add or remove
+                items there anytime.
               </p>
 
               <div className="mt-8 space-y-8">
-                <div>
-                  <h3 id="bean" className="scroll-mt-24 text-xl font-semibold text-stone-800 dark:text-stone-200">
-                    Bean
-                  </h3>
-                  <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    Select the coffee beans you&apos;re using for this shot. The bean
-                    selection is the foundation of every shot log — knowing which
-                    coffee you used lets you compare results across different beans
-                    and track how a specific roast evolves over time.
-                  </p>
-                  <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
-                    <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
-                      💡 Tips
-                    </p>
-                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-stone-600 dark:text-stone-400">
-                      <li>
-                        Add the roaster name and roast date when creating a new bean
-                        for easy identification later.
-                      </li>
-                      <li>
-                        Track &ldquo;days post roast&rdquo; to learn how your beans
-                        taste as they age.
-                      </li>
-                      <li>
-                        Use the search to quickly find previously added beans.
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-
                 <div>
                   <h3 id="grinder" className="scroll-mt-24 text-xl font-semibold text-stone-800 dark:text-stone-200">
                     Grinder
@@ -204,6 +174,17 @@ export default function ShotLogResourcePage() {
                     </ul>
                   </div>
                 </div>
+
+                <div>
+                  <h3 id="tools-used" className="scroll-mt-24 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Tools
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Toggle the prep tools you used (WDT, distributor, tamper, etc.).
+                    Tools are listed separately from grinder and machine so you can
+                    mix and match what you actually reached for on the bar.
+                  </p>
+                </div>
               </div>
             </section>
 
@@ -213,12 +194,40 @@ export default function ShotLogResourcePage() {
                 Recipe
               </h2>
               <p className="mt-4 text-lg leading-8 text-stone-600 dark:text-stone-400">
-                The recipe defines your input parameters — the variables you
-                control before and during the shot. Getting the recipe right is
-                the key to reproducible espresso.
+                The recipe defines your input parameters — beans, dose, grind, temperature,
+                and more. Getting the recipe right is the key to reproducible espresso.
               </p>
 
               <div className="mt-8 space-y-8">
+                <div>
+                  <h3 id="bean" className="scroll-mt-24 text-xl font-semibold text-stone-800 dark:text-stone-200">
+                    Bean
+                  </h3>
+                  <p className="mt-2 text-stone-600 dark:text-stone-400">
+                    Select the coffee beans you&apos;re using for this shot. Knowing which
+                    coffee you used lets you compare results across different beans
+                    and track how a specific roast evolves over time.
+                  </p>
+                  <div className="mt-3 rounded-lg border border-stone-200 bg-stone-50 p-4 dark:border-stone-700 dark:bg-stone-900">
+                    <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
+                      💡 Tips
+                    </p>
+                    <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-stone-600 dark:text-stone-400">
+                      <li>
+                        Add the roaster name and roast date when creating a new bean
+                        for easy identification later.
+                      </li>
+                      <li>
+                        Track &ldquo;days post roast&rdquo; to learn how your beans
+                        taste as they age.
+                      </li>
+                      <li>
+                        Use the search to quickly find previously added beans.
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
                 <div>
                   <h3 id="dose" className="scroll-mt-24 text-xl font-semibold text-stone-800 dark:text-stone-200">
                     Dose
@@ -312,16 +321,6 @@ export default function ShotLogResourcePage() {
                     A low-pressure soak before full extraction, measured in seconds.
                     Enable this field if your machine supports pre-infusion. Learn more about{" "}
                     <GlossaryLink slug="pre-infusion">pre-infusion</GlossaryLink> in the glossary.
-                  </p>
-                </div>
-                <div>
-                  <h3 id="tools-used" className="scroll-mt-24 flex items-center gap-2 text-xl font-semibold text-stone-800 dark:text-stone-200">
-                    Tools Used
-                    <HiddenFieldLink />
-                  </h3>
-                  <p className="mt-2 text-stone-600 dark:text-stone-400">
-                    Select any tools you used during preparation (e.g., WDT tool,
-                    distribution tool, leveler).
                   </p>
                 </div>
               </div>

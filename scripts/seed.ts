@@ -1,7 +1,8 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { grinders, machines, tools } from "../src/db/schema";
-import { createGrinderId, createMachineId } from "../src/lib/nanoid-ids";
+import { eq } from "drizzle-orm";
+import { equipment } from "../src/db/schema";
+import { createEquipmentId } from "../src/lib/nanoid-ids";
 import { config } from "dotenv";
 
 function loadEnv(): void {
@@ -85,16 +86,27 @@ const DEFAULT_TOOLS = [
 ] as const;
 
 async function seed() {
-  console.log("Seeding default equipment...\n");
+  console.log("Seeding default equipment (unified table)...\n");
 
-  // --- Grinders ---
-  const existingGrinders = await db.select({ name: grinders.name }).from(grinders);
+  const existingGrinders = await db
+    .select({ name: equipment.name })
+    .from(equipment)
+    .where(eq(equipment.type, "grinder"));
   const existingGrinderNames = new Set(existingGrinders.map((g) => g.name));
   const newGrinders = DEFAULT_GRINDERS.filter((name) => !existingGrinderNames.has(name));
 
   if (newGrinders.length > 0) {
     for (const name of newGrinders) {
-      await db.insert(grinders).values({ id: createGrinderId(), name }).onConflictDoNothing({ target: grinders.name });
+      await db
+        .insert(equipment)
+        .values({
+          id: createEquipmentId(),
+          type: "grinder",
+          name,
+          isGlobal: true,
+          adminApproved: true,
+        })
+        .onConflictDoNothing({ target: [equipment.type, equipment.name] });
     }
     console.log(`  ✓ Inserted ${newGrinders.length} new grinder(s)`);
   }
@@ -102,14 +114,25 @@ async function seed() {
     console.log(`  · Skipped ${DEFAULT_GRINDERS.length - newGrinders.length} existing grinder(s)`);
   }
 
-  // --- Machines ---
-  const existingMachines = await db.select({ name: machines.name }).from(machines);
+  const existingMachines = await db
+    .select({ name: equipment.name })
+    .from(equipment)
+    .where(eq(equipment.type, "machine"));
   const existingMachineNames = new Set(existingMachines.map((m) => m.name));
   const newMachines = DEFAULT_MACHINES.filter((name) => !existingMachineNames.has(name));
 
   if (newMachines.length > 0) {
     for (const name of newMachines) {
-      await db.insert(machines).values({ id: createMachineId(), name }).onConflictDoNothing({ target: machines.name });
+      await db
+        .insert(equipment)
+        .values({
+          id: createEquipmentId(),
+          type: "machine",
+          name,
+          isGlobal: true,
+          adminApproved: true,
+        })
+        .onConflictDoNothing({ target: [equipment.type, equipment.name] });
     }
     console.log(`  ✓ Inserted ${newMachines.length} new machine(s)`);
   }
@@ -117,17 +140,29 @@ async function seed() {
     console.log(`  · Skipped ${DEFAULT_MACHINES.length - newMachines.length} existing machine(s)`);
   }
 
-  // --- Tools ---
-  const existingTools = await db.select({ slug: tools.slug }).from(tools);
-  const existingToolSlugs = new Set(existingTools.map((t) => t.slug));
+  const existingTools = await db
+    .select({ slug: equipment.slug })
+    .from(equipment)
+    .where(eq(equipment.type, "tool"));
+  const existingToolSlugs = new Set(
+    existingTools.map((t) => t.slug).filter((s): s is string => s != null),
+  );
   const newTools = DEFAULT_TOOLS.filter((tool) => !existingToolSlugs.has(tool.slug));
 
   if (newTools.length > 0) {
     for (const tool of newTools) {
       await db
-        .insert(tools)
-        .values({ slug: tool.slug, name: tool.name, description: tool.description })
-        .onConflictDoNothing({ target: tools.slug });
+        .insert(equipment)
+        .values({
+          id: createEquipmentId(),
+          type: "tool",
+          name: tool.name,
+          slug: tool.slug,
+          description: tool.description,
+          isGlobal: true,
+          adminApproved: true,
+        })
+        .onConflictDoNothing({ target: [equipment.type, equipment.name] });
     }
     console.log(`  ✓ Inserted ${newTools.length} new tool(s)`);
   }

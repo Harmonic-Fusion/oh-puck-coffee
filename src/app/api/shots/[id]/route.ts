@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
-import { shots, beans, users, grinders, machines, shotImages } from "@/db/schema";
-import { count, eq } from "drizzle-orm";
+import { shots, beans, users, shotImages, equipment } from "@/db/schema";
+import {
+  grinderEquipment,
+  machineEquipment,
+} from "@/lib/equipment-shot-joins";
+import { count, eq, inArray } from "drizzle-orm";
 import { validateMemberAccess } from "@/lib/api-auth";
 import { createShotSchema } from "@/shared/shots/schema";
 
@@ -26,10 +30,11 @@ export async function GET(
       beanName: beans.name,
       beanRoastLevel: beans.roastLevel,
       beanRoastDate: beans.roastDate,
+      equipmentIds: shots.equipmentIds,
       grinderId: shots.grinderId,
-      grinderName: grinders.name,
+      grinderName: grinderEquipment.name,
       machineId: shots.machineId,
-      machineName: machines.name,
+      machineName: machineEquipment.name,
       doseGrams: shots.doseGrams,
       yieldGrams: shots.yieldGrams,
       sizeOz: shots.sizeOz,
@@ -60,8 +65,8 @@ export async function GET(
     .from(shots)
     .leftJoin(users, eq(shots.userId, users.id))
     .leftJoin(beans, eq(shots.beanId, beans.id))
-    .leftJoin(grinders, eq(shots.grinderId, grinders.id))
-    .leftJoin(machines, eq(shots.machineId, machines.id))
+    .leftJoin(grinderEquipment, eq(shots.grinderId, grinderEquipment.id))
+    .leftJoin(machineEquipment, eq(shots.machineId, machineEquipment.id))
     .where(eq(shots.id, id))
     .limit(1);
 
@@ -84,6 +89,25 @@ export async function GET(
 
   const imageCount = Number(imageCountRow?.c ?? 0);
 
+  const eqIds = (result.equipmentIds as string[] | null) ?? null;
+  let equipmentUsedDetails: { id: string; name: string; type: string }[] | null =
+    null;
+  if (eqIds?.length) {
+    const eqRows = await db
+      .select({
+        id: equipment.id,
+        name: equipment.name,
+        type: equipment.type,
+      })
+      .from(equipment)
+      .where(inArray(equipment.id, eqIds));
+    const byId = new Map(eqRows.map((r) => [r.id, r]));
+    const ordered = eqIds
+      .map((id) => byId.get(id))
+      .filter((x): x is NonNullable<typeof x> => x != null);
+    equipmentUsedDetails = ordered.length > 0 ? ordered : null;
+  }
+
   // Compute derived fields on read
   const dose = result.doseGrams ? parseFloat(result.doseGrams) : null;
   const yieldG = result.yieldGrams ? parseFloat(result.yieldGrams) : null;
@@ -103,6 +127,7 @@ export async function GET(
 
   return NextResponse.json({
     ...result,
+    equipmentUsedDetails,
     brewRatio,
     daysPostRoast,
     imageCount,
@@ -163,6 +188,7 @@ export async function PATCH(
       beanId: data.beanId,
       grinderId: data.grinderId || null,
       machineId: data.machineId || null,
+      equipmentIds: data.equipmentIds?.length ? data.equipmentIds : null,
       doseGrams: data.doseGrams != null ? String(data.doseGrams) : null,
       yieldGrams: data.yieldGrams != null ? String(data.yieldGrams) : null,
       sizeOz: data.sizeOz != null ? String(data.sizeOz) : null,

@@ -27,6 +27,7 @@ import {
   getSourColor,
 } from "@/shared/flavor-wheel";
 import type { FlavorNode } from "@/shared/flavor-wheel/types";
+import { ADMIN_EQUIPMENT_TYPE_OPTIONS } from "@/shared/equipment/schema";
 import { formatRating } from "@/lib/format-rating";
 import { formatTemp, roundToOneDecimal } from "@/lib/format-numbers";
 import { useTempUnit } from "@/lib/use-temp-unit";
@@ -43,7 +44,7 @@ import {
 const SHOT_DETAIL_EXPANDED_SECTIONS_KEY =
   "coffee-shot-detail-expanded-sections";
 const DEFAULT_EXPANDED_SECTIONS = [
-  "setup",
+  "equipment",
   "recipe",
   "results",
   "metrics",
@@ -61,8 +62,9 @@ function getSavedExpandedSections(): Set<string> {
   try {
     const parsed = JSON.parse(saved) as string[];
     // Validate that all sections are valid
-    const validSections = ["setup", "recipe", "results", "metrics", "tasting"];
-    const filtered = parsed.filter((s) => validSections.includes(s));
+    const validSections = ["equipment", "recipe", "results", "metrics", "tasting"];
+    const migrated = parsed.map((s) => (s === "setup" ? "equipment" : s));
+    const filtered = migrated.filter((s) => validSections.includes(s));
     return filtered.length > 0
       ? new Set(filtered)
       : new Set(DEFAULT_EXPANDED_SECTIONS);
@@ -208,6 +210,9 @@ export function ShotDetail({
     if (shot.brewPressure) params.set("brewPressure", shot.brewPressure);
     if (shot.toolsUsed && shot.toolsUsed.length > 0) {
       params.set("toolsUsed", shot.toolsUsed.join(","));
+    }
+    if (shot.equipmentIds && shot.equipmentIds.length > 0) {
+      params.set("equipmentIds", shot.equipmentIds.join(","));
     }
     return `${window.location.origin}${AppRoutes.log.path}?${params.toString()}`;
   }, [shot]);
@@ -615,29 +620,58 @@ export function ShotDetail({
             images={prefetchedShotImages}
           />
 
-          {/* Setup Section */}
+          {/* Equipment Section */}
           <div>
             <button
               type="button"
-              onClick={() => toggleSection("setup")}
+              onClick={() => toggleSection("equipment")}
               className="flex w-full items-center justify-between py-2"
             >
               <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-400 dark:text-stone-500">
-                Setup
+                Equipment
               </h3>
-              {expandedSections.has("setup") ? (
+              {expandedSections.has("equipment") ? (
                 <ChevronUpIcon className="h-4 w-4 text-stone-400 dark:text-stone-500" />
               ) : (
                 <ChevronDownIcon className="h-4 w-4 text-stone-400 dark:text-stone-500" />
               )}
             </button>
-            {expandedSections.has("setup") && (
+            {expandedSections.has("equipment") && (
               <div className="divide-y divide-stone-100 rounded-lg border border-stone-200 px-4 dark:divide-stone-800 dark:border-stone-700">
-                <DetailRow label="Bean" value={shot.beanName} />
-                <DetailRow label="Roast Level" value={shot.beanRoastLevel} />
-                <DetailRow label="Grinder" value={shot.grinderName} />
-                <DetailRow label="Machine" value={shot.machineName} />
-                <DetailRow label="Days Post Roast" value={shot.daysPostRoast} />
+                {shot.equipmentUsedDetails && shot.equipmentUsedDetails.length > 0 ? (
+                  shot.equipmentUsedDetails.map((row) => (
+                    <DetailRow
+                      key={row.id}
+                      label={
+                        ADMIN_EQUIPMENT_TYPE_OPTIONS.find((o) => o.value === row.type)
+                          ?.label ?? row.type
+                      }
+                      value={row.name}
+                    />
+                  ))
+                ) : (
+                  <>
+                    <DetailRow label="Grinder" value={shot.grinderName} />
+                    <DetailRow label="Machine" value={shot.machineName} />
+                  </>
+                )}
+                {shot.toolsUsed && shot.toolsUsed.length > 0 && (
+                  <div className="flex justify-between py-1.5">
+                    <span className="text-sm text-stone-500 dark:text-stone-400">
+                      Tools Used
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 justify-end">
+                      {shot.toolsUsed.map((t) => (
+                        <span
+                          key={t}
+                          className="rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-400"
+                        >
+                          {toolMap.get(t) || t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -660,6 +694,9 @@ export function ShotDetail({
             </button>
             {expandedSections.has("recipe") && (
               <div className="divide-y divide-stone-100 rounded-lg border border-stone-200 px-4 dark:divide-stone-800 dark:border-stone-700">
+                <DetailRow label="Bean" value={shot.beanName} />
+                <DetailRow label="Roast Level" value={shot.beanRoastLevel} />
+                <DetailRow label="Days Post Roast" value={shot.daysPostRoast} />
                 <DetailRow
                   label="Dose"
                   value={`${roundToOneDecimal(shot.doseGrams)}g`}
@@ -702,23 +739,6 @@ export function ShotDetail({
                       : null
                   }
                 />
-                {shot.toolsUsed && shot.toolsUsed.length > 0 && (
-                  <div className="flex justify-between py-1.5">
-                    <span className="text-sm text-stone-500 dark:text-stone-400">
-                      Tools Used
-                    </span>
-                    <div className="flex flex-wrap gap-1.5 justify-end">
-                      {shot.toolsUsed.map((t) => (
-                        <span
-                          key={t}
-                          className="rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-xs text-stone-600 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-400"
-                        >
-                          {toolMap.get(t) || t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>

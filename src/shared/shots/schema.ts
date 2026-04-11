@@ -14,6 +14,8 @@ function parseRequiredRating(value: unknown): unknown {
 
 export const createShotSchema = z.object({
   beanId: z.string().min(1, { message: "Required" }),
+  /** Ordered unified equipment.id values (user's brew gear). Primary grinder/machine are derived for legacy joins. */
+  equipmentIds: z.array(z.string()).max(64).optional(),
   grinderId: z.string().optional(),
   machineId: z.string().optional(),
   doseGrams: z.coerce.number().positive().max(50).optional(),
@@ -71,6 +73,7 @@ export const shotSchema = z.object({
   id: z.string().min(1),
   userId: z.string().min(1),
   beanId: z.string().min(1),
+  equipmentIds: z.array(z.string()).nullable(),
   grinderId: z.string().nullable(),
   machineId: z.string().nullable(),
   doseGrams: z.coerce.number(),

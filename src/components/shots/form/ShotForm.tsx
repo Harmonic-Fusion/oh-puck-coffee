@@ -47,6 +47,7 @@ export function ShotForm({ phrase }: { phrase?: string }) {
     resolver: zodResolver(createShotSchema) as Resolver<CreateShot>,
     defaultValues: {
       beanId: "",
+      equipmentIds: [],
       grinderId: undefined,
       machineId: undefined,
       doseGrams: undefined,

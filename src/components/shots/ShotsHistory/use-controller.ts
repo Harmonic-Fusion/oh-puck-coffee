@@ -214,6 +214,9 @@ export function useShotsHistoryController({
       if (shot.beanId) params.set("beanId", shot.beanId);
       if (shot.grinderId) params.set("grinderId", shot.grinderId);
       if (shot.machineId) params.set("machineId", shot.machineId);
+      if (shot.equipmentIds && shot.equipmentIds.length > 0) {
+        params.set("equipmentIds", shot.equipmentIds.join(","));
+      }
       if (shot.doseGrams) params.set("doseGrams", shot.doseGrams);
       if (shot.yieldGrams) params.set("yieldGrams", shot.yieldGrams);
       if (shot.grindLevel) params.set("grindLevel", shot.grindLevel);
