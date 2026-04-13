@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/auth";
 import { db } from "@/db";
 import { feedback } from "@/db/schema";
-import { createFeedbackSchema } from "@/shared/feedback/schema";
+import { createFeedbackRequestSchema } from "@/shared/feedback/schema";
 import { createFeedbackId } from "@/lib/nanoid-ids";
 
 export async function POST(request: NextRequest) {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const parsed = createFeedbackSchema.safeParse(body);
+  const parsed = createFeedbackRequestSchema.safeParse(body);
 
   if (!parsed.success) {
     return NextResponse.json(
@@ -21,11 +21,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const row =
+    "source" in parsed.data && parsed.data.source === "client_error"
+      ? {
+          type: parsed.data.type,
+          subject: parsed.data.subject,
+          message: parsed.data.message,
+        }
+      : parsed.data;
+
   const [result] = await db
     .insert(feedback)
     .values({
       id: createFeedbackId(),
-      ...parsed.data,
+      ...row,
       userId: session.user.id,
     })
     .returning();

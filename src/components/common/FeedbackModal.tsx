@@ -45,28 +45,24 @@ function getTemplateForType(type: FeedbackType): string {
   return "";
 }
 
-function getInstructionsForType(type: FeedbackType): string {
+function getInstructionsForType(type: FeedbackType): string | null {
   if (type === "bug") {
     return "Please provide a summary, steps to reproduce, expected vs actual outcomes, and any extra details.";
   }
   if (type === "feature") {
     return "Please describe your request, the problem it solves, who will benefit, how it could be accomplished, and any additional context.";
   }
-  return "Please provide details about your feedback.";
+  // Note: "other" type doesn't need instructions
+  return null;
 }
 
 export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
-  const [type, setType] = useState<FeedbackType>("bug");
-  const [subject, setSubject] = useState("");
+  const [type, setType] = useState<FeedbackType>("other");
   const [message, setMessage] = useState("");
   const { showToast } = useToast();
 
   const submitFeedback = useMutation({
-    mutationFn: async (data: {
-      type: FeedbackType;
-      subject: string;
-      message: string;
-    }) => {
+    mutationFn: async (data: { type: FeedbackType; message: string }) => {
       const res = await fetch(ApiRoutes.feedback.path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -80,8 +76,7 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
     },
     onSuccess: () => {
       showToast("success", "Thank you for your feedback!");
-      setType("bug");
-      setSubject("");
+      setType("other");
       setMessage("");
       onClose();
     },
@@ -93,21 +88,19 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
   });
 
   function handleSubmit() {
-    if (!subject.trim() || !message.trim()) {
-      showToast("error", "Please fill in all fields");
+    if (!message.trim()) {
+      showToast("error", "Please enter your feedback in the message field.");
       return;
     }
     submitFeedback.mutate({
       type,
-      subject: subject.trim(),
       message: message.trim(),
     });
   }
 
   function handleClose() {
     if (!submitFeedback.isPending) {
-      setType("bug");
-      setSubject("");
+      setType("other");
       setMessage("");
       onClose();
     }
@@ -141,6 +134,7 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
   const canInsertTemplate = template
     ? template.length <= remainingSpace
     : false;
+  const instructions = getInstructionsForType(type);
 
   return (
     <Modal
@@ -160,9 +154,7 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={
-              submitFeedback.isPending || !subject.trim() || !message.trim()
-            }
+            disabled={submitFeedback.isPending || !message.trim()}
             className="h-12 rounded-xl border-2 border-amber-700 bg-amber-700 px-6 text-base font-medium text-white transition-colors hover:bg-amber-800 disabled:opacity-50"
           >
             {submitFeedback.isPending ? "Submitting..." : "Submit"}
@@ -173,10 +165,13 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
       <div className="space-y-4">
         <div>
           <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-stone-300">
-            Type
+            Feedback type
           </label>
+          <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">
+            Defaults to general feedback; choose Bug or Feature if that fits.
+          </p>
           <div className="flex gap-3">
-            {(["bug", "feature", "other"] as const).map((option) => (
+            {(["other", "bug", "feature"] as const).map((option) => (
               <button
                 key={option}
                 type="button"
@@ -194,28 +189,6 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
           </div>
         </div>
 
-        <div>
-          <label
-            htmlFor="feedback-subject"
-            className="mb-2 block text-sm font-medium text-stone-700 dark:text-stone-300"
-          >
-            Subject
-          </label>
-          <input
-            id="feedback-subject"
-            type="text"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            disabled={submitFeedback.isPending}
-            maxLength={200}
-            placeholder="Brief description of your feedback"
-            className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-800 placeholder:text-stone-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200 dark:placeholder:text-stone-500"
-          />
-          <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-            {subject.length}/200 characters
-          </p>
-        </div>
-
         <div className="space-y-2">
           <label
             htmlFor="feedback-message"
@@ -223,25 +196,27 @@ export function FeedbackModal({ open, onClose }: FeedbackModalProps) {
           >
             Message
           </label>
-          <div className="my-4">
-            <div className="flex flex-col items-start justify-between gap-2">
-              <div className="flex-1">
-                <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
-                  {getInstructionsForType(type)}
-                </p>
+          {instructions && (
+            <div className="my-4">
+              <div className="flex flex-col items-start justify-between gap-2">
+                <div className="flex-1">
+                  <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
+                    {instructions}
+                  </p>
+                </div>
+                {template && (
+                  <button
+                    type="button"
+                    onClick={handleUseTemplate}
+                    disabled={submitFeedback.isPending || !canInsertTemplate}
+                    className="shrink-0 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
+                  >
+                    Insert template
+                  </button>
+                )}
               </div>
-              {template && (
-                <button
-                  type="button"
-                  onClick={handleUseTemplate}
-                  disabled={submitFeedback.isPending || !canInsertTemplate}
-                  className="shrink-0 rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-50 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300 dark:hover:bg-stone-700"
-                >
-                  Insert template
-                </button>
-              )}
             </div>
-          </div>
+          )}
           <textarea
             id="feedback-message"
             value={message}
